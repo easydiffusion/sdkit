@@ -94,10 +94,10 @@ It has a lot of features! It was born out of a popular Stable Diffusion UI, spli
 
 **Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see all the features](Features)
 
-We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
+📢 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
 
 ## Is it fast?
-It is pretty fast, and close to the fastest. For the same image, `sdkit` took 5.5 seconds, while `automatic1111` webui took 4.95 seconds. We're looking for code contributions to make `sdkit` even faster!
+It is pretty fast, and close to the fastest. For the same image, `sdkit` took 5.5 seconds, while `automatic1111` webui took 4.95 seconds. 📢 We're looking for code contributions to make `sdkit` even faster!
 
 `xformers` is supported experimentally, which will make `sdkit` even faster.
 
@@ -115,7 +115,7 @@ No xformers. No VRAM optimizations for low-memory usage.
 ## Does it work on lower-end GPUs, or without GPUs?
 Yes. It works on NVIDIA GPUs with atleast 3GB of VRAM. Otherwise, it can run entirely on the CPU, for PCs without a compatible GPU. Running on the CPU will be *very* slow, but it'll work.
 
-We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
+📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
 ## Why not just use diffusers?
 You can certainly use diffusers. `sdkit` is just a different attempt at a productive toolkit, so use `sdkit` if you find its features useful.
@@ -141,7 +141,7 @@ If your project is using sdkit, you can add it to this list. Please feel free to
 # Contributing
 We'd love to accept code contributions. Please feel free to drop by our [Discord community](https://discord.com/invite/u9yhsFmEkB)!
 
-We're looking for code contributions for these features (or anything else you'd like to work on):
+📢 We're looking for code contributions for these features (or anything else you'd like to work on):
 - CodeFormer upscaling (please maintain the required copyright notices)
 - Using custom Textual Inversion embeddings
 - Seamless tiling
