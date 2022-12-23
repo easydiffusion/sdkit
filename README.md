@@ -131,7 +131,7 @@ You can certainly use diffusers. `sdkit` is just a different attempt at a produc
 8. includes 14 samplers (including k-samplers).
 9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022.
 
-This is not to say that `diffusers` can't do these. The easy-to-use API of `diffusers` is an inspiration for `sdkit`.
+This is not to say that `diffusers` doesn't do these. The easy-to-use API of `diffusers` is an inspiration for `sdkit`.
 
 # Who is using sdkit?
 * [cmdr2 UI](https://github.com/cmdr2/stable-diffusion-ui) for Stable Diffusion.
