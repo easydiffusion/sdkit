@@ -64,7 +64,7 @@ save_images(images, dir_path='D:\\path\\to\\images\\directory')
 Please see the list of [examples](examples), to learn how to use the other features (like filters, VAE, Hypernetworks, memory optimizations, running on multiple GPUs etc).
 
 # API
-Please see the [API Reference](wiki/API) page for a detailed summary.
+Please see the [API Reference](https://github.com/easydiffusion/sdkit/wiki/API) page for a detailed summary.
 
 Broadly, the API contains 5 modules:
 ```python
