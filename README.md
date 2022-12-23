@@ -63,7 +63,7 @@ images = generate_images(context, prompt='Photograph of an astronaut riding a ho
 save_images(images, dir_path='D:\\path\\to\\images\\directory')
 ```
 
-Please see the list of [examples](examples), to learn how to use the other features (like filters, VAE, Hypernetworks, memory optimizations, running on multiple GPUs etc).
+Please see the list of [examples](https://github.com/easydiffusion/sdkit/tree/main/examples), to learn how to use the other features (like filters, VAE, Hypernetworks, memory optimizations, running on multiple GPUs etc).
 
 # API
 Please see the [API Reference](https://github.com/easydiffusion/sdkit/wiki/API) page for a detailed summary.
@@ -80,7 +80,7 @@ sdkit.utils
 And a `sdkit.Context` object is passed around, which encapsulates the data related to the runtime (e.g. `device` and `vram_optimizations`) as well as references to the loaded model files and paths. `Context` is a thread-local object.
 
 # Models DB
-Click here to see the [list of known models](sdkit/models/models_db).
+Click here to see the [list of known models](https://github.com/easydiffusion/sdkit/tree/main/sdkit/models/models_db).
 
 sdkit includes a database of known models and their configurations. This lets you download a known model with a single line of code. You can customize where it saves the downloaded model.
 
@@ -170,4 +170,4 @@ The license of this software forbids you from sharing any content that:
 - Spreads misinformation.
 - Target vulnerable groups. 
 
-For the full list of restrictions please read [the License](LICENSE). You agree to these terms by using this software.
+For the full list of restrictions please read [the License](https://github.com/easydiffusion/sdkit/blob/main/LICENSE). You agree to these terms by using this software.
