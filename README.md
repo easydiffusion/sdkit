@@ -75,6 +75,8 @@ sdkit.train # model merge, and (in the future) more training methods
 sdkit.utils
 ```
 
+And a `sdkit.Context` object is passed around, which encapsulates the data related to the system (e.g. `device` and `vram_optimizations`) as well as references to the loaded model files and paths. It is a thread-local object.
+
 # FAQ
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
