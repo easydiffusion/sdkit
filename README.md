@@ -122,14 +122,14 @@ You can certainly use diffusers. `sdkit` is just a different attempt at a produc
 
 `sdkit`:
 1. is a fresh attempt at a simple, lightweight toolkit for Stable Diffusion projects.
-2. natively includes frequently-used projects like GFPGAN and RealESRGAN
-3. works with the popular `.ckpt` and `.safetensors` model format (instead of only the diffusers format)
-4. includes memory optimizations for low-end GPUs
-5. built-in support for running on multiple GPUs
-6. can download models from any server
-7. auto-scans for malicious models
-8. includes 14 samplers (including k-samplers)
-9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022
+2. natively includes frequently-used projects like GFPGAN and RealESRGAN.
+3. works with the popular `.ckpt` and `.safetensors` model format (instead of only the diffusers format).
+4. includes memory optimizations for low-end GPUs.
+5. built-in support for running on multiple GPUs.
+6. can download models from any server.
+7. auto-scans for malicious models.
+8. includes 14 samplers (including k-samplers).
+9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022.
 
 This is not to say that `diffusers` can't do these. The easy-to-use API of `diffusers` is an inspiration for `sdkit`.
 
@@ -142,13 +142,13 @@ If your project is using sdkit, you can add it to this list. Please feel free to
 We'd love to accept code contributions. Please feel free to drop by our [Discord community](https://discord.com/invite/u9yhsFmEkB)!
 
 📢 We're looking for code contributions for these features (or anything else you'd like to work on):
-- CodeFormer upscaling (please maintain the required copyright notices)
-- Using custom Textual Inversion embeddings
-- Seamless tiling
-- Outpainting
-- Mac support
-- AMD support
-- Allow other samplers for img2img (instead of only DDIM)
+- CodeFormer upscaling (please maintain the required copyright notices).
+- Using custom Textual Inversion embeddings.
+- Seamless tiling.
+- Outpainting.
+- Mac support.
+- AMD support.
+- Allow other samplers for img2img (instead of only DDIM).
 
 # Credits
 * Stable Diffusion: https://github.com/Stability-AI/stablediffusion
