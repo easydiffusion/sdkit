@@ -63,6 +63,16 @@ save_images(images, dir_path='D:\\path\\to\\images\\directory')
 
 Please see the list of [examples](examples), to learn how to use the other features (like filters, VAE, Hypernetworks, memory optimizations, running on multiple GPUs etc).
 
+# API
+Broadly, the API contains 5 modules:
+```python
+sdkit.models # load/unloading models, downloading known models, scanning models
+sdkit.generate # generating images
+sdkit.filter # face restoration, upscaling
+sdkit.train # model merge, and (in the future) more training methods
+sdkit.utils
+```
+
 # FAQ
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
@@ -122,6 +132,7 @@ We're looking for code contributions for these features (or anything else you'd 
 - Outpainting
 - Mac support
 - AMD support
+- Allow other samplers for img2img (instead of only DDIM)
 
 # Disclaimer
 The authors of this project are not responsible for any content generated using this project.
