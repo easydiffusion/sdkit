@@ -107,7 +107,7 @@ Yes. It works on NVIDIA GPUs with atleast 3GB of VRAM. Otherwise, it can run ent
 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
 ## Why not just use diffusers?
-You can. `sdkit` is just a different attempt at a productive toolkit, so use `sdkit` if you find its features useful.
+You can certainly use diffusers. `sdkit` is just a different attempt at a productive toolkit, so use `sdkit` if you find its features useful.
 
 `sdkit`:
 1. is a fresh attempt at a simple, lightweight toolkit for Stable Diffusion projects.
