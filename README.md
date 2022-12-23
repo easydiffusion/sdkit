@@ -92,7 +92,7 @@ For models that don't match a known hash (e.g. custom models), or if you want to
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see all the features](https://github.com/easydiffusion/sdkit/wiki/Features)
+**Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
 
 📢 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
 
@@ -113,7 +113,7 @@ No xformers. No VRAM optimizations for low-memory usage.
 | `automatic1111` webui | 4.95 sec | 6.15 it/s | 5.1 GB |
 
 ## Does it work on lower-end GPUs, or without GPUs?
-Yes. It works on NVIDIA GPUs with atleast 3GB of VRAM. Otherwise, it can run entirely on the CPU, for PCs without a compatible GPU. Running on the CPU will be *very* slow, but it'll work.
+Yes. It works on NVIDIA GPUs with atleast 3GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
 
 📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
