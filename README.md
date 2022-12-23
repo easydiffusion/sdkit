@@ -80,9 +80,9 @@ And a `sdkit.Context` object is passed around, which encapsulates the data relat
 # Models DB
 sdkit includes a database of known models and their configurations. This lets you download a known model with a single line of code. You can customize where it downloads models.
 
-Additionally, sdkit will automatically know the configuration for a given model (when loading from disk). For e.g. if an SD 2.1 model is being loaded, sdkit will automatically know to use `fp32` for `attn_precision`. If an SD 2.0 v-type model is being loaded, sdkit will automatically know to use the `v2-inference-v.yaml` configuration. It does this by matching the quick-hash of the given model file, with the list of known quick-hashes.
+Additionally, sdkit will attempt to automatically determine the configuration for a given model (when loading from disk). For e.g. if an SD 2.1 model is being loaded, sdkit will automatically know to use `fp32` for `attn_precision`. If an SD 2.0 v-type model is being loaded, sdkit will automatically know to use the `v2-inference-v.yaml` configuration. It does this by matching the quick-hash of the given model file, with the list of known quick-hashes.
 
-Custom models need to provide the path to the config file, e.g. `context.model_paths['stable-diffusion'] = 'path/to/config.yaml'`
+For models that don't match a known hash (e.g. custom models), or to override config file, you can set the path to the config file in `context.model_paths`. e.g. `context.model_paths['stable-diffusion'] = 'path/to/config.yaml'`
 
 # FAQ
 ## Does it have all the cool features?
