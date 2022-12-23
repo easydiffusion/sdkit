@@ -1,6 +1,8 @@
 # sdkit
 **sdkit** (**s**table **d**iffusion **kit**) is an easy-to-use library for using Stable Diffusion in your AI Art projects. It is fast, feature-packed, and memory-efficient.
 
+[![Discord Server](https://img.shields.io/discord/1014774730907209781?label=Discord)](https://discord.com/invite/u9yhsFmEkB)
+
 *New: Stable Diffusion 2.1 is now supported!*
 
 This is a community project, so please feel free to contribute (and use in your project)!
@@ -8,7 +10,7 @@ This is a community project, so please feel free to contribute (and use in your 
 ![t2i](https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/assets/stable-samples/txt2img/768/merged-0006.png)
 
 # Why?
-The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like GFPGAN for face restoration, RealESRGAN for upscaling, support for loading custom VAEs and hypernetworks etc).
+The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like GFPGAN for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs and hypernetworks etc).
 
 Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc.
 
@@ -90,7 +92,7 @@ For models that don't match a known hash (e.g. custom models), or to override th
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers, custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see all the features](Features)
+**Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see all the features](Features)
 
 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
 
@@ -126,7 +128,8 @@ You can certainly use diffusers. `sdkit` is just a different attempt at a produc
 5. built-in support for running on multiple GPUs
 6. can download models from any server
 7. auto-scans for malicious models
-8. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022
+8. includes 14 samplers (including k-samplers)
+9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022
 
 This is not to say that `diffusers` can't do these. The easy-to-use API of `diffusers` is an inspiration for `sdkit`.
 
@@ -146,6 +149,14 @@ We're looking for code contributions for these features (or anything else you'd 
 - Mac support
 - AMD support
 - Allow other samplers for img2img (instead of only DDIM)
+
+# Credits
+* Stable Diffusion: https://github.com/Stability-AI/stablediffusion
+* GFPGAN: https://github.com/TencentARC/GFPGAN
+* RealESRGAN: https://github.com/xinntao/Real-ESRGAN
+* k-diffusion: https://github.com/crowsonkb/k-diffusion
+* Code contributors and artists on the cmdr2 UI: https://github.com/cmdr2/stable-diffusion-ui and Discord (https://discord.com/invite/u9yhsFmEkB)
+* Lots of contributors on the internet
 
 # Disclaimer
 The authors of this project are not responsible for any content generated using this project.
