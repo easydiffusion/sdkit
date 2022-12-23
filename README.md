@@ -12,7 +12,7 @@ This is a community project, so please feel free to contribute (and use in your 
 # Why?
 The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like GFPGAN for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs and hypernetworks etc).
 
-Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc.
+Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
 # Installation
 1. On Windows and Linux only: `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu116`
@@ -92,7 +92,7 @@ For models that don't match a known hash (e.g. custom models), or to override th
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see all the features](Features)
+**Features include:** SD 2.1, txt2img, img2img, inpainting, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see all the features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
 📢 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
 
