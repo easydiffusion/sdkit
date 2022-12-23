@@ -19,9 +19,9 @@ def apply_filters(context: Context, filters, images, **kwargs):
     images = images if isinstance(images, list) else [images]
     filters = filters if isinstance(filters, list) else [filters]
 
-    return [apply_filter_single(context, image, **kwargs) for image in images]
+    return [apply_filter_single_image(context, filters, image, **kwargs) for image in images]
 
-def apply_filter_single(context, filters, image, **kwargs):
+def apply_filter_single_image(context, filters, image, **kwargs):
     image = base64_str_to_img(image) if isinstance(image, str) else image
 
     for filter_type in filters:
