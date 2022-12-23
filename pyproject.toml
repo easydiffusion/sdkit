@@ -8,7 +8,7 @@ version = "1.0.1"
 authors = [
   {name="cmdr2", email="secondary.cmdr2@gmail.com"},
 ]
-description = "SDKit (Stable Diffusion Kit) is an easy-to-use library for using Stable Diffusion in your projects. It bundles Stable Diffusion along with commonly-used features (like GFPGAN, RealESRGAN, custom VAE, hypernetworks etc). It also includes a model-downloader with a database of commonly used models, and advanced features like running in parallel on multiple GPUs, auto-scanning for malicious models etc. It is fast, feature-packed, and memory-efficient. Supports Stable Diffusion 2.1!"
+description = "sdkit (stable diffusion kit) is an easy-to-use library for using Stable Diffusion in your AI Art projects. It is fast, feature-packed, and memory-efficient. It bundles Stable Diffusion along with commonly-used features (like GFPGAN, RealESRGAN, k-samplers, custom VAE, hypernetworks etc). It also includes a model-downloader with a database of commonly used models, and advanced features like running in parallel on multiple GPUs, auto-scanning for malicious models etc. Supports Stable Diffusion 2.1!"
 readme = "README.md"
 requires-python = ">=3.8.5"
 classifiers = [
@@ -21,6 +21,5 @@ classifiers = [
 keywords = ["stable diffusion", "ai", "art"]
 
 [project.urls]
-"Homepage" = "https://github.com/cmdr2/stable-diffusion-ui"
-"Bug Tracker" = "https://github.com/cmdr2/stable-diffusion-ui/issues"
-
+"Homepage" = "https://github.com/easydiffusion/sdkit"
+"Bug Tracker" = "https://github.com/easydiffusion/sdkit/issues"
