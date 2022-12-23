@@ -78,7 +78,7 @@ sdkit.utils
 And a `sdkit.Context` object is passed around, which encapsulates the data related to the runtime (e.g. `device` and `vram_optimizations`) as well as references to the loaded model files and paths. `Context` is a thread-local object.
 
 # Models DB
-Click here to see the [list of known models](models/models_db).
+Click here to see the [list of known models](sdkit/models/models_db).
 
 sdkit includes a database of known models and their configurations. This lets you download a known model with a single line of code. You can customize where it saves the downloaded model.
 
