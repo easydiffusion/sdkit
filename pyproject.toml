@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdkit"
+version = "1.0.1"
+authors = [
+  {name="cmdr2", email="secondary.cmdr2@gmail.com"},
+]
+description = "SDKit (Stable Diffusion Kit) is an easy-to-use library for using Stable Diffusion in your projects. It bundles Stable Diffusion along with commonly-used features (like GFPGAN, RealESRGAN, custom VAE, hypernetworks etc). It also includes a model-downloader with a database of commonly used models, and advanced features like running in parallel on multiple GPUs, auto-scanning for malicious models etc. It is fast, feature-packed, and memory-efficient. Supports Stable Diffusion 2.1!"
+readme = "README.md"
+requires-python = ">=3.8.5"
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: Microsoft :: Windows :: Windows 10",
+	"Operating System :: Microsoft :: Windows :: Windows 11",
+	"Operating System :: POSIX :: Linux",
+]
+keywords = ["stable diffusion", "ai", "art"]
+
+[project.urls]
+"Homepage" = "https://github.com/cmdr2/stable-diffusion-ui"
+"Bug Tracker" = "https://github.com/cmdr2/stable-diffusion-ui/issues"
+
