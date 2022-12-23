@@ -28,7 +28,9 @@ def generate_images(
         prompt_strength: float = 0.8,
         preserve_init_image_color_profile = False,
 
-        sampler_name: str = "euler_a", # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms"
+        sampler_name: str = "euler_a", # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
+                                       # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
+                                       # "dpm_adaptive"
         hypernetwork_strength: float = 0,
 
         callback=None,

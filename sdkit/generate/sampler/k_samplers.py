@@ -19,12 +19,6 @@ samplers = {
     'dpmpp_sde': k_samplers.sample_dpmpp_sde,
     'dpm_fast': k_samplers.sample_dpm_fast,
     'dpm_adaptive': k_samplers.sample_dpm_adaptive,
-    'lms': k_samplers.sample_lms,
-    'dpm_2': k_samplers.sample_dpm_2,
-    'dpm_2_a': k_samplers.sample_dpm_2_ancestral,
-    'dpmpp_2s_a': k_samplers.sample_dpmpp_2s_ancestral,
-    'dpmpp_2m': k_samplers.sample_dpmpp_2m,
-    'dpmpp_sde': k_samplers.sample_dpmpp_sde,
 }
 
 def sample(context: Context, sampler_name:str=None, noise: Tensor=None, batch_size: int=1, shape: tuple=(), steps: int=50, cond: Tensor=None, uncond: Tensor=None, guidance_scale: float=0.8, callback=None, **kwargs):
