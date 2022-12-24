@@ -38,7 +38,10 @@ def unload_model(context: Context, **kwargs):
     _set_vae(context, base_vae)
 
 def _set_vae(context: Context, vae: dict):
-    model = context.models.get('stable-diffusion')
+    if 'stable-diffusion' not in context.models:
+        return
+
+    model = context.models['stable-diffusion']
     model.first_stage_model.load_state_dict(vae, strict=False)
 
 def _get_base_model_vae(context: Context):

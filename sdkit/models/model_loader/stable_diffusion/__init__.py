@@ -46,12 +46,14 @@ def load_model(context: Context, scan_model=True, **kwargs):
     config.model.params.unet_config.params.use_fp16 = context.half_precision
 
     extra_config = config.get('extra', {})
-    attn_precision = extra_config.get('attn_precision', 'fp16')
+    attn_precision = extra_config.get('attn_precision', 'fp16' if context.half_precision else 'fp32')
 
     # instantiate the model
     model = instantiate_from_config(config.model)
     _, _ = model.load_state_dict(sd, strict=False)
-    if context.half_precision: model = model.half()
+
+    model = model.half() if context.half_precision else model.float()
+
     optimizations.send_to_device(context, model)
     model.eval()
     del sd

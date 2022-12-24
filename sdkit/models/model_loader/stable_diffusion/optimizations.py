@@ -16,8 +16,9 @@ def send_to_device(context: Context, model):
     for a summary of the logic used for VRAM optimizations
     """
     log.info(f'VRAM Optimizations: {context.vram_optimizations}')
-    if len(context.vram_optimizations) == 0:
+    if len(context.vram_optimizations) == 0 or context.device == 'cpu':
         model.to(context.device)
+        model.cond_stage_model.device = context.device
         return
 
     # based on the approach at https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/lowvram.py
@@ -44,6 +45,7 @@ def send_to_device(context: Context, model):
                 log.debug(f'moved {module_name} to cpu')
 
             module.to(context.device)
+            if module == model.cond_stage_model: module.device = context.device
             context.module_in_gpu = module
             log.debug(f'moved {module_name} to GPU')
         return move_to_gpu
