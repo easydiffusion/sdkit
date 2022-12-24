@@ -19,6 +19,25 @@ def load_model(context: Context, scan_model=True, **kwargs):
 
     model_path = context.model_paths.get('stable-diffusion')
     config_file_path = get_model_config_file(context)
+
+    if scan_model:
+        scan_result = scan_model_fn(model_path)
+        if scan_result.issues_count > 0 or scan_result.infected_files > 0:
+            raise Exception(f'Model scan failed! Potentially infected model: {model_path}')
+
+    # load the model file
+    sd = load_tensor_file(model_path)
+    sd = sd['state_dict'] if 'state_dict' in sd else sd
+
+    # try to guess the config, if no config file was given
+    # check if a key specific to SD 2.0 is missing
+    if config_file_path is None and 'cond_stage_model.model.ln_final.bias' not in sd.keys():
+        # try using an SD 1.4 config
+        from sdkit.models import get_model_info_from_db
+        sd_v1_4_info = get_model_info_from_db(model_type='stable-diffusion', model_id='1.4')
+        config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
+
+    # load the config
     if config_file_path is None:
         raise Exception(f'Unknown model! No config file path specified in context.model_configs for the "stable-diffusion" model!')
 
@@ -29,14 +48,7 @@ def load_model(context: Context, scan_model=True, **kwargs):
     extra_config = config.get('extra', {})
     attn_precision = extra_config.get('attn_precision', 'fp16')
 
-    if scan_model:
-        scan_result = scan_model_fn(model_path)
-        if scan_result.issues_count > 0 or scan_result.infected_files > 0:
-            raise Exception(f'Model scan failed! Potentially infected model: {model_path}')
-
-    sd = load_tensor_file(model_path)
-    sd = sd['state_dict'] if 'state_dict' in sd else sd
-
+    # instantiate the model
     model = instantiate_from_config(config.model)
     _, _ = model.load_state_dict(sd, strict=False)
     if context.half_precision: model = model.half()
@@ -66,8 +78,11 @@ def get_model_config_file(context: Context):
 
     model_path = context.model_paths['stable-diffusion']
     quick_hash = hash_file_quick(model_path)
-
     model_info = get_model_info_from_db(quick_hash=quick_hash)
+
+    return resolve_model_config_file_path(model_info, model_path)
+
+def resolve_model_config_file_path(model_info, model_path):
     if model_info is None:
         return
     config_url = model_info.get('config_url')
