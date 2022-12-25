@@ -28,8 +28,9 @@ def merge_two_models(model0, model1, alpha, use_fp16=True):
 
     model0_file = load_tensor_file(model0) if isinstance(model0, str) else model0
     model1_file = load_tensor_file(model1) if isinstance(model1, str) else model1
-    model0 = model0_file['state_dict']
-    model1 = model1_file['state_dict']
+
+    model0 = model0_file['state_dict'] if 'state_dict' in model0_file else model0_file
+    model1 = model1_file['state_dict'] if 'state_dict' in model1_file else model1_file
 
     # common weights
     for key in model0.keys():
