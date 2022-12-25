@@ -75,7 +75,7 @@ def unload_model(context: Context, **kwargs):
 def get_model_config_file(context: Context):
     from sdkit.models import get_model_info_from_db
 
-    if 'stable-diffusion' in context.model_configs:
+    if context.model_configs.get('stable-diffusion') is not None:
         return context.model_configs['stable-diffusion']
 
     model_path = context.model_paths['stable-diffusion']
