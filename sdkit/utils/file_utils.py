@@ -13,7 +13,7 @@ def save_tensor_file(data, path):
     if path.lower().endswith(".safetensors"):
         return safetensors.torch.save_file(data, path, metadata={"format": "pt"})
     else:
-        return torch.load(path, map_location="cpu")
+        return torch.save(data, path, map_location="cpu")
 
 def save_images(images: list, dir_path: str, file_name='image', output_format='JPEG', output_quality=75):
     '''
