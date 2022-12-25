@@ -47,4 +47,4 @@ def merge_two_models(model0, model1, alpha, use_fp16=True):
         for key, val in model0.items():
             model0[key] = val.half()
 
-    return model0_file
+    return model0
