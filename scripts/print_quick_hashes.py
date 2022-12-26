@@ -6,7 +6,7 @@ python print_quick_hashes.py --help
 '''
 import argparse
 
-from sdkit.models.models_db import read_models_db
+from sdkit.models import get_models_db
 from sdkit.utils import hash_url_quick
 
 parser = argparse.ArgumentParser(description="arg parser")
@@ -14,7 +14,7 @@ parser.add_argument("--diff-only", action="store_true", help="Only show entries 
 parser.set_defaults(diff_only=False)
 args = parser.parse_args()
 
-models_db = read_models_db()
+models_db = get_models_db()
 hashes_found = {}
 
 if args.diff_only:

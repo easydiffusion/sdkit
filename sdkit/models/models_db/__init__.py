@@ -1,9 +1,15 @@
 import json
 from pathlib import Path
 
+db = None
 index = None
 
-def read_models_db():
+def get_models_db():
+    global db
+
+    if db is not None:
+        return db
+
     db_path = Path(__file__).parent
     db = {}
     with open(db_path/'stable_diffusion.json') as f: db['stable-diffusion'] = json.load(f)
@@ -12,7 +18,7 @@ def read_models_db():
     return db
 
 def get_model_info_from_db(quick_hash=None, model_type=None, model_id=None):
-    db = read_models_db()
+    db = get_models_db()
 
     if quick_hash:
         if index is None:
@@ -26,7 +32,7 @@ def get_model_info_from_db(quick_hash=None, model_type=None, model_id=None):
 def rebuild_index():
     global index
 
-    db = read_models_db()
+    db = get_models_db()
     index = {}
     for _, m in db.items():
         module_index = {info.get('quick_hash'): info for _, info in m.items()}

@@ -49,6 +49,7 @@ def download_model(model_type: str, model_id: str, download_base_dir: str=None, 
             log.warn(f'No download url found for model {model_type} {model_id}')
             return
 
+        os.makedirs(download_base_dir, exist_ok=True)
         out_path = os.path.join(download_base_dir, model_file_name)
         download_file(model_url, out_path)
 
