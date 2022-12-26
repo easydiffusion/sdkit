@@ -2,9 +2,9 @@ import torch
 
 from sdkit.utils import log
 
-def get_cond_and_uncond(prompt, negative_prompt, batch_size, model):
+def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model):
     cond = parse_prompt(prompt, batch_size, model)
-    uncond = parse_prompt(negative_prompt, batch_size, model)
+    uncond = parse_prompt(unconditional_prompt, batch_size, model)
 
     return cond, uncond
 
