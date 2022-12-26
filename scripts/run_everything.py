@@ -12,8 +12,8 @@ from sdkit.utils import save_images, log
 
 # args
 parser = argparse.ArgumentParser()
-parser.add_argument('--models-dir', type=str, help="Path to the directory containing all the models, with subdirs for each model-type")
-parser.add_argument('--out-dir', type=str, help="Path to the directory to save the generated images")
+parser.add_argument('--models-dir', type=str, required=True, help="Path to the directory containing all the models, with subdirs for each model-type")
+parser.add_argument('--out-dir', type=str, required=True, help="Path to the directory to save the generated images")
 args = parser.parse_args()
 
 # setup
