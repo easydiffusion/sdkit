@@ -47,6 +47,7 @@ def load_model(context: Context, scan_model=True, **kwargs):
 
     extra_config = config.get('extra', {})
     attn_precision = extra_config.get('attn_precision', 'fp16' if context.half_precision else 'fp32')
+    log.info(f'using attn_precision: {attn_precision}')
 
     # instantiate the model
     model = instantiate_from_config(config.model)
