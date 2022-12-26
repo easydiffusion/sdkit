@@ -2,29 +2,25 @@
 Utility script for calculating quick hashes for all the entries in the models db.
 
 Usage:
-python print_quick_hashes.py
+python print_quick_hashes.py --help
 '''
 import argparse
 
+from sdkit.models.models_db import read_models_db
 from sdkit.utils import hash_url_quick
-import stable_diffusion, realesrgan, gfpgan
 
 parser = argparse.ArgumentParser(description="arg parser")
 parser.add_argument("--diff-only", action="store_true", help="Only show entries if the calculated quick-hash doesn't match the stored quick-hash")
 parser.set_defaults(diff_only=False)
 args = parser.parse_args()
 
-all_models = {
-    'stable-diffusion': stable_diffusion.models,
-    'gfpgan': gfpgan.models,
-    'realesrgan': realesrgan.models,
-}
+models_db = read_models_db()
 hashes_found = {}
 
 if args.diff_only:
     print('Printing quick-hashes for only those URLs that do not match the configured quick-hash')
 
-for model_type, models in all_models.items():
+for model_type, models in models_db.items():
     print(f'{model_type} models:')
 
     for model_id, model_info in models.items():
