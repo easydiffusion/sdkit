@@ -16,7 +16,7 @@ from .file_utils import (
 )
 
 from .hash_utils import (
-    hash_bytes_quick,
+    hash_bytes,
     hash_url_quick,
     hash_file_quick,
 )
