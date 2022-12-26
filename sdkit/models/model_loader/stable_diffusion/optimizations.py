@@ -157,8 +157,8 @@ def make_attn_forward(context: Context, attn_precision='fp16'):
             end = i + slice_size
             if attn_precision == "fp32":
                 with torch.autocast(enabled=False, device_type=autocast_device):
-                    q, k = q.float(), k.float()
-                    s1 = einsum('b i d, b j d -> b i j', q[:, i:end], k)
+                    q_fp, k_fp = q[:, i:end].float(), k.float()
+                    s1 = einsum('b i d, b j d -> b i j', q_fp, k_fp)
             else:
                 s1 = einsum('b i d, b j d -> b i j', q[:, i:end], k)
 
