@@ -38,7 +38,7 @@ def merge_two_models(model0, model1, alpha, use_fp16=True):
             model0[key] = (1 - alpha) * model0[key] + alpha * model1[key]
 
     for key in model1.keys():
-        if 'model' in key and key not in model1:
+        if 'model' in key and key not in model0:
             model0[key] = model1[key]
 
     # unload model1 from memory
