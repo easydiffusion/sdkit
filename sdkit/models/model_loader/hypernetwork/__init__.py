@@ -36,7 +36,6 @@ def load_model(context: Context, **kwargs):
     except:
         log.error(traceback.format_exc())
         log.error(f'Could not load hypernetwork: {model_path}')
-        del context.models['hypernetwork']
 
 def unload_model(context: Context, **kwargs):
     pass
