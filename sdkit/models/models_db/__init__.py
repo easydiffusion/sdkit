@@ -1,17 +1,15 @@
 import os
 import json
+from pathlib import Path
 
 index = None
 
 def read_models_db():
-    import sdkit
-    base = os.path.dirname(sdkit.__file__)
-    base = os.path.dirname(base)
-    db_path = os.path.join(base, 'models_db')
+    db_path = Path(__file__).parent
     db = {}
-    with open(os.path.join(db_path, 'stable_diffusion.json')) as f: db['stable-diffusion'] = json.load(f)
-    with open(os.path.join(db_path, 'gfpgan.json')) as f: db['gfpgan'] = json.load(f)
-    with open(os.path.join(db_path, 'realesrgan.json')) as f: db['realesrgan'] = json.load(f)
+    with open(db_path/'stable_diffusion.json') as f: db['stable-diffusion'] = json.load(f)
+    with open(db_path/'gfpgan.json') as f: db['gfpgan'] = json.load(f)
+    with open(db_path/'realesrgan.json') as f: db['realesrgan'] = json.load(f)
     return db
 
 def get_model_info_from_db(quick_hash=None, model_type=None, model_id=None):
