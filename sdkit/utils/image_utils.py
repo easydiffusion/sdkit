@@ -38,13 +38,14 @@ def base64_str_to_img(img_str):
     img = Image.open(buffered)
     return img
 
-def resize_img(img: Image, desired_width, desired_height):
+def resize_img(img: Image, desired_width, desired_height, clamp_to_64=False):
     w, h = img.size
 
     if desired_width is not None and desired_height is not None:
         w, h = desired_width, desired_height
 
-    w, h = map(lambda x: x - x % 64, (w, h))  # resize to integer multiple of 64
+    if clamp_to_64:
+        w, h = map(lambda x: x - x % 64, (w, h))  # resize to integer multiple of 64
 
     return img.resize((w, h), resample=Image.Resampling.LANCZOS)
 
