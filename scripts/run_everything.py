@@ -16,7 +16,7 @@ from sdkit import Context
 from sdkit.models import get_models_db, resolve_downloaded_model_path, load_model
 from sdkit.generate import generate_images
 from sdkit.generate.sampler import default_samplers, k_samplers
-from sdkit.utils import save_images, log
+from sdkit.utils import log
 
 models_db = get_models_db()
 samplers = list(default_samplers.samplers.keys()) + list(k_samplers.samplers.keys())
@@ -31,17 +31,33 @@ context = Context()
 
 for model_id, model_info in sd_models.items():
     if model_id in skip_models:
-        print(f'skipping {model_id} as requested')
+        log.info(f'skipping {model_id} as requested')
         continue
+
+    out_dir_path = os.path.join(args.out_dir, model_id)
+    # check if this model should be skipped (already done)
+    if os.path.exists(out_dir_path):
+        skip = True
+        for sampler_name in samplers:
+            img_path = os.path.join(out_dir_path, f'{sampler_name}_0.jpeg')
+            if not os.path.exists(img_path):
+                skip = False
+                break
+        if skip:
+            log.info(f'skipping {model_id}, since images for all the samplers already exist in {out_dir_path}')
+            continue
 
     context.model_paths['stable-diffusion'] = resolve_downloaded_model_path(model_type='stable-diffusion', model_id=model_id, download_base_dir=args.models_dir)
     load_model(context, 'stable-diffusion', scan_model=False)
 
     min_size = model_info['metadata']['min_size']
 
-    out_dir_path = os.path.join(args.out_dir, model_id)
-
     for sampler_name in samplers:
+        img_path = os.path.join(out_dir_path, f'{sampler_name}_0.jpeg')
+        if os.path.exists(img_path):
+            log.info(f'Skipping sampler {sampler_name} since it has already been processed at {img_path}')
+            continue
+
         log.info(f'Model: {model_id}, Sampler: {sampler_name}')
         images = generate_images(
             context,
@@ -50,4 +66,4 @@ for model_id, model_info in sd_models.items():
             width=min_size, height=min_size,
             sampler_name=sampler_name
         )
-        save_images(images, dir_path=out_dir_path, file_name=sampler_name)
+        images[0].save(img_path)
