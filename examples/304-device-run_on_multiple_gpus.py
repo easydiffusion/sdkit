@@ -21,7 +21,7 @@ def render_thread(device):
     log.info(f'finished generating on device {device}')
 
 def start_thread(device):
-    thread = threading.Thread(target=render_thread, kwargs={'device': 'cuda:0'})
+    thread = threading.Thread(target=render_thread, kwargs={'device': device})
     thread.daemon = True
     thread.name = f'SD-{device}'
     thread.start()
