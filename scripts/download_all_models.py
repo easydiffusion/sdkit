@@ -3,10 +3,7 @@ import sys
 import argparse
 import requests
 
-from sdkit.models import download_model, resolve_downloaded_model_path
-from sdkit.models import get_models_db
-from sdkit.utils import hash_file_quick
-
+# args
 parser = argparse.ArgumentParser()
 parser.add_argument('--models-dir', required=True, help="Folder path where the models will be downloaded, with a subdir for each model type")
 parser.add_argument('--hash-only', action='store_true', default=False, help="Don't download, just calculate the hashes of the models in the downloaded dir")
@@ -15,6 +12,11 @@ args = parser.parse_args()
 if len(sys.argv) < 2:
     print('Error: need to provide a folder path as the first argument')
     exit(1)
+
+# setup
+from sdkit.models import download_model, resolve_downloaded_model_path
+from sdkit.models import get_models_db
+from sdkit.utils import hash_file_quick
 
 db = get_models_db()
 

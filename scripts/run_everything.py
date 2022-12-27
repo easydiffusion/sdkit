@@ -4,12 +4,6 @@ Runs all the models in the models db, with all the samplers.
 import os
 import argparse
 
-from sdkit import Context
-from sdkit.models import get_models_db, resolve_downloaded_model_path, load_model
-from sdkit.generate import generate_images
-from sdkit.generate.sampler import default_samplers, k_samplers
-from sdkit.utils import save_images, log
-
 # args
 parser = argparse.ArgumentParser()
 parser.add_argument('--models-dir', type=str, required=True, help="Path to the directory containing all the models, with subdirs for each model-type")
@@ -18,6 +12,12 @@ parser.add_argument('--skip-models', type=str, default=None, help="Comma-separat
 args = parser.parse_args()
 
 # setup
+from sdkit import Context
+from sdkit.models import get_models_db, resolve_downloaded_model_path, load_model
+from sdkit.generate import generate_images
+from sdkit.generate.sampler import default_samplers, k_samplers
+from sdkit.utils import save_images, log
+
 models_db = get_models_db()
 samplers = list(default_samplers.samplers.keys()) + list(k_samplers.samplers.keys())
 

@@ -6,13 +6,15 @@ python print_quick_hashes.py --help
 '''
 import argparse
 
-from sdkit.models import get_models_db
-from sdkit.utils import hash_url_quick
-
+# args
 parser = argparse.ArgumentParser(description="arg parser")
 parser.add_argument("--diff-only", action="store_true", help="Only show entries if the calculated quick-hash doesn't match the stored quick-hash")
 parser.set_defaults(diff_only=False)
 args = parser.parse_args()
+
+# setup
+from sdkit.models import get_models_db
+from sdkit.utils import hash_url_quick
 
 models_db = get_models_db()
 hashes_found = {}
