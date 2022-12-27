@@ -25,7 +25,11 @@ def start_thread(device):
     thread.daemon = True
     thread.name = f'SD-{device}'
     thread.start()
+    return thread
 
 # assuming the PC has two CUDA-compatible GPUs, start on the first two GPUs: cuda:0 and cuda:1
-start_thread('cuda:0')
-start_thread('cuda:1')
+t0 = start_thread('cuda:0')
+t1 = start_thread('cuda:1')
+
+t0.join()
+t1.join()
