@@ -49,6 +49,7 @@ for model_id, model_info in sd_models.items():
 
     context.model_paths['stable-diffusion'] = resolve_downloaded_model_path(model_type='stable-diffusion', model_id=model_id, download_base_dir=args.models_dir)
     load_model(context, 'stable-diffusion', scan_model=False)
+    os.makedirs(out_dir_path)
 
     min_size = model_info['metadata']['min_size']
 
