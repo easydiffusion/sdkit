@@ -15,18 +15,17 @@ def send_to_device(context: Context, model):
     Please see the documentation for `diffusionkit.types.Context.vram_optimizations`
     for a summary of the logic used for VRAM optimizations
     """
-    log.info(f'VRAM Optimizations: {context.vram_optimizations}')
     if len(context.vram_optimizations) == 0 or context.device == 'cpu':
+        log.info('No VRAM optimizations being applied')
         model.to(context.device)
         model.cond_stage_model.device = context.device
         return
 
+    log.info(f'VRAM Optimizations: {context.vram_optimizations}')
+
     # based on the approach at https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/lowvram.py
     # the idea is to keep only one module in the GPU at a time, depending on the desired optimization level
     # using torch's `register_forward_pre_hook()` hook
-
-    is_sd2_model = hasattr(model.cond_stage_model, 'model')
-    cond_transformer = model.cond_stage_model.model if is_sd2_model else model.cond_stage_model.transformer
 
     context.module_in_gpu = None
 
@@ -36,7 +35,6 @@ def send_to_device(context: Context, model):
             This hook ensures that only this module is in the GPU. It moves the
             other module back to the CPU before loading itself to the GPU.
             """
-            module = model.cond_stage_model if module == cond_transformer else module
             if module == context.module_in_gpu:
                 return
 
@@ -50,32 +48,28 @@ def send_to_device(context: Context, model):
             log.debug(f'moved {module_name} to GPU')
         return move_to_gpu
 
-    def wrap_fs_fn(fn, module_name):
+    def wrap_fs_fn(fn, model_to_move, module_name):
         move_to_gpu = make_move_to_gpu_hook(module_name)
 
         def wrap(x):
-            move_to_gpu(model.first_stage_model, None)
+            move_to_gpu(model_to_move, None)
             return fn(x)
         return wrap
 
     if 'KEEP_FS_AND_CS_IN_CPU' in context.vram_optimizations or 'KEEP_ENTIRE_MODEL_IN_CPU' in context.vram_optimizations:
-        if is_sd2_model: model.cond_stage_model.transformer = model.cond_stage_model.model
-
         # move the FS, CS and the main model to CPU. And send only the overall reference to the correct device
-        tmp = model.cond_stage_model.transformer, model.first_stage_model, model.model
-        model.cond_stage_model.transformer, model.first_stage_model, model.model = (None,) * 3
+        tmp = model.cond_stage_model, model.first_stage_model, model.model
+        model.cond_stage_model, model.first_stage_model, model.model = (None,) * 3
         model.to(context.device)
-        model.cond_stage_model.transformer, model.first_stage_model, model.model = tmp
+        model.cond_stage_model, model.first_stage_model, model.model = tmp
 
         # set forward_pre_hook (a feature of torch NN module) to move each module to the GPU only when required
-        model.cond_stage_model.transformer.register_forward_pre_hook(make_move_to_gpu_hook('model.cond_stage_model.transformer'))
         model.first_stage_model.register_forward_pre_hook(make_move_to_gpu_hook('model.first_stage_model'))
-        model.first_stage_model.encode = wrap_fs_fn(model.first_stage_model.encode, 'model.first_stage_model.encode')
-        model.first_stage_model.decode = wrap_fs_fn(model.first_stage_model.decode, 'model.first_stage_model.decode')
+        model.first_stage_model.encode = wrap_fs_fn(model.first_stage_model.encode, model.first_stage_model, 'model.first_stage_model.encode')
+        model.first_stage_model.decode = wrap_fs_fn(model.first_stage_model.decode, model.first_stage_model, 'model.first_stage_model.decode')
 
-        if is_sd2_model:
-            model.cond_stage_model.model = model.cond_stage_model.transformer
-            del model.cond_stage_model.transformer
+        model.cond_stage_model.register_forward_pre_hook(make_move_to_gpu_hook('model.cond_stage_model'))
+        model.cond_stage_model.forward = wrap_fs_fn(model.cond_stage_model.forward, model.cond_stage_model, 'model.cond_stage_model.forward')
 
     if 'KEEP_ENTIRE_MODEL_IN_CPU' in context.vram_optimizations: # apply the same approach, but to the individual blocks in model
         d = model.model.diffusion_model
