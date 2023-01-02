@@ -35,6 +35,8 @@ from .latent_utils import (
     img_to_tensor,
     get_image_latent_and_mask,
     latent_samples_to_images,
+    to_tensor,
+    floatArrayToGrayscaleBitmap,
 )
 
 from .device_utils import (
