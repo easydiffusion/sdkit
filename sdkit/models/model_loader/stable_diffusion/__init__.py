@@ -13,12 +13,12 @@ from sdkit.utils import load_tensor_file, save_tensor_file, hash_file_quick, dow
 
 tr_logging.set_verbosity_error() # suppress unnecessary logging
 
-def load_model(context: Context, scan_model=True, **kwargs):
+def load_model(context: Context, scan_model=True, check_for_config_with_same_name=True, **kwargs):
     from . import optimizations
     from sdkit.models import scan_model as scan_model_fn
 
     model_path = context.model_paths.get('stable-diffusion')
-    config_file_path = get_model_config_file(context)
+    config_file_path = get_model_config_file(context, check_for_config_with_same_name)
 
     if scan_model:
         scan_result = scan_model_fn(model_path)
@@ -73,13 +73,20 @@ def load_model(context: Context, scan_model=True, **kwargs):
 def unload_model(context: Context, **kwargs):
     context.module_in_gpu = None # don't keep a dangling reference, prevents gc
 
-def get_model_config_file(context: Context):
+def get_model_config_file(context: Context, check_for_config_with_same_name):
     from sdkit.models import get_model_info_from_db
 
     if context.model_configs.get('stable-diffusion') is not None:
         return context.model_configs['stable-diffusion']
 
     model_path = context.model_paths['stable-diffusion']
+
+    if check_for_config_with_same_name:
+        model_name_path = os.path.splitext(model_path)[0]
+        model_config_path = f'{model_name_path}.yaml'
+        if os.path.exists(model_config_path):
+            return model_config_path
+
     quick_hash = hash_file_quick(model_path)
     model_info = get_model_info_from_db(quick_hash=quick_hash)
 
