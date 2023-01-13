@@ -54,7 +54,7 @@ VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS = {
     'low': {'KEEP_ENTIRE_MODEL_IN_CPU'},
     'high': {},
 }
-perf_results = [['vram_usage_level', 'model_filename', 'sampler_name', 'ram_usage_max', 'vram_usage_max', 'test_status']]
+perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'ram_usage_max', 'vram_usage_max', 'test_status']]
 perf_results_file = f'perf_results_{time.time()}.csv'
 
 # print test info
@@ -69,40 +69,35 @@ log.info('---')
 
 # run the test
 def run_test():
-    for vram_usage_level in vram_usage_levels_to_test:
-        context = Context()
-        context.vram_optimizations = VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS[vram_usage_level]
-
-        out_dir_path = os.path.join(args.out_dir, vram_usage_level)
-
-        try:
-            run_model(context, out_dir_path, vram_usage_level)
-        finally:
-            del context
-
-def run_model(context, out_dir_path, vram_usage_level):
     for model_filename in models_to_test:
-        model_dir_path = os.path.join(out_dir_path, model_filename)
+        model_dir_path = os.path.join(args.out_dir, model_filename)
 
         if args.skip_completed and is_model_already_tested(model_dir_path):
             log.info(f'skipping model {model_filename} since it has already been processed at {model_dir_path}')
             continue
 
-        # setup the model
-        try:
-            context.model_paths['stable-diffusion'] = os.path.join(args.models_dir, model_filename)
-            load_model(context, 'stable-diffusion', scan_model=False)
-            os.makedirs(model_dir_path, exist_ok=True)
-        except Exception as e:
-            log.exception(e)
-            perf_results.append([vram_usage_level, model_filename, 'n/a', 'n/a', 'n/a', 'error'])
-            continue
+        os.makedirs(model_dir_path, exist_ok=True)
 
-        min_size = get_min_size(context.model_paths['stable-diffusion'])
-        width = min_size if args.width == -1 else args.width
-        height = min_size if args.height == -1 else args.height
+        for vram_usage_level in vram_usage_levels_to_test:
+            context = Context()
+            context.vram_optimizations = VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS[vram_usage_level]
 
-        run_samplers(context, model_filename, model_dir_path, width, height, vram_usage_level)
+            # setup the model
+            try:
+                context.model_paths['stable-diffusion'] = os.path.join(args.models_dir, model_filename)
+                load_model(context, 'stable-diffusion', scan_model=False)
+            except Exception as e:
+                log.exception(e)
+                perf_results.append([model_filename, vram_usage_level, 'n/a', 'n/a', 'n/a', 'error'])
+                continue
+
+            min_size = get_min_size(context.model_paths['stable-diffusion'])
+            width = min_size if args.width == -1 else args.width
+            height = min_size if args.height == -1 else args.height
+
+            run_samplers(context, model_filename, model_dir_path, width, height, vram_usage_level)
+
+            del context
 
 def run_samplers(context, model_filename, out_dir_path, width, height, vram_usage_level):
     from threading import Thread, Event
@@ -149,7 +144,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             prof_thread_stop_event.set()
             prof_thread.join()
 
-        perf_results.append([vram_usage_level, model_filename, sampler_name, max(ram_usage.queue), max(vram_usage.queue), test_status])
+        perf_results.append([model_filename, vram_usage_level, sampler_name, max(ram_usage.queue), max(vram_usage.queue), test_status])
 
         log_perf_results()
 
