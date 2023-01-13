@@ -76,15 +76,16 @@ def run_test():
             log.info(f'skipping model {model_filename} since it has already been processed at {model_dir_path}')
             continue
 
-        os.makedirs(model_dir_path, exist_ok=True)
-
         for vram_usage_level in vram_usage_levels_to_test:
             context = Context()
             context.vram_optimizations = VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS[vram_usage_level]
 
             # setup the model
+            out_dir_path = os.path.join(model_dir_path, vram_usage_level)
+            os.makedirs(out_dir_path, exist_ok=True)
+
             try:
-                context.model_paths['stable-diffusion'] = os.path.join(args.models_dir, model_filename)
+                context.model_paths['stable-diffusion'] = os.path.join(model_dir_path, model_filename)
                 load_model(context, 'stable-diffusion', scan_model=False)
             except Exception as e:
                 log.exception(e)
@@ -104,7 +105,7 @@ def run_test():
                 pass
 
             # run the actual test
-            run_samplers(context, model_filename, model_dir_path, width, height, vram_usage_level)
+            run_samplers(context, model_filename, out_dir_path, width, height, vram_usage_level)
 
             del context
 
