@@ -2,7 +2,7 @@ from threading import local
 
 class Context(local):
     def __init__(self) -> None:
-        self._device: str = 'cuda'
+        self._device: str = 'cuda:0'
         self._half_precision: bool = True
 
         self.models: dict = {}
