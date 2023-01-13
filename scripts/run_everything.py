@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--models-dir', type=str, required=True, help="Path to the directory containing the Stable Diffusion models")
 parser.add_argument('--out-dir', type=str, required=True, help="Path to the directory to save the generated images and test results")
 parser.add_argument('--models', default='all', help="Comma-separated list of model filenames (without spaces) to test. Default: all")
-parser.add_argument('--exclude-models', default=set(), help="Comma-separated list of model filenames (without spaces) to skip. Supports wildcards, for e.g. --exclude-models *.safetensors, or --exclude-models sd-1-4*")
+parser.add_argument('--exclude-models', default=set(), help="Comma-separated list of model filenames (without spaces) to skip. Supports wildcards (without commas), for e.g. --exclude-models *.safetensors, or --exclude-models sd-1-4*")
 parser.add_argument('--samplers', default='all', help="Comma-separated list of sampler names (without spaces) to test. Default: all")
 parser.add_argument('--exclude-samplers', default=set(), help="Comma-separated list of sampler names (without spaces) to skip")
 parser.add_argument('--vram-usage-levels', default='balanced', help="Comma-separated list of VRAM usage levels. Allowed values: low, balanced, high")
@@ -25,7 +25,7 @@ parser.set_defaults(live_perf=False)
 args = parser.parse_args()
 
 if args.models != 'all': args.models = set(args.models.split(','))
-if args.exclude_models != set(): args.exclude_models = set(args.exclude_models.split(','))
+if args.exclude_models != set() and '*' not in args.exclude_models: args.exclude_models = set(args.exclude_models.split(','))
 if args.samplers != 'all': args.samplers = set(args.samplers.split(','))
 if args.exclude_samplers != set(): args.exclude_samplers = set(args.exclude_samplers.split(','))
 
@@ -38,9 +38,9 @@ sd_models = set([f for f in os.listdir(args.models_dir) if os.path.splitext(f)[1
 all_samplers = set(default_samplers.samplers.keys()) | set(k_samplers.samplers.keys())
 args.vram_usage_levels = args.vram_usage_levels.split(',')
 
-if len(args.exclude_models) == 1 and '*' in list(args.exclude_models)[0]:
+if isinstance(args.exclude_models, str) and '*' in args.exclude_models:
     import fnmatch
-    args.exclude_models = set(fnmatch.filter(sd_models, list(args.exclude_models)[0]))
+    args.exclude_models = set(fnmatch.filter(sd_models, args.exclude_models))
 
 models_to_test = sd_models if args.models == 'all' else args.models
 models_to_test -= args.exclude_models
