@@ -208,6 +208,6 @@ def log_perf_results():
     out_file = os.path.join(args.out_dir, perf_results_file)
     df.to_csv(out_file, header=False, index=False)
 
-    print(f'Written performance summary to {out_file}\n')
+    print(f'Written the performance summary to {out_file}\n')
 
 run_test()
