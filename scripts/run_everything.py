@@ -85,7 +85,7 @@ def run_test():
             os.makedirs(out_dir_path, exist_ok=True)
 
             try:
-                context.model_paths['stable-diffusion'] = os.path.join(model_dir_path, model_filename)
+                context.model_paths['stable-diffusion'] = os.path.join(args.models_dir, model_filename)
                 load_model(context, 'stable-diffusion', scan_model=False)
             except Exception as e:
                 log.exception(e)
