@@ -17,8 +17,9 @@ parser.add_argument('--samplers', default='all', help="Comma-separated list of s
 parser.add_argument('--exclude-samplers', default=set(), help="Comma-separated list of sampler names (without spaces) to skip")
 parser.add_argument('--vram-usage-levels', default='balanced', help="Comma-separated list of VRAM usage levels. Allowed values: low, balanced, high")
 parser.add_argument('--skip-completed', default=False, help="Skips a model or sampler if it has already been tested (i.e. an output image exists for it)")
-parser.add_argument('--width', default=-1, type=int, help="Specify the image width. Defaults to 512 or 768 (if the model requires 768)")
-parser.add_argument('--height', default=-1, type=int, help="Specify the image height. Defaults to 512 or 768 (if the model requires 768)")
+parser.add_argument('--width', default=-1, type=int, help="Specify the image width. Defaults to what the model needs (512 or 768, if the model requires 768)")
+parser.add_argument('--height', default=-1, type=int, help="Specify the image height. Defaults to what the model needs (512 or 768, if the model requires 768)")
+parser.add_argument('--device', default='cuda:0', type=str, help="Specify the device to run on. E.g. cpu or cuda:0 or cuda:1 etc")
 parser.add_argument('--live-perf', action="store_true", help="Print the RAM and VRAM usage stats every few seconds")
 parser.set_defaults(live_perf=False)
 args = parser.parse_args()
@@ -78,6 +79,7 @@ def run_test():
 
         for vram_usage_level in vram_usage_levels_to_test:
             context = Context()
+            context.device = args.device
             context.vram_optimizations = VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS[vram_usage_level]
 
             # setup the model
