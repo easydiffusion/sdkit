@@ -144,7 +144,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             prof_thread_stop_event.set()
             prof_thread.join()
 
-        perf_results.append([model_filename, vram_usage_level, sampler_name, max(ram_usage.queue), max(vram_usage.queue), test_status])
+        perf_results.append([model_filename, vram_usage_level, sampler_name, f'{max(ram_usage.queue):.2f}', f'{max(vram_usage.queue):.2f}', test_status])
 
         log_perf_results()
 
