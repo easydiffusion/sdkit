@@ -54,7 +54,7 @@ VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS = {
     'low': {'KEEP_ENTIRE_MODEL_IN_CPU'},
     'high': {},
 }
-perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'ram_usage_max (GB)', 'vram_usage_max (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'test_status']]
+perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'max_ram (GB)', 'max_vram (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'test_status']]
 perf_results_file = f'perf_results_{time.time()}.csv'
 
 # print test info
