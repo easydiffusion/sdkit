@@ -54,7 +54,7 @@ VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS = {
     'low': {'KEEP_ENTIRE_MODEL_IN_CPU'},
     'high': {},
 }
-perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'ram_usage_max', 'vram_usage_max', 'test_status']]
+perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'ram_usage_max (GB)', 'vram_usage_max (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'test_status']]
 perf_results_file = f'perf_results_{time.time()}.csv'
 
 # print test info
@@ -88,13 +88,22 @@ def run_test():
                 load_model(context, 'stable-diffusion', scan_model=False)
             except Exception as e:
                 log.exception(e)
-                perf_results.append([model_filename, vram_usage_level, 'n/a', 'n/a', 'n/a', 'error'])
+                perf_results.append([model_filename, vram_usage_level, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'error'])
+                log_perf_results()
                 continue
 
             min_size = get_min_size(context.model_paths['stable-diffusion'])
             width = min_size if args.width == -1 else args.width
             height = min_size if args.height == -1 else args.height
 
+            # run a warm-up, before running the actual samplers
+            log.info('Warming up..')
+            try:
+                generate_images(context, prompt='Photograph of an astronaut riding a horse', num_inference_steps=10, seed=42, width=width, height=height, sampler_name='euler_a')
+            except:
+                pass
+
+            # run the actual test
             run_samplers(context, model_filename, model_dir_path, width, height, vram_usage_level)
 
             del context
@@ -124,27 +133,33 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
         })
         prof_thread.start()
 
+        t, speed = time.time(), 0
+
         # start rendering
         try:
             images = generate_images(
                 context,
                 prompt='Photograph of an astronaut riding a horse',
                 seed=42,
+                num_inference_steps=25,
                 width=width, height=height,
                 sampler_name=sampler_name
             )
+            t = time.time() - t
+            speed = 25 / t
             test_status = 'success'
 
             images[0].save(img_path)
         except Exception as e:
             test_status = 'error'
             log.exception(e)
+            t = 0
         finally:
             # stop profiling
             prof_thread_stop_event.set()
             prof_thread.join()
 
-        perf_results.append([model_filename, vram_usage_level, sampler_name, f'{max(ram_usage.queue):.1f}', f'{max(vram_usage.queue):.1f}', test_status])
+        perf_results.append([model_filename, vram_usage_level, sampler_name, f'{max(ram_usage.queue):.1f}', f'{max(vram_usage.queue):.1f}', f'{width}x{height}', f'{t:.1f}', f'{speed:.1f}', test_status])
 
         log_perf_results()
 
