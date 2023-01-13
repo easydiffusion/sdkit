@@ -84,7 +84,7 @@ def run_model(context, out_dir_path, vram_usage_level):
     for model_filename in models_to_test:
         model_dir_path = os.path.join(out_dir_path, model_filename)
 
-        if args.skip_if_already_tested and is_model_already_tested(model_dir_path):
+        if args.skip_completed and is_model_already_tested(model_dir_path):
             log.info(f'skipping model {model_filename} since it has already been processed at {model_dir_path}')
             continue
 
@@ -111,7 +111,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
     for sampler_name in samplers_to_test:
         # setup
         img_path = os.path.join(out_dir_path, f'{sampler_name}_0.jpeg')
-        if args.skip_if_already_tested and os.path.exists(img_path):
+        if args.skip_completed and os.path.exists(img_path):
             log.info(f'skipping sampler {sampler_name} since it has already been processed at {img_path}')
             continue
 
