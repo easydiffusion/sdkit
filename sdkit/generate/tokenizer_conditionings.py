@@ -241,6 +241,7 @@ def transform_conditioning(model, conditioning, tokens_ids, transforms, wrapped=
         subcond = None
         if 'slerp' in transform:
             subcond = model.get_learned_conditioning(text)[0]
+            subcond = to_tensor(subcond, model.device, torch.float32)
             if not wrapped:  # Full sentences are wrapped, keep the subprompt wrapped for those.
                 subcond = subcond[1: len(ids) + 1]
 
