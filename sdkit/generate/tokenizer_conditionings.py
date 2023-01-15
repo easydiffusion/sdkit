@@ -228,6 +228,10 @@ def build_conditioning(model, baseText, transforms):
     return transform_conditioning(model, conditioning, ids, transforms, wrapped=True)
 
 def transform_conditioning(model, conditioning, tokens_ids, transforms, wrapped=True):
+    if hasattr(conditioning, 'dtype'):
+        dtype = conditioning.dtype
+    else:
+        dtype = torch.float16
     conditioning = to_tensor(conditioning, model.device, torch.float32)
     log.debug(f'transform_conditioning {transforms} {tokens_ids} {len(conditioning)}')
     assert (len(conditioning) >= len(tokens_ids))
@@ -289,7 +293,7 @@ def transform_conditioning(model, conditioning, tokens_ids, transforms, wrapped=
 
     conditioning *= orig_std / conditioning.std()
     conditioning += orig_mean - conditioning.mean()
-    return to_tensor(conditioning, model.device, torch.float32)
+    return to_tensor(conditioning, model.device, dtype)
 
 def batch_conditioning(cond, batch_size):
     if isinstance(cond, torch.Tensor):
