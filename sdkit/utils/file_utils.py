@@ -44,6 +44,7 @@ def save_dicts(entries: list, dir_path: str, file_name='data', output_format='tx
           and the returned value will be used as the actual file name. e.g `def fn(i): return 'foo' + i`
     * output_format: 'txt' or 'json'
     '''
+    if output_format.lower() not in ['json', 'txt']: return
     if dir_path is None: return
     os.makedirs(dir_path, exist_ok=True)
 
