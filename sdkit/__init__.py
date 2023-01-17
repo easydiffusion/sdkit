@@ -4,14 +4,17 @@ class Context(local):
     def __init__(self) -> None:
         self._device: str = 'cuda:0'
         self._half_precision: bool = True
+        self._vram_usage_level = None
 
         self.models: dict = {}
         self.model_paths: dict = {}
         self.model_configs: dict = {}
 
         self.device_name: str = None
-        self.vram_optimizations: set = {'KEEP_FS_AND_CS_IN_CPU', 'SET_ATTENTION_STEP_TO_4'}
+        self.vram_optimizations: set = set()
         '''
+        **Do not change this unless you know what you're doing!** Instead set `context.vram_usage_level` to `'low'`, `'balanced'` or `'high'`.
+
         Possible values:
         * Empty set: Fastest, and consumes the maximum amount of VRAM.
 
@@ -27,7 +30,10 @@ class Context(local):
 
         * `'SET_ATTENTION_STEP_TO_4'`: Pretty useful! Fairly fast performance, consumes a medium amount of VRAM. For the sd-v1-4 model,
         it consumes about 1 GB more than `'KEEP_ENTIRE_MODEL_IN_CPU'`, for a much faster rendering performance.
+
+        * `'SET_ATTENTION_STEP_TO_16'`: Very useful! Lowest GPU memory utilization, but slowest performance.
         '''
+        self.vram_usage_level = 'balanced'
 
     # hacky approach, but we need to enforce full precision for some devices
     # we also need to force full precision for these devices (haven't implemented this yet):
@@ -51,3 +57,18 @@ class Context(local):
     @half_precision.setter
     def half_precision(self, h):
         self._half_precision = h if self._device != 'cpu' else False
+
+    @property
+    def vram_usage_level(self):
+        return self._vram_usage_level
+
+    @vram_usage_level.setter
+    def vram_usage_level(self, level):
+        self._vram_usage_level = level
+
+        if level == 'low':
+            self.vram_optimizations = {'KEEP_ENTIRE_MODEL_IN_CPU', 'SET_ATTENTION_STEP_TO_24'}
+        elif level == 'balanced':
+            self.vram_optimizations = {'KEEP_FS_AND_CS_IN_CPU', 'SET_ATTENTION_STEP_TO_4'}
+        elif level == 'high':
+            self.vram_optimizations = {}
