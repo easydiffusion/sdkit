@@ -101,7 +101,15 @@ def make_attn_forward(context: Context, attn_precision='fp16'):
         if context.device == 'cpu':
             return 2
         elif 'SET_ATTENTION_STEP_TO_4' in context.vram_optimizations:
-            return 4
+            return 4 # use for balanced
+        elif 'SET_ATTENTION_STEP_TO_6' in context.vram_optimizations:
+            return 6
+        elif 'SET_ATTENTION_STEP_TO_8' in context.vram_optimizations:
+            return 8
+        elif 'SET_ATTENTION_STEP_TO_16' in context.vram_optimizations:
+            return 16
+        elif 'SET_ATTENTION_STEP_TO_24' in context.vram_optimizations:
+            return 24 # use for low
 
         # figure out the available memory
         stats = torch.cuda.memory_stats(q.device)
