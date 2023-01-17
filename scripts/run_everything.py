@@ -55,11 +55,6 @@ from sdkit.generate import generate_images
 from sdkit.models import get_model_info_from_db
 from sdkit.utils import hash_file_quick
 
-VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS = {
-    'balanced': {'KEEP_FS_AND_CS_IN_CPU', 'SET_ATTENTION_STEP_TO_4'},
-    'low': {'KEEP_ENTIRE_MODEL_IN_CPU', 'SET_ATTENTION_STEP_TO_24'},
-    'high': {},
-}
 perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'max_ram (GB)', 'max_vram (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'test_status']]
 perf_results_file = f'perf_results_{time.time()}.csv'
 
@@ -85,7 +80,7 @@ def run_test():
         for vram_usage_level in vram_usage_levels_to_test:
             context = Context()
             context.device = args.device
-            context.vram_optimizations = VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS[vram_usage_level]
+            context.vram_usage_level = vram_usage_level
 
             # setup the model
             out_dir_path = os.path.join(model_dir_path, vram_usage_level)
