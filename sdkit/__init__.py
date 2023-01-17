@@ -67,7 +67,7 @@ class Context(local):
         self._vram_usage_level = level
 
         if level == 'low':
-            self.vram_optimizations = {'KEEP_ENTIRE_MODEL_IN_CPU', 'SET_ATTENTION_STEP_TO_24'}
+            self.vram_optimizations = {'KEEP_ENTIRE_MODEL_IN_CPU', 'SET_ATTENTION_STEP_TO_16'}
         elif level == 'balanced':
             self.vram_optimizations = {'KEEP_FS_AND_CS_IN_CPU', 'SET_ATTENTION_STEP_TO_4'}
         elif level == 'high':
