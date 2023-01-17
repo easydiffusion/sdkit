@@ -71,4 +71,4 @@ class Context(local):
         elif level == 'balanced':
             self.vram_optimizations = {'KEEP_FS_AND_CS_IN_CPU', 'SET_ATTENTION_STEP_TO_4'}
         elif level == 'high':
-            self.vram_optimizations = {}
+            self.vram_optimizations = {'SET_ATTENTION_STEP_TO_2'}

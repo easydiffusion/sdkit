@@ -86,6 +86,10 @@ def send_to_device(context: Context, model):
     else:
         model.model.to(context.device)
 
+    if 'KEEP_ENTIRE_MODEL_IN_CPU' not in context.vram_optimizations and 'KEEP_FS_AND_CS_IN_CPU' not in context.vram_optimizations:
+        model.to(context.device)
+        model.cond_stage_model.device = context.device
+
 def get_context_kv(attention_context):
     return attention_context, attention_context
 
@@ -98,7 +102,7 @@ def make_attn_forward(context: Context, attn_precision='fp16'):
     app_context = context
 
     def get_steps(q, k):
-        if context.device == 'cpu':
+        if context.device == 'cpu' or 'SET_ATTENTION_STEP_TO_2' in context.vram_optimizations:
             return 2
         elif 'SET_ATTENTION_STEP_TO_4' in context.vram_optimizations:
             return 4 # use for balanced
