@@ -5,7 +5,7 @@ to disk, along with the peak RAM and VRAM usage, as well as the sampling perform
 import os
 import time
 import argparse
-from sdkit.utils import log
+from sdkit.utils import log, get_device_usage
 
 # args
 parser = argparse.ArgumentParser()
@@ -17,6 +17,7 @@ parser.add_argument('--samplers', default='all', help="Comma-separated list of s
 parser.add_argument('--exclude-samplers', default=set(), help="Comma-separated list of sampler names (without spaces) to skip")
 parser.add_argument('--vram-usage-levels', default='balanced', help="Comma-separated list of VRAM usage levels. Allowed values: low, balanced, high")
 parser.add_argument('--skip-completed', default=False, help="Skips a model or sampler if it has already been tested (i.e. an output image exists for it)")
+parser.add_argument('--steps', default=25, type=int, help="Number of inference steps to run for each sampler")
 parser.add_argument('--width', default=-1, type=int, help="Specify the image width. Defaults to what the model needs (512 or 768, if the model requires 768)")
 parser.add_argument('--height', default=-1, type=int, help="Specify the image height. Defaults to what the model needs (512 or 768, if the model requires 768)")
 parser.add_argument('--device', default='cuda:0', type=str, help="Specify the device to run on. E.g. cpu or cuda:0 or cuda:1 etc")
@@ -56,7 +57,7 @@ from sdkit.utils import hash_file_quick
 
 VRAM_USAGE_LEVEL_TO_OPTIMIZATIONS = {
     'balanced': {'KEEP_FS_AND_CS_IN_CPU', 'SET_ATTENTION_STEP_TO_4'},
-    'low': {'KEEP_ENTIRE_MODEL_IN_CPU'},
+    'low': {'KEEP_ENTIRE_MODEL_IN_CPU', 'SET_ATTENTION_STEP_TO_24'},
     'high': {},
 }
 perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'max_ram (GB)', 'max_vram (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'test_status']]
@@ -148,7 +149,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
                 context,
                 prompt='Photograph of an astronaut riding a horse',
                 seed=42,
-                num_inference_steps=25,
+                num_inference_steps=args.steps,
                 width=width, height=height,
                 sampler_name=sampler_name
             )
@@ -171,21 +172,13 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
         log_perf_results()
 
 def profiling_thread(device, prof_thread_stop_event, ram_usage, vram_usage):
-    import torch
     import time
-    import psutil
 
     while not prof_thread_stop_event.is_set():
-        ram_used = psutil.Process().memory_info().rss / 10**9
-        vram_free, vram_total = torch.cuda.mem_get_info(device)
-        vram_used = (vram_total - vram_free) / 10**9
+        cpu_used, ram_used, ram_total, vram_used, vram_total = get_device_usage(device, log_info=args.live_perf)
 
         ram_usage.put(ram_used)
         vram_usage.put(vram_used)
-
-        if args.live_perf:
-            log.info(f'System RAM (used): {ram_used} GB')
-            log.info(f'GPU RAM (used): {vram_used} GB')
 
         time.sleep(1)
 

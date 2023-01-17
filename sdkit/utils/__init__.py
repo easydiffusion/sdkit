@@ -39,6 +39,7 @@ from .latent_utils import (
 
 from .device_utils import (
     gc,
+    get_device_usage,
 )
 
 from .http_utils import (
