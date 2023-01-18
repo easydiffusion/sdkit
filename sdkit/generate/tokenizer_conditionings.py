@@ -130,7 +130,8 @@ def get_vocabulary_size(encoder_model):
 
 def print_token_loss(encoder_model, tokens, max_size=None):
     if max_size is None:
-        max_size = get_token_length(encoder_model)
+        # Remove 2 for BOS and EOS tokens.
+        max_size = get_token_length(encoder_model) - 2
     if hasattr(encoder_model, 'tokenizer') and encoder_model.tokenizer:
         # when using CLIP tokenizers look for possible tokenizer.unk_token (unknown tokens)
         tokenizer = encoder_model.tokenizer
