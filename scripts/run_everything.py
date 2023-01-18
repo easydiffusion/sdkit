@@ -191,6 +191,7 @@ def get_min_size(model_path, default_size=512):
     return model_info['metadata']['min_size'] if model_info is not None else default_size
 
 def log_perf_results():
+    import pandas as pd
     from importlib.metadata import version
 
     print('\n-- Performance summary --')
@@ -199,7 +200,7 @@ def log_perf_results():
     print(f'Device: {args.device}')
     print(f'Num inference steps: {args.steps}')
     print('')
-    import pandas as pd
+
     df = pd.DataFrame(data=perf_results)
     df = df.rename(columns=df.iloc[0]).drop(df.index[0])
     print(df)
