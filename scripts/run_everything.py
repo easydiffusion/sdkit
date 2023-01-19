@@ -127,7 +127,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             log.info(f'skipping sampler {sampler_name} since it has already been processed at {img_path}')
             continue
 
-        log.info(f'Model: {model_filename}, Sampler: {sampler_name}')
+        log.info(f'Model: {model_filename}, Sampler: {sampler_name}, Size: {width}x{height}, VRAM Usage Level: {vram_usage_level}')
 
         # start profiling
         prof_thread_stop_event = Event()
