@@ -219,7 +219,7 @@ def log_perf_results():
 
     df['vram_spike_test'] = df['vram_spike_test'].apply(lambda is_pass: 'pass' if is_pass else 'ERROR')
     df['render_test'] = df['render_test'].apply(lambda is_pass: 'pass' if is_pass else 'ERROR')
-    df['test_status'] = df['test_status'].apply(lambda is_pass: 'pass' if is_pass else 'FAIL')
+    df['overall_status'] = df['test_status'].apply(lambda is_pass: 'pass' if is_pass else 'FAIL')
 
     del df['vram_tp100']
 
