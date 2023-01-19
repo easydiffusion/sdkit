@@ -1,6 +1,6 @@
 import torch
 import psutil
-from gc import collect, get_objects
+from gc import collect
 
 from sdkit import Context
 
