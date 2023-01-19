@@ -18,8 +18,7 @@ parser.add_argument('--exclude-samplers', default=set(), help="Comma-separated l
 parser.add_argument('--vram-usage-levels', default='balanced', help="Comma-separated list of VRAM usage levels. Allowed values: low, balanced, high")
 parser.add_argument('--skip-completed', default=False, help="Skips a model or sampler if it has already been tested (i.e. an output image exists for it)")
 parser.add_argument('--steps', default=25, type=int, help="Number of inference steps to run for each sampler")
-parser.add_argument('--width', default=-1, type=int, help="Specify the image width. Defaults to what the model needs (512 or 768, if the model requires 768)")
-parser.add_argument('--height', default=-1, type=int, help="Specify the image height. Defaults to what the model needs (512 or 768, if the model requires 768)")
+parser.add_argument('--sizes', default='auto', type=str, help="Comma-separated list of image sizes (width x height). No spaces. E.g. 512x512 or 512x512,1024x768. Defaults to what the model needs (512x512 or 768x768, if the model requires 768)")
 parser.add_argument('--device', default='cuda:0', type=str, help="Specify the device to run on. E.g. cpu or cuda:0 or cuda:1 etc")
 parser.add_argument('--live-perf', action="store_true", help="Print the RAM and VRAM usage stats every few seconds")
 parser.set_defaults(live_perf=False)
@@ -29,6 +28,7 @@ if args.models != 'all': args.models = set(args.models.split(','))
 if args.exclude_models != set() and '*' not in args.exclude_models: args.exclude_models = set(args.exclude_models.split(','))
 if args.samplers != 'all': args.samplers = set(args.samplers.split(','))
 if args.exclude_samplers != set(): args.exclude_samplers = set(args.exclude_samplers.split(','))
+if args.sizes != 'auto': args.sizes = [tuple(map(lambda x: int(x), size.split('x'))) for size in args.sizes.split(',')]
 
 # setup
 log.info('Starting..')
@@ -63,6 +63,7 @@ log.info('---')
 log.info(f'Models actually being tested: {models_to_test}')
 log.info(f'Samplers actually being tested: {samplers_to_test}')
 log.info(f'VRAM usage levels being tested: {vram_usage_levels_to_test}')
+log.info(f'Sizes being tested: {args.sizes}')
 log.info('---')
 log.info(f'Available models: {sd_models}')
 log.info(f'Available samplers: {all_samplers}')
@@ -95,19 +96,23 @@ def run_test():
                 log_perf_results()
                 continue
 
-            min_size = get_min_size(context.model_paths['stable-diffusion'])
-            width = min_size if args.width == -1 else args.width
-            height = min_size if args.height == -1 else args.height
 
             # run a warm-up, before running the actual samplers
             log.info('Warming up..')
             try:
-                generate_images(context, prompt='Photograph of an astronaut riding a horse', num_inference_steps=10, seed=42, width=width, height=height, sampler_name='euler_a')
+                generate_images(context, prompt='Photograph of an astronaut riding a horse', num_inference_steps=10, seed=42, width=512, height=512, sampler_name='euler_a')
             except:
                 pass
 
+            if args.sizes == 'auto':
+                min_size = get_min_size(context.model_paths['stable-diffusion'])
+                sizes = [(min_size, min_size)]
+            else:
+                sizes = args.sizes
+
             # run the actual test
-            run_samplers(context, model_filename, out_dir_path, width, height, vram_usage_level)
+            for width, height in sizes:
+                run_samplers(context, model_filename, out_dir_path, width, height, vram_usage_level)
 
             del context
 
@@ -203,6 +208,8 @@ def log_perf_results():
 
     df = pd.DataFrame(data=perf_results)
     df = df.rename(columns=df.iloc[0]).drop(df.index[0])
+    df = df.sort_values('image_size', ascending=False)
+    df.reset_index(drop=True)
     print(df)
     print('')
 
