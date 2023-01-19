@@ -215,10 +215,11 @@ def log_perf_results():
     df['vram_tp90'] = df['vram_usage'].apply(lambda x: np.percentile(x, 90))
     df['vram_tp100'] = df['vram_usage'].apply(lambda x: np.percentile(x, 100))
     df['vram_spike_test'] = abs((df['vram_tp100'] - df['vram_tp90']) / df['vram_tp90']) < 0.15
+    df['vram_tp90'] = df['vram_usage'].apply(lambda x: f'{x:.1f}')
     df['test_status'] = df['render_test'] & df['vram_spike_test']
 
-    df['vram_spike_test'] = df['vram_spike_test'].apply(lambda is_pass: 'pass' if is_pass else 'ERROR')
-    df['render_test'] = df['render_test'].apply(lambda is_pass: 'pass' if is_pass else 'ERROR')
+    df['vram_spike_test'] = df['vram_spike_test'].apply(lambda is_pass: 'pass' if is_pass else 'FAIL')
+    df['render_test'] = df['render_test'].apply(lambda is_pass: 'pass' if is_pass else 'FAIL')
     df['overall_status'] = df['test_status'].apply(lambda is_pass: 'pass' if is_pass else 'FAIL')
 
     del df['vram_tp100']
