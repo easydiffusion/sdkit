@@ -209,7 +209,7 @@ def log_perf_results():
     df = pd.DataFrame(data=perf_results)
     df = df.rename(columns=df.iloc[0]).drop(df.index[0])
     df = df.sort_values('image_size', ascending=False)
-    df.reset_index(drop=True)
+    df = df.reset_index(drop=True)
     print(df)
     print('')
 
