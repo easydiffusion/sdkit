@@ -55,7 +55,7 @@ from sdkit.generate import generate_images
 from sdkit.models import get_model_info_from_db
 from sdkit.utils import hash_file_quick
 
-perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'max_ram (GB)', 'max_vram (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'test_status']]
+perf_results = [['model_filename', 'vram_usage_level', 'sampler_name', 'max_ram (GB)', 'max_vram (GB)', 'image_size', 'time_taken (s)', 'speed (it/s)', 'render_test', 'ram_usage', 'vram_usage']]
 perf_results_file = f'perf_results_{time.time()}.csv'
 
 # print test info
@@ -92,7 +92,7 @@ def run_test():
                 load_model(context, 'stable-diffusion', scan_model=False)
             except Exception as e:
                 log.exception(e)
-                perf_results.append([model_filename, vram_usage_level, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'error'])
+                perf_results.append([model_filename, vram_usage_level, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', False, [], []])
                 log_perf_results()
                 continue
 
@@ -155,11 +155,11 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             )
             t = time.time() - t
             speed = 25 / t
-            test_status = 'success'
+            render_success = True
 
             images[0].save(img_path)
         except Exception as e:
-            test_status = 'error'
+            render_success = False
             log.exception(e)
             t = 0
         finally:
@@ -167,7 +167,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             prof_thread_stop_event.set()
             prof_thread.join()
 
-        perf_results.append([model_filename, vram_usage_level, sampler_name, f'{max(ram_usage.queue):.1f}', f'{max(vram_usage.queue):.1f}', f'{width}x{height}', f'{t:.1f}', f'{speed:.1f}', test_status])
+        perf_results.append([model_filename, vram_usage_level, sampler_name, f'{max(ram_usage.queue):.1f}', f'{max(vram_usage.queue):.1f}', f'{width}x{height}', f'{t:.1f}', f'{speed:.1f}', render_success, list(ram_usage.queue), list(vram_usage.queue)])
 
         log_perf_results()
 
@@ -197,6 +197,7 @@ def get_min_size(model_path, default_size=512):
 
 def log_perf_results():
     import pandas as pd
+    import numpy as np
     from importlib.metadata import version
 
     print('\n-- Performance summary --')
@@ -210,12 +211,27 @@ def log_perf_results():
     df = df.rename(columns=df.iloc[0]).drop(df.index[0])
     df = df.sort_values(by=['image_size', 'model_filename'], ascending=False)
     df = df.reset_index(drop=True)
-    print(df)
-    print('')
 
-    df = pd.DataFrame(data=perf_results)
+    df['vram_tp90'] = df['vram_usage'].apply(lambda x: np.percentile(x, 90))
+    df['vram_tp100'] = df['vram_usage'].apply(lambda x: np.percentile(x, 100))
+    df['vram_spike_test'] = abs((df['vram_tp100'] - df['vram_tp90']) / df['vram_tp90']) < 0.15
+    df['test_status'] = df['render_test'] & df['vram_spike_test']
+
+    df['vram_spike_test'] = df['vram_spike_test'].apply(lambda is_pass: 'pass' if is_pass else 'ERROR')
+    df['render_test'] = df['render_test'].apply(lambda is_pass: 'pass' if is_pass else 'ERROR')
+    df['test_status'] = df['test_status'].apply(lambda is_pass: 'pass' if is_pass else 'FAIL')
+
+    del df['vram_tp100']
+
     out_file = os.path.join(args.out_dir, perf_results_file)
     df.to_csv(out_file, header=False, index=False)
+
+    # print the summary
+    del df['vram_usage']
+    del df['ram_usage']
+
+    print(df)
+    print('')
 
     print(f'Written the performance summary to {out_file}\n')
 
