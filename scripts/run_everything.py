@@ -154,7 +154,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
                 sampler_name=sampler_name
             )
             t = time.time() - t
-            speed = 25 / t
+            speed = args.steps / t
             render_success = True
 
             images[0].save(img_path)
