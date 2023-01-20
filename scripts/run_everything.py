@@ -216,7 +216,7 @@ def log_perf_results():
 
     df['vram_tp90'] = df['vram_usage'].apply(lambda x: np.percentile(x, 90))
     df['vram_tp100'] = df['vram_usage'].apply(lambda x: np.percentile(x, 100))
-    df['vram_spike_test'] = abs((df['vram_tp100'] - df['vram_tp90']) / df['vram_tp90']) < 0.15
+    df['vram_spike_test'] = abs((df['vram_tp100'] - df['vram_tp90'])) < 0.5 # okay with a spike of 500 MB
     df['vram_tp90'] = df['vram_tp90'].apply(lambda x: f'{x:.1f}')
     df['overall_status'] = df['render_test'] & df['vram_spike_test']
 
