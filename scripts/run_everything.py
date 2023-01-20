@@ -227,7 +227,7 @@ def log_perf_results():
     del df['vram_tp100']
 
     out_file = os.path.join(args.out_dir, perf_results_file)
-    df.to_csv(out_file, header=False, index=False)
+    df.to_csv(out_file, index=False)
 
     # print the summary
     del df['vram_usage']
