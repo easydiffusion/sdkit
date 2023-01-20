@@ -200,6 +200,8 @@ def log_perf_results():
     import numpy as np
     from importlib.metadata import version
 
+    pd.set_option('display.max_rows', 1000)
+
     print('\n-- Performance summary --')
     print(f"sdkit version: {version('sdkit')}")
     print(f"stable-diffusion-sdkit version: {version('stable-diffusion-sdkit')}")
