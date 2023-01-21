@@ -2,10 +2,8 @@ import regex as re
 from sdkit.utils import log
 from typing import List, Union, Tuple
 
-# Should be about 3 or 4 with fp16.
-# Newer models use fp32. Raised to 6 for testing.
-ROUND_PRECISION = 6
-DELIMITERS = ['()', '[]', '\'', '"']
+ROUND_PRECISION = 3
+DELIMITERS = ['()', '[]', '`', '"']
 
 def clean_text(text: str) -> str:
     while '  ' in text:
