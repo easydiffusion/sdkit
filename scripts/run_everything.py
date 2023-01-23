@@ -9,12 +9,15 @@ from sdkit.utils import log, get_device_usage
 
 # args
 parser = argparse.ArgumentParser()
+parser.add_argument('--prompt', type=str, default="Photograph of an astronaut riding a horse", help="Prompt to use for generating the image")
+parser.add_argument('--seed', type=int, default=42, help="Seed to use for generating the image")
 parser.add_argument('--models-dir', type=str, required=True, help="Path to the directory containing the Stable Diffusion models")
 parser.add_argument('--out-dir', type=str, required=True, help="Path to the directory to save the generated images and test results")
 parser.add_argument('--models', default='all', help="Comma-separated list of model filenames (without spaces) to test. Default: all")
 parser.add_argument('--exclude-models', default=set(), help="Comma-separated list of model filenames (without spaces) to skip. Supports wildcards (without commas), for e.g. --exclude-models *.safetensors, or --exclude-models sd-1-4*")
 parser.add_argument('--samplers', default='all', help="Comma-separated list of sampler names (without spaces) to test. Default: all")
 parser.add_argument('--exclude-samplers', default=set(), help="Comma-separated list of sampler names (without spaces) to skip")
+parser.add_argument('--init-image', default=None, help="Path to an initial image to use. Only works with DDIM sampler (for now).")
 parser.add_argument('--vram-usage-levels', default='balanced', help="Comma-separated list of VRAM usage levels. Allowed values: low, balanced, high")
 parser.add_argument('--skip-completed', default=False, help="Skips a model or sampler if it has already been tested (i.e. an output image exists for it)")
 parser.add_argument('--steps', default=25, type=int, help="Number of inference steps to run for each sampler")
@@ -48,6 +51,17 @@ models_to_test -= args.exclude_models
 samplers_to_test = all_samplers if args.samplers == 'all' else args.samplers
 samplers_to_test -= args.exclude_samplers
 vram_usage_levels_to_test = args.vram_usage_levels
+
+if args.init_image is not None:
+    if not os.path.exists(args.init_image):
+        log.error(f'Error! Could not an initial image at the path specified: {args.init_image}')
+        exit(1)
+
+    if samplers_to_test != {'ddim'}:
+        log.error('We only support the "ddim" sampler for img2img right now!')
+        exit(1)
+
+    all_samplers = {'ddim'}
 
 # setup the test
 from sdkit import Context
@@ -147,11 +161,12 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
         try:
             images = generate_images(
                 context,
-                prompt='Photograph of an astronaut riding a horse',
-                seed=42,
+                prompt=args.prompt,
+                seed=args.seed,
                 num_inference_steps=args.steps,
                 width=width, height=height,
-                sampler_name=sampler_name
+                sampler_name=sampler_name,
+                init_image=args.init_image,
             )
             t = time.time() - t
             speed = args.steps / t
