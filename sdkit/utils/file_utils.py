@@ -51,7 +51,6 @@ def save_dicts(entries: list, dir_path: str, file_name='data', output_format='tx
     '''
     if dir_path is None: return
     os.makedirs(dir_path, exist_ok=True)
-    output_format = 'embed'
 
     for i, metadata in enumerate(entries):
         actual_file_name = file_name(i) if callable(file_name) else f'{file_name}_{i}'
