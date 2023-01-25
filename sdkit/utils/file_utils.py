@@ -65,7 +65,7 @@ def save_dicts(entries: list, dir_path: str, file_name='data', output_format='tx
         elif output_format.lower() == 'embed' and file_format.lower() == 'jpeg':
             targetImage = Image.open(f'{path}.{file_format.lower()}')
             user_comment = json.dumps(metadata)
-            exif_dict = {'Exif': { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment)}}
+            exif_dict = {'Exif': { piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}}
             exif_bytes = piexif.dump(exif_dict)
             targetImage.save(f'{path}.{file_format.lower()}', exif=exif_bytes)
         else:
