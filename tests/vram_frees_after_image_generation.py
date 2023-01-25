@@ -25,7 +25,7 @@ log.info('Loaded the model..')
 usage_model_load = DeviceUsage(*get_device_usage(c.device, log_info=True))
 
 try:
-    images = generate_images(c, prompt="Photograph of an astronaut riding a horse", width=2048, height=2048)
+    images = generate_images(c, prompt="Photograph of an astronaut riding a horse")
 except Exception as e:
     log.exception(e)
 
