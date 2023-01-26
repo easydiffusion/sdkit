@@ -14,7 +14,7 @@ images[0].save('image1.jpg')
 
 
 # TEST 2 - no VRAM optimizations (maximum VRAM usage, fastest performance)
-context.vram_optimizations = {}
+context.vram_usage_level = 'high'
 load_model(context, 'stable-diffusion') # reload the model, to apply the change to VRAM optimization
 
 images = generate_images(context, prompt='Photograph of an astronaut riding a horse', seed=42, width=512, height=512)
@@ -22,7 +22,7 @@ images[0].save('image2.jpg')
 
 
 # TEST 3 - lowest VRAM usage, slowest performance (for GPUs with less than 4gb of VRAM)
-context.vram_optimizations = {'KEEP_ENTIRE_MODEL_IN_CPU'}
+context.vram_usage_level = 'low'
 load_model(context, 'stable-diffusion') # reload the model, to apply the change to VRAM optimization
 
 images = generate_images(context, prompt='Photograph of an astronaut riding a horse', seed=42, width=512, height=512)
