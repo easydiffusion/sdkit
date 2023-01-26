@@ -1,6 +1,6 @@
 import torch
 import psutil
-from gc import collect
+from gc import collect, get_objects
 
 from sdkit import Context
 
@@ -30,3 +30,29 @@ def get_device_usage(device, log_info=False):
         log.info(msg)
 
     return cpu_used, ram_used, ram_total, vram_used, vram_total
+
+def print_largest_tensors_in_memory(device, num=10):
+    objs = []
+    total_mem = 0
+    device = torch.device(device) if isinstance(device, str) else device
+    l = get_objects()
+    for obj in l:
+        try:
+            if (torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data))) and obj.device == device:
+                size = obj.nelement() * obj.element_size() / 1024**2
+                x = str(obj)
+                objs.append([size, obj.shape, f'{x[:100]}..{x[-100:-1]}'])
+                del x
+                total_mem += size
+        except:
+            pass
+
+    objs.sort(key=lambda x: x[0], reverse=True)
+    n = len(objs)
+    objs = objs[:min(num, n)]
+
+    print(f'== {num} largest tensors on {device} ==')
+    for i, o in enumerate(objs):
+        print(f'{i+1}. Size: {o[0]:.1f} MiB, Shape: {o[1]}, Data: {o[2]}')
+    print('--')
+    print(f'Total memory occupied on {device} by {n} tensors: {total_mem:.1f} MiB')

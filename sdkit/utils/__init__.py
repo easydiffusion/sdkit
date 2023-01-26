@@ -40,6 +40,7 @@ from .latent_utils import (
 from .device_utils import (
     gc,
     get_device_usage,
+    print_largest_tensors_in_memory,
 )
 
 from .http_utils import (
