@@ -291,9 +291,9 @@ def transform_conditioning(model, conditioning, tokens_ids, transforms, wrapped=
             else:
                 log.debug('WEIGHT Ids %s not found in prompt tokens %s', ids, tokens_ids)
                 log.warn('WEIGHT Missing "%s", can\'t apply transform!', text)
-
-    conditioning *= orig_std / conditioning.std()
-    conditioning += orig_mean - conditioning.mean()
+    if wrapped: # Apply re-normalisation only to the final wrapped conditioning
+        conditioning *= orig_std / conditioning.std()
+        conditioning += orig_mean - conditioning.mean()
     return to_tensor(conditioning, model.device, dtype)
 
 def batch_conditioning(cond, batch_size):
