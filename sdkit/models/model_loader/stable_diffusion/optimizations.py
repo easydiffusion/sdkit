@@ -166,35 +166,27 @@ def make_attn_forward(context: Context, attn_precision='fp16'):
         r1 = torch.zeros(q.shape[0], q.shape[1], v.shape[2], device=q.device, dtype=q.dtype)
         steps = get_steps(q, k)
         slice_size = q.shape[1] // steps if (q.shape[1] % steps) == 0 else q.shape[1]
-        try:
-            for i in range(0, q.shape[1], slice_size):
-                end = i + slice_size
-                if attn_precision == "fp32":
-                    with torch.autocast(enabled=False, device_type=autocast_device):
-                        q, k = q.float(), k.float()
-                        s1 = einsum('b i d, b j d -> b i j', q[:, i:end], k)
-                else:
+        for i in range(0, q.shape[1], slice_size):
+            end = i + slice_size
+            if attn_precision == "fp32":
+                with torch.autocast(enabled=False, device_type=autocast_device):
+                    q, k = q.float(), k.float()
                     s1 = einsum('b i d, b j d -> b i j', q[:, i:end], k)
+            else:
+                s1 = einsum('b i d, b j d -> b i j', q[:, i:end], k)
 
-                try:
-                    s2 = s1.softmax(dim=-1, dtype=q.dtype)
-                finally:
-                    del s1
+            s2 = s1.softmax(dim=-1, dtype=q.dtype)
+            del s1
 
-                try:
-                    r1[:, i:end] = einsum('b i j, b j d -> b i d', s2, v)
-                finally:
-                    del s2
-        finally:
-            del q, k, v
+            r1[:, i:end] = einsum('b i j, b j d -> b i d', s2, v)
+            del s2
+
+        del q, k, v
 
         r2 = rearrange(r1, '(b h) n d -> b n (h d)', h=h)
-        try:
-            out = self.to_out(r2)
-        finally:
-            del r1, r2
+        del r1
 
-        return out
+        return self.to_out(r2)
 
     return forward
 
