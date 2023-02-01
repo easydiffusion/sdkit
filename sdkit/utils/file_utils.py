@@ -56,4 +56,4 @@ def save_dicts(entries: list, dir_path: str, file_name='data', output_format='tx
                 for key, val in metadata.items():
                     f.write(f'{key}: {val}\n')
             elif output_format.lower() == 'json':
-                json.dump(metadata, f)
+                json.dump(metadata, f, indent=2)
