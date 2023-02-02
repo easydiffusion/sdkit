@@ -173,11 +173,11 @@ def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model, **kwarg
         unconditional_prompt = ""
     if not 'unconditional_transforms' in kwargs:
         rndSeed = None
-        if rndSeed is None:
-            rndSeed = np.random.randint(low=0, high=2**32 - 1, dtype=np.uint32)
         if unconditional_prompt.startswith('**'): # Random float to tensors.
             if len(unconditional_prompt) > 2:
                 rndSeed = int(unconditional_prompt[2:])
+            if rndSeed is None:
+                rndSeed = np.random.randint(low=0, high=2**32 - 1, dtype=np.uint32)
             max_tokens_len = conditioning.size(dim=1)
             max_dimensions_len = conditioning.size(dim=2)
             log.info(f'Unconditional conditioning set to random, returning {max_tokens_len}x{max_dimensions_len} random tensors.')
@@ -187,6 +187,8 @@ def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model, **kwarg
         elif unconditional_prompt.startswith('*'): # Random tokens to tensors.
             if len(unconditional_prompt) > 1:
                 rndSeed = int(unconditional_prompt[1:])
+            if rndSeed is None:
+                rndSeed = np.random.randint(low=0, high=2**32 - 1, dtype=np.uint32)
             max_len = get_token_length(model.cond_stage_model)
             vocab_size = get_vocabulary_size(model.cond_stage_model)
             rng = np.random.default_rng(seed=rndSeed)
