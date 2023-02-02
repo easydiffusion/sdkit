@@ -333,8 +333,10 @@ def get_random_conditioning(nbr_tokens, nbr_dimensions, device, seed=None, alpha
     generator = torch.Generator(device=device)
     if seed is None:
         seed = generator.seed()
+    else:
+        seed = int(seed)
     log.info('Generating random conditioning from seed %d', seed)
-    rnd_cond = torch.rand((nbr_tokens - 2, nbr_dimensions), generator=generator.manual_seed(seed), device=device)
+    rnd_cond = torch.rand(tuple([int(nbr_tokens - 2), int(nbr_dimensions)]), generator=generator.manual_seed(seed), device=device)
     rnd_cond = torch.sub(torch.mul(rnd_cond, 1.5), 0.5)
     rnd_cond = torch.mul(rnd_cond, 3 * alpha)
     #rnd_cond /= rnd_cond.norm(dim=-1, keepdim=True)
