@@ -7,6 +7,7 @@ import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
 import tempfile
 from urllib.parse import urlparse
+from pathlib import Path
 
 from sdkit import Context
 from sdkit.utils import load_tensor_file, save_tensor_file, hash_file_quick, download_file, log
@@ -99,11 +100,16 @@ def resolve_model_config_file_path(model_info, model_path):
     if config_url is None:
         return
 
-    config_file_name = os.path.basename(urlparse(config_url).path)
-    model_dir_name = os.path.dirname(model_path)
-    config_file_path = os.path.join(model_dir_name, config_file_name)
+    if config_url.startswith('http'):
+        config_file_name = os.path.basename(urlparse(config_url).path)
+        model_dir_name = os.path.dirname(model_path)
+        config_file_path = os.path.join(model_dir_name, config_file_name)
 
-    if not os.path.exists(config_file_path):
-        download_file(config_url, config_file_path)
+        if not os.path.exists(config_file_path):
+            download_file(config_url, config_file_path)
+    else:
+        from sdkit.models import models_db
+        models_db_path = Path(models_db.__file__).parent
+        config_file_path = models_db_path/config_url
 
     return config_file_path
