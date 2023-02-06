@@ -43,6 +43,9 @@ def generate_images(
         seed_everything(seed)
         precision_scope = torch.autocast if context.half_precision and context.device != "cpu" else nullcontext
 
+        if 'stable-diffusion' not in context.models:
+            raise RuntimeError("The model for Stable Diffusion has not been loaded yet! If you've tried to load it, please check the logs above this message for errors (while loading the model).")
+
         model = context.models['stable-diffusion']
         if 'hypernetwork' in context.models:
             context.models['hypernetwork']['hypernetwork_strength'] = hypernetwork_strength
