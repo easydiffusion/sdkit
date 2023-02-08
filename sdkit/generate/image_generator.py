@@ -43,6 +43,9 @@ def generate_images(
         seed_everything(seed)
         precision_scope = torch.autocast if context.half_precision and context.device != "cpu" else nullcontext
 
+        if 'stable-diffusion' not in context.models:
+            raise RuntimeError("The model for Stable Diffusion has not been loaded yet! If you've tried to load it, please check the logs above this message for errors (while loading the model).")
+
         model = context.models['stable-diffusion']
         if 'hypernetwork' in context.models:
             context.models['hypernetwork']['hypernetwork_strength'] = hypernetwork_strength
@@ -81,8 +84,8 @@ def txt2img(params: dict, context: Context, num_inference_steps, **kwargs):
     return latent_samples_to_images(context, samples)
 
 def img2img(params: dict, context: Context, num_inference_steps, num_outputs, width, height, init_image, init_image_mask, prompt_strength, preserve_init_image_color_profile, **kwargs):
-    init_image = base64_str_to_img(init_image) if isinstance(init_image, str) else init_image
-    init_image_mask = base64_str_to_img(init_image_mask) if isinstance(init_image_mask, str) else init_image_mask
+    init_image = get_image(init_image)
+    init_image_mask = get_image(init_image_mask)
 
     if not hasattr(context, 'init_image_latent') or context.init_image_latent is None:
         context.init_image_latent, context.init_image_mask_tensor = get_image_latent_and_mask(context, init_image, init_image_mask, width, height, num_outputs)
@@ -102,3 +105,15 @@ def img2img(params: dict, context: Context, num_inference_steps, num_outputs, wi
             images[i] = apply_color_profile(init_image, img)
 
     return images
+
+def get_image(img):
+    if not isinstance(img, str):
+        return img
+
+    if img.startswith('data:image'):
+        return base64_str_to_img(img)
+
+    import os
+    if os.path.exists(img):
+        from PIL import Image
+        return Image.open(img)

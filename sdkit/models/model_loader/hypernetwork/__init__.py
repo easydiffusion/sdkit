@@ -38,4 +38,5 @@ def load_model(context: Context, **kwargs):
         log.error(f'Could not load hypernetwork: {model_path}')
 
 def unload_model(context: Context, **kwargs):
-    pass
+    from .hypernetwork import override_attention_context_kv
+    override_attention_context_kv(None)

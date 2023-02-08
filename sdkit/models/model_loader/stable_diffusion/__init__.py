@@ -7,18 +7,19 @@ import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
 import tempfile
 from urllib.parse import urlparse
+from pathlib import Path
 
 from sdkit import Context
 from sdkit.utils import load_tensor_file, save_tensor_file, hash_file_quick, download_file, log
 
 tr_logging.set_verbosity_error() # suppress unnecessary logging
 
-def load_model(context: Context, scan_model=True, **kwargs):
+def load_model(context: Context, scan_model=True, check_for_config_with_same_name=True, **kwargs):
     from . import optimizations
     from sdkit.models import scan_model as scan_model_fn
 
     model_path = context.model_paths.get('stable-diffusion')
-    config_file_path = get_model_config_file(context)
+    config_file_path = get_model_config_file(context, check_for_config_with_same_name)
 
     if scan_model:
         scan_result = scan_model_fn(model_path)
@@ -73,13 +74,20 @@ def load_model(context: Context, scan_model=True, **kwargs):
 def unload_model(context: Context, **kwargs):
     context.module_in_gpu = None # don't keep a dangling reference, prevents gc
 
-def get_model_config_file(context: Context):
+def get_model_config_file(context: Context, check_for_config_with_same_name):
     from sdkit.models import get_model_info_from_db
 
     if context.model_configs.get('stable-diffusion') is not None:
         return context.model_configs['stable-diffusion']
 
     model_path = context.model_paths['stable-diffusion']
+
+    if check_for_config_with_same_name:
+        model_name_path = os.path.splitext(model_path)[0]
+        model_config_path = f'{model_name_path}.yaml'
+        if os.path.exists(model_config_path):
+            return model_config_path
+
     quick_hash = hash_file_quick(model_path)
     model_info = get_model_info_from_db(quick_hash=quick_hash)
 
@@ -92,11 +100,16 @@ def resolve_model_config_file_path(model_info, model_path):
     if config_url is None:
         return
 
-    config_file_name = os.path.basename(urlparse(config_url).path)
-    model_dir_name = os.path.dirname(model_path)
-    config_file_path = os.path.join(model_dir_name, config_file_name)
+    if config_url.startswith('http'):
+        config_file_name = os.path.basename(urlparse(config_url).path)
+        model_dir_name = os.path.dirname(model_path)
+        config_file_path = os.path.join(model_dir_name, config_file_name)
 
-    if not os.path.exists(config_file_path):
-        download_file(config_url, config_file_path)
+        if not os.path.exists(config_file_path):
+            download_file(config_url, config_file_path)
+    else:
+        from sdkit.models import models_db
+        models_db_path = Path(models_db.__file__).parent
+        config_file_path = models_db_path/config_url
 
     return config_file_path

@@ -25,6 +25,11 @@ def load_model(context: Context, model_type: str, **kwargs):
 
     log.info(f'loaded {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}')
 
+    # reload dependent models
+    if model_type == 'stable-diffusion':
+        load_model(context, 'vae')
+        load_model(context, 'hypernetwork')
+
 def unload_model(context: Context, model_type: str, **kwargs):
     if model_type not in context.models:
         return

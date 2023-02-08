@@ -29,28 +29,24 @@ def send_to_device(context: Context, model):
 
     context.module_in_gpu = None
 
-    def make_move_to_gpu_hook(module_name):
-        def move_to_gpu(module, _):
-            """
-            This hook ensures that only this module is in the GPU. It moves the
-            other module back to the CPU before loading itself to the GPU.
-            """
-            if module == context.module_in_gpu:
-                return
+    def move_to_gpu(module, _):
+        """
+        This hook ensures that only this module is in the GPU. It moves the
+        other module back to the CPU before loading itself to the GPU.
+        """
+        if module == context.module_in_gpu:
+            return
 
-            if context.module_in_gpu is not None:
-                context.module_in_gpu.to('cpu')
-                log.debug(f'moved {module_name} to cpu')
+        if context.module_in_gpu is not None:
+            context.module_in_gpu.to('cpu')
+            log.debug(f"moved {getattr(context.module_in_gpu, 'log_name', context.module_in_gpu.__class__.__name__)} to cpu")
 
-            module.to(context.device)
-            if module == model.cond_stage_model: module.device = context.device
-            context.module_in_gpu = module
-            log.debug(f'moved {module_name} to GPU')
-        return move_to_gpu
+        module.to(context.device)
+        if module == model.cond_stage_model: module.device = context.device
+        context.module_in_gpu = module
+        log.debug(f"moved {getattr(context.module_in_gpu, 'log_name', context.module_in_gpu.__class__.__name__)} to GPU")
 
-    def wrap_fs_fn(fn, model_to_move, module_name):
-        move_to_gpu = make_move_to_gpu_hook(module_name)
-
+    def wrap_fs_fn(fn, model_to_move):
         def wrap(x):
             move_to_gpu(model_to_move, None)
             return fn(x)
@@ -64,12 +60,14 @@ def send_to_device(context: Context, model):
         model.cond_stage_model, model.first_stage_model, model.model = tmp
 
         # set forward_pre_hook (a feature of torch NN module) to move each module to the GPU only when required
-        model.first_stage_model.register_forward_pre_hook(make_move_to_gpu_hook('model.first_stage_model'))
-        model.first_stage_model.encode = wrap_fs_fn(model.first_stage_model.encode, model.first_stage_model, 'model.first_stage_model.encode')
-        model.first_stage_model.decode = wrap_fs_fn(model.first_stage_model.decode, model.first_stage_model, 'model.first_stage_model.decode')
+        model.first_stage_model.log_name = 'model.first_stage_model'
+        model.first_stage_model.register_forward_pre_hook(move_to_gpu)
+        model.first_stage_model.encode = wrap_fs_fn(model.first_stage_model.encode, model.first_stage_model)
+        model.first_stage_model.decode = wrap_fs_fn(model.first_stage_model.decode, model.first_stage_model)
 
-        model.cond_stage_model.register_forward_pre_hook(make_move_to_gpu_hook('model.cond_stage_model'))
-        model.cond_stage_model.forward = wrap_fs_fn(model.cond_stage_model.forward, model.cond_stage_model, 'model.cond_stage_model.forward')
+        model.cond_stage_model.log_name = 'model.cond_stage_model'
+        model.cond_stage_model.register_forward_pre_hook(move_to_gpu)
+        model.cond_stage_model.forward = wrap_fs_fn(model.cond_stage_model.forward, model.cond_stage_model)
 
     if 'KEEP_ENTIRE_MODEL_IN_CPU' in context.vram_optimizations: # apply the same approach, but to the individual blocks in model
         d = model.model.diffusion_model
@@ -79,12 +77,25 @@ def send_to_device(context: Context, model):
         model.model.to(context.device)
         d.input_blocks, d.middle_block, d.output_blocks, d.time_embed = tmp
 
-        d.time_embed.register_forward_pre_hook(make_move_to_gpu_hook('model.model.diffusion_model.time_embed'))
-        for block in d.input_blocks: block.register_forward_pre_hook(make_move_to_gpu_hook('model.model.diffusion_model.input_blocks'))
-        d.middle_block.register_forward_pre_hook(make_move_to_gpu_hook('model.model.diffusion_model.middle_block'))
-        for block in d.output_blocks: block.register_forward_pre_hook(make_move_to_gpu_hook('model.model.diffusion_model.output_blocks'))
+        d.time_embed.log_name = 'model.model.diffusion_model.time_embed'
+        d.time_embed.register_forward_pre_hook(move_to_gpu)
+
+        for i, block in enumerate(d.input_blocks):
+            block.log_name = f'model.model.diffusion_model.input_blocks[{i}]'
+            block.register_forward_pre_hook(move_to_gpu)
+
+        d.middle_block.log_name = 'model.model.diffusion_model.middle_block'
+        d.middle_block.register_forward_pre_hook(move_to_gpu)
+
+        for i, block in enumerate(d.output_blocks):
+            block.log_name = f'model.model.diffusion_model.output_blocks[{i}]'
+            block.register_forward_pre_hook(move_to_gpu)
     else:
         model.model.to(context.device)
+
+    if 'KEEP_ENTIRE_MODEL_IN_CPU' not in context.vram_optimizations and 'KEEP_FS_AND_CS_IN_CPU' not in context.vram_optimizations:
+        model.to(context.device)
+        model.cond_stage_model.device = context.device
 
 def get_context_kv(attention_context):
     return attention_context, attention_context
@@ -98,10 +109,18 @@ def make_attn_forward(context: Context, attn_precision='fp16'):
     app_context = context
 
     def get_steps(q, k):
-        if context.device == 'cpu':
+        if context.device == 'cpu' or 'SET_ATTENTION_STEP_TO_2' in context.vram_optimizations:
             return 2
         elif 'SET_ATTENTION_STEP_TO_4' in context.vram_optimizations:
-            return 4
+            return 4 # use for balanced
+        elif 'SET_ATTENTION_STEP_TO_6' in context.vram_optimizations:
+            return 6
+        elif 'SET_ATTENTION_STEP_TO_8' in context.vram_optimizations:
+            return 8
+        elif 'SET_ATTENTION_STEP_TO_16' in context.vram_optimizations:
+            return 16
+        elif 'SET_ATTENTION_STEP_TO_24' in context.vram_optimizations:
+            return 24 # use for low
 
         # figure out the available memory
         stats = torch.cuda.memory_stats(q.device)

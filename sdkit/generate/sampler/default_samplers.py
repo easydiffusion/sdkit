@@ -48,7 +48,7 @@ def _sample_img2img(model, sampler_name, noise, steps, batch_size, params, **kwa
     mask = kwargs.get('mask')
 
     sampler.make_schedule(ddim_num_steps=steps, ddim_eta=0., verbose=False)
-    z_enc = sampler.stochastic_encode(init_image_latent, torch.tensor([actual_inference_steps - 1] * batch_size).to(model.device), noise=noise)
+    z_enc = sampler.stochastic_encode(init_image_latent, torch.tensor([actual_inference_steps] * batch_size).to(model.device), noise=noise)
 
     sampler.make_schedule = (lambda **kwargs: kwargs) # we've already called this, don't call this again from within the sampler
     sampler.ddim_timesteps = sampler.ddim_timesteps[:actual_inference_steps]

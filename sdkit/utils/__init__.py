@@ -39,8 +39,15 @@ from .latent_utils import (
     floatArrayToGrayscaleBitmap,
 )
 
-from .device_utils import (
+from .memory_utils import (
     gc,
+    get_device_usage,
+    print_largest_tensors_in_memory,
+    print_tensor_info,
+    get_object_id,
+    record_tensor_name,
+    get_tensors_in_memory,
+    take_memory_snapshot,
 )
 
 from .http_utils import (

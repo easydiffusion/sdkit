@@ -13,7 +13,7 @@ def save_tensor_file(data, path):
     if path.lower().endswith(".safetensors"):
         return safetensors.torch.save_file(data, path, metadata={"format": "pt"})
     else:
-        return torch.save(data, path, map_location="cpu")
+        return torch.save(data, path)
 
 def save_images(images: list, dir_path: str, file_name='image', output_format='JPEG', output_quality=75):
     '''
@@ -44,6 +44,7 @@ def save_dicts(entries: list, dir_path: str, file_name='data', output_format='tx
           and the returned value will be used as the actual file name. e.g `def fn(i): return 'foo' + i`
     * output_format: 'txt' or 'json'
     '''
+    if output_format.lower() not in ['json', 'txt']: return
     if dir_path is None: return
     os.makedirs(dir_path, exist_ok=True)
 
@@ -55,4 +56,4 @@ def save_dicts(entries: list, dir_path: str, file_name='data', output_format='tx
                 for key, val in metadata.items():
                     f.write(f'{key}: {val}\n')
             elif output_format.lower() == 'json':
-                json.dump(metadata, f)
+                json.dump(metadata, f, indent=2)
