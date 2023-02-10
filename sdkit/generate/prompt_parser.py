@@ -59,9 +59,7 @@ def split_weighted_subprompts(text):
                 try:
                     weight = float(text[:idx])
                 except:  # couldn't treat as float
-                    log.warn(
-                        f"Warning: '{text[:idx]}' is not a value, are you missing a space?"
-                    )
+                    log.warn(f"Warning: '{text[:idx]}' is not a value, are you missing a space?")
                     weight = 1.0
             else:  # no value found
                 weight = 1.0

@@ -24,9 +24,7 @@ models_db = get_models_db()
 hashes_found = {}
 
 if args.diff_only:
-    print(
-        "Printing quick-hashes for only those URLs that do not match the configured quick-hash"
-    )
+    print("Printing quick-hashes for only those URLs that do not match the configured quick-hash")
 
 for model_type, models in models_db.items():
     print(f"{model_type} models:")
@@ -37,8 +35,6 @@ for model_type, models in models_db.items():
         if not args.diff_only or quick_hash != model_info.get("quick_hash"):
             print(f"{model_id} = {quick_hash}")
         if quick_hash in hashes_found:
-            print(
-                f"HASH CONFLICT! {quick_hash} already maps to {hashes_found[quick_hash]}"
-            )
+            print(f"HASH CONFLICT! {quick_hash} already maps to {hashes_found[quick_hash]}")
         else:
             hashes_found[quick_hash] = url

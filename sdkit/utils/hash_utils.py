@@ -11,17 +11,13 @@ def hash_url_quick(url):
 
     def get_size():
         res = requests.get(url, stream=True)
-        size = int(
-            res.headers["content-length"]
-        )  # fail loudly if the url doesn't return a content-length header
+        size = int(res.headers["content-length"])  # fail loudly if the url doesn't return a content-length header
         log.debug(f"total size: {size}")
         return size
 
     def read_bytes(offset: int, count: int):
         res = requests.get(url, headers={"Range": f"bytes={offset}-{offset+count-1}"})
-        log.debug(
-            f"read byte range. offset: {offset}, count: {count}, actual count: {len(res.content)}"
-        )
+        log.debug(f"read byte range. offset: {offset}, count: {count}, actual count: {len(res.content)}")
         return res.content
 
     return compute_quick_hash(
@@ -44,9 +40,7 @@ def hash_file_quick(file_path):
         with open(file_path, "rb") as f:
             f.seek(offset)
             bytes = f.read(count)
-            log.debug(
-                f"read byte range. offset: {offset}, count: {count}, actual count: {len(bytes)}"
-            )
+            log.debug(f"read byte range. offset: {offset}, count: {count}, actual count: {len(bytes)}")
             return bytes
 
     return compute_quick_hash(

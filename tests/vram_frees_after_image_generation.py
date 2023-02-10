@@ -16,9 +16,7 @@ from sdkit.generate import generate_images
 from sdkit.models import load_model
 from sdkit.utils import get_device_usage, log
 
-DeviceUsage = namedtuple(
-    "DeviceUsage", ["cpu_used", "ram_used", "ram_total", "vram_used", "vram_total"]
-)
+DeviceUsage = namedtuple("DeviceUsage", ["cpu_used", "ram_used", "ram_total", "vram_used", "vram_total"])
 
 c = Context()
 
@@ -41,14 +39,17 @@ usage_after_render = DeviceUsage(*get_device_usage(c.device, log_info=True))
 
 print("")
 log.info(
-    f"VRAM trend: {usage_start.vram_used:.1f} (start) GiB to {usage_model_load.vram_used:.1f} GiB (before render) to {usage_after_render.vram_used:.1f} GiB (after render)"
+    f"VRAM trend: {usage_start.vram_used:.1f} (start) GiB to"
+    f" {usage_model_load.vram_used:.1f} GiB (before render) to"
+    f" {usage_after_render.vram_used:.1f} GiB (after render)"
 )
 print("")
 
 max_expected_vram = usage_model_load.vram_used + 0.3
 if usage_after_render.vram_used > max_expected_vram:
     log.error(
-        f"Test failed! VRAM after render was expected to be below {max_expected_vram:.1f} GiB, but was {usage_after_render.vram_used:.1f} GiB!"
+        "Test failed! VRAM after render was expected to be below"
+        f" {max_expected_vram:.1f} GiB, but was {usage_after_render.vram_used:.1f} GiB!"
     )
     exit(1)
 else:

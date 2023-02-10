@@ -6,16 +6,12 @@ from PIL import Image
 
 from sdkit import Context
 
-gfpgan_temp_device_lock = (
-    Lock()
-)  # workaround: gfpgan currently can only start on one device at a time.
+gfpgan_temp_device_lock = Lock()  # workaround: gfpgan currently can only start on one device at a time.
 
 
 def apply(context: Context, image, **kwargs):
     # This lock is only ever used here. No need to use timeout for the request. Should never deadlock.
-    with (
-        gfpgan_temp_device_lock
-    ):  # Wait for any other devices to complete before starting.
+    with gfpgan_temp_device_lock:  # Wait for any other devices to complete before starting.
         # hack for a bug in facexlib: https://github.com/xinntao/facexlib/pull/19/files
         from facexlib.detection import retinaface
 

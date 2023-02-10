@@ -28,7 +28,7 @@ keywords = ["stable diffusion", "ai", "art"]
 profile = "black"
 
 [tool.black]
-line-length = 88
+line-length = 120
 include = '\.pyi?$'
 exclude = '''
 /(

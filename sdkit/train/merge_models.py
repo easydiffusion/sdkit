@@ -1,11 +1,10 @@
-# loosely inspired by https://github.com/lodimasq/batch-checkpoint-merger/blob/master/batch_checkpoint_merger/main.py#L71
+# loosely inspired by
+# https://github.com/lodimasq/batch-checkpoint-merger/blob/master/batch_checkpoint_merger/main.py#L71
 
 from sdkit.utils import load_tensor_file, log, save_tensor_file
 
 
-def merge_models(
-    model0_path: str, model1_path: str, ratio: float, out_path: str, use_fp16=True
-):
+def merge_models(model0_path: str, model1_path: str, ratio: float, out_path: str, use_fp16=True):
     """
     Merges (using weighted sum) and writes to the `out_path`.
 
@@ -14,9 +13,7 @@ def merge_models(
               0 means only the first model will be used.
     """
 
-    log.info(
-        f"[cyan]Merge models:[/cyan] Merging {model0_path} and {model1_path}, ratio {ratio}"
-    )
+    log.info(f"[cyan]Merge models:[/cyan] Merging {model0_path} and {model1_path}, ratio {ratio}")
     merged = merge_two_models(model0_path, model1_path, ratio, use_fp16)
 
     log.info(f"[cyan]Merge models:[/cyan] ... saving as {out_path}")

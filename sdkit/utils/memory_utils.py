@@ -23,9 +23,7 @@ def gc(context: Context):
 def get_device_usage(device, log_info=False):
     cpu_used = psutil.cpu_percent()
     ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
-    vram_free, vram_total = (
-        torch.cuda.mem_get_info(device) if device != "cpu" else (0, 0)
-    )
+    vram_free, vram_total = torch.cuda.mem_get_info(device) if device != "cpu" else (0, 0)
     vram_used = vram_total - vram_free
 
     ram_used /= 1024**3
@@ -46,8 +44,9 @@ def get_device_usage(device, log_info=False):
 
 def get_object_id(o):
     """
-    Returns a more-readable object id, than the long number returned by the inbuilt `id()` function.
-    Internally, this calls `id()` and converts the number to a base64 string.
+    Returns a more-readable object id, than the long number returned by
+    the inbuilt `id()` function. Internally, this calls `id()` and converts
+    the number to a base64 string.
     """
 
     obj_id = id(o)
@@ -57,18 +56,19 @@ def get_object_id(o):
 
 def record_tensor_name(t, name="t", log_info=False):
     """
-    Records a name for the given tensor object. Helpful while investigating the source of memory leaks.
+    Records a name for the given tensor object. Helpful while investigating
+    the source of memory leaks.
 
-    For e.g. you can record variables from across the codebase, and see which one is leaking by calling
-    `print_largest_tensors_in_memory()` or `take_memory_snapshot()` after calling `gc()` (for garbage-collection).
+    For e.g. you can record variables from across the codebase, and see
+    which one is leaking by calling `print_largest_tensors_in_memory()`
+    or `take_memory_snapshot()` after calling `gc()` (for garbage-collection).
 
-    `print_largest_tensors_in_memory()` and `take_memory_snapshot()` print the recorded names for each tensor, if available.
+    `print_largest_tensors_in_memory()` and `take_memory_snapshot()`
+    print the recorded names for each tensor, if available.
     """
 
     obj_id = get_object_id(t)
-    recorded_tensor_names[obj_id] = (
-        [] if obj_id not in recorded_tensor_names else recorded_tensor_names[obj_id]
-    )
+    recorded_tensor_names[obj_id] = [] if obj_id not in recorded_tensor_names else recorded_tensor_names[obj_id]
     recorded_tensor_names[obj_id].append(name)
 
     if log_info:
@@ -83,7 +83,8 @@ def print_tensor_info(t, name="t"):
     obj_id = get_object_id(t)
     obj_size = t.nelement() * t.element_size() / 1024**2  # MiB
     log.info(
-        f" {name} id: {obj_id}, size: {obj_size} MiB, shape: {t.shape}, requires_grad: {t.requires_grad}, type: {t.dtype}, device: {t.device}"
+        f" {name} id: {obj_id}, size: {obj_size} MiB, shape: {t.shape}, requires_grad:"
+        f" {t.requires_grad}, type: {t.dtype}, device: {t.device}"
     )
 
 
@@ -99,10 +100,7 @@ def get_tensors_in_memory(device):
     objs_in_mem = get_objects()
     for obj in objs_in_mem:
         try:
-            if (
-                torch.is_tensor(obj)
-                or (hasattr(obj, "data") and torch.is_tensor(obj.data))
-            ) and obj.device == device:
+            if (torch.is_tensor(obj) or (hasattr(obj, "data") and torch.is_tensor(obj.data))) and obj.device == device:
                 tensors.append(obj)
         except:
             pass
@@ -112,7 +110,8 @@ def get_tensors_in_memory(device):
 
 def print_largest_tensors_in_memory(device, num=10):
     """
-    Prints a list of the largest tensors in the given device. Choose the number of objects displayed with the `num` argument.
+    Prints a list of the largest tensors in the given device.
+    Choose the number of objects displayed with the `num` argument.
 
     Prints the recorded names for each tensor, if recorded using `record_tensor_name()`.
 
@@ -131,7 +130,8 @@ def print_largest_tensors_in_memory(device, num=10):
 
 def take_memory_snapshot(device, print_snapshot=True):
     """
-    Records and prints a list of new tensors (in the device) since the last snapshot (created by calling `take_memory_snapshot()`).
+    Records and prints a list of new tensors (in the device) since the last snapshot
+    (created by calling `take_memory_snapshot()`).
 
     Prints the recorded names for each tensor, if recorded using `record_tensor_name()`.
 
@@ -153,21 +153,15 @@ def take_memory_snapshot(device, print_snapshot=True):
         return
 
     new_tensor_entries = [entry for entry in entries if entry[0] in new_tensor_ids]
-    new_tensors_total_mem = reduce(
-        lambda sum, entry: sum + entry[1], new_tensor_entries, 0
-    )  # MiB
+    new_tensors_total_mem = reduce(lambda sum, entry: sum + entry[1], new_tensor_entries, 0)  # MiB
     print(new_tensors_total_mem)
     num_new_tensors = len(new_tensor_ids)
 
     print(f"== {num_new_tensors} new tensors this snapshot on {device} ==")
     print(_fmt_tensors_summary(new_tensor_entries))
     print("---")
-    print(
-        f"Total memory occupied on {device} by {len(entries)} tensors: {total_mem:.1f} MiB"
-    )
-    print(
-        f"{num_new_tensors} new tensors added {new_tensors_total_mem:.1f} MiB this frame"
-    )
+    print(f"Total memory occupied on {device} by {len(entries)} tensors: {total_mem:.1f} MiB")
+    print(f"{num_new_tensors} new tensors added {new_tensors_total_mem:.1f} MiB this frame")
 
 
 def _get_tensor_entries(device, sorted_by_size=True):
@@ -193,13 +187,10 @@ def _fmt_tensors_summary(entries):
     summary = []
     for i, o in enumerate(entries):
         obj_id, size, shape, n_referrers, requires_grad, dtype = o
-        known_names = (
-            f" ({recorded_tensor_names[obj_id]})"
-            if obj_id in recorded_tensor_names
-            else ""
-        )
+        known_names = f" ({recorded_tensor_names[obj_id]})" if obj_id in recorded_tensor_names else ""
         summary.append(
-            f"{i+1}. Id: {obj_id}{known_names}, Size: {size:.1f} MiB, Shape: {shape}, Referrers: {n_referrers}, requires_grad: {requires_grad}, dtype: {dtype}"
+            f"{i+1}. Id: {obj_id}{known_names}, Size: {size:.1f} MiB, Shape: {shape},"
+            f" Referrers: {n_referrers}, requires_grad: {requires_grad}, dtype: {dtype}"
         )
 
     return "\n".join(summary)

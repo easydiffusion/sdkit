@@ -27,9 +27,7 @@ def sample(
     **kwargs,
 ):
     model = context.models["stable-diffusion"]
-    sample_fn = (
-        _sample_txt2img if "init_image_latent" not in kwargs else _sample_img2img
-    )
+    sample_fn = _sample_txt2img if "init_image_latent" not in kwargs else _sample_img2img
 
     common_params = {
         "S": steps,
@@ -43,9 +41,7 @@ def sample(
         "img_callback": callback,
     }
 
-    samples, _ = sample_fn(
-        model, sampler_name, noise, steps, batch_size, common_params.copy(), **kwargs
-    )
+    samples, _ = sample_fn(model, sampler_name, noise, steps, batch_size, common_params.copy(), **kwargs)
     return samples
 
 

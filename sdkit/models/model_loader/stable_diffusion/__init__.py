@@ -22,9 +22,7 @@ from sdkit.utils import (
 tr_logging.set_verbosity_error()  # suppress unnecessary logging
 
 
-def load_model(
-    context: Context, scan_model=True, check_for_config_with_same_name=True, **kwargs
-):
+def load_model(context: Context, scan_model=True, check_for_config_with_same_name=True, **kwargs):
     from sdkit.models import scan_model as scan_model_fn
 
     from . import optimizations
@@ -35,9 +33,7 @@ def load_model(
     if scan_model:
         scan_result = scan_model_fn(model_path)
         if scan_result.issues_count > 0 or scan_result.infected_files > 0:
-            raise Exception(
-                f"Model scan failed! Potentially infected model: {model_path}"
-            )
+            raise Exception(f"Model scan failed! Potentially infected model: {model_path}")
 
     # load the model file
     sd = load_tensor_file(model_path)
@@ -45,22 +41,17 @@ def load_model(
 
     # try to guess the config, if no config file was given
     # check if a key specific to SD 2.0 is missing
-    if (
-        config_file_path is None
-        and "cond_stage_model.model.ln_final.bias" not in sd.keys()
-    ):
+    if config_file_path is None and "cond_stage_model.model.ln_final.bias" not in sd.keys():
         # try using an SD 1.4 config
         from sdkit.models import get_model_info_from_db
 
-        sd_v1_4_info = get_model_info_from_db(
-            model_type="stable-diffusion", model_id="1.4"
-        )
+        sd_v1_4_info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.4")
         config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
 
     # load the config
     if config_file_path is None:
         raise Exception(
-            f'Unknown model! No config file path specified in context.model_configs for the "stable-diffusion" model!'
+            'Unknown model! No config file path specified in context.model_configs for the "stable-diffusion" model!'
         )
 
     log.info(f"using config: {config_file_path}")
@@ -68,9 +59,7 @@ def load_model(
     config.model.params.unet_config.params.use_fp16 = context.half_precision
 
     extra_config = config.get("extra", {})
-    attn_precision = extra_config.get(
-        "attn_precision", "fp16" if context.half_precision else "fp32"
-    )
+    attn_precision = extra_config.get("attn_precision", "fp16" if context.half_precision else "fp32")
     log.info(f"using attn_precision: {attn_precision}")
 
     # instantiate the model

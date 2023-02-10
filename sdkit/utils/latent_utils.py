@@ -54,12 +54,8 @@ def get_image_latent_and_mask(
 
     image = image.convert("RGB")
     image = resize_img(image, desired_width, desired_height, clamp_to_64=True)
-    image = img_to_tensor(
-        image, batch_size, context.device, context.half_precision, shift_range=True
-    )
-    image = model.get_first_stage_encoding(
-        model.encode_first_stage(image)
-    )  # move to latent space
+    image = img_to_tensor(image, batch_size, context.device, context.half_precision, shift_range=True)
+    image = model.get_first_stage_encoding(model.encode_first_stage(image))  # move to latent space
 
     if mask is None:
         return image, None
@@ -67,9 +63,7 @@ def get_image_latent_and_mask(
     mask = mask.convert("RGB")
     mask = resize_img(mask, image.shape[3], image.shape[2])
     mask = ImageOps.invert(mask)
-    mask = img_to_tensor(
-        mask, batch_size, context.device, context.half_precision, unsqueeze=True
-    )
+    mask = img_to_tensor(mask, batch_size, context.device, context.half_precision, unsqueeze=True)
 
     return image, mask
 

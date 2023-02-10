@@ -16,9 +16,7 @@ parser.add_argument(
     default="Photograph of an astronaut riding a horse",
     help="Prompt to use for generating the image",
 )
-parser.add_argument(
-    "--seed", type=int, default=42, help="Seed to use for generating the image"
-)
+parser.add_argument("--seed", type=int, default=42, help="Seed to use for generating the image")
 parser.add_argument(
     "--models-dir",
     type=str,
@@ -39,7 +37,11 @@ parser.add_argument(
 parser.add_argument(
     "--exclude-models",
     default=set(),
-    help="Comma-separated list of model filenames (without spaces) to skip. Supports wildcards (without commas), for e.g. --exclude-models *.safetensors, or --exclude-models sd-1-4*",
+    help=(
+        "Comma-separated list of model filenames (without spaces) to skip. Supports"
+        " wildcards (without commas), for e.g. --exclude-models *.safetensors, or"
+        " --exclude-models sd-1-4*"
+    ),
 )
 parser.add_argument(
     "--samplers",
@@ -76,7 +78,11 @@ parser.add_argument(
     "--sizes",
     default="auto",
     type=str,
-    help="Comma-separated list of image sizes (width x height). No spaces. E.g. 512x512 or 512x512,1024x768. Defaults to what the model needs (512x512 or 768x768, if the model requires 768)",
+    help=(
+        "Comma-separated list of image sizes (width x height). No spaces. E.g. 512x512"
+        " or 512x512,1024x768. Defaults to what the model needs (512x512 or 768x768, if"
+        " the model requires 768)"
+    ),
 )
 parser.add_argument(
     "--device",
@@ -101,22 +107,14 @@ if args.samplers != "all":
 if args.exclude_samplers != set():
     args.exclude_samplers = set(args.exclude_samplers.split(","))
 if args.sizes != "auto":
-    args.sizes = [
-        tuple(map(lambda x: int(x), size.split("x"))) for size in args.sizes.split(",")
-    ]
+    args.sizes = [tuple(map(lambda x: int(x), size.split("x"))) for size in args.sizes.split(",")]
 
 # setup
 log.info("Starting..")
 from sdkit.generate.sampler import default_samplers, k_samplers
 from sdkit.models import load_model
 
-sd_models = set(
-    [
-        f
-        for f in os.listdir(args.models_dir)
-        if os.path.splitext(f)[1] in (".ckpt", ".safetensors")
-    ]
-)
+sd_models = set([f for f in os.listdir(args.models_dir) if os.path.splitext(f)[1] in (".ckpt", ".safetensors")])
 all_samplers = set(default_samplers.samplers.keys()) | set(k_samplers.samplers.keys())
 args.vram_usage_levels = args.vram_usage_levels.split(",")
 
@@ -133,9 +131,7 @@ vram_usage_levels_to_test = args.vram_usage_levels
 
 if args.init_image is not None:
     if not os.path.exists(args.init_image):
-        log.error(
-            f"Error! Could not an initial image at the path specified: {args.init_image}"
-        )
+        log.error(f"Error! Could not an initial image at the path specified: {args.init_image}")
         exit(1)
 
     if samplers_to_test != {"ddim"}:
@@ -185,9 +181,7 @@ def run_test():
         model_dir_path = os.path.join(args.out_dir, model_filename)
 
         if args.skip_completed and is_model_already_tested(model_dir_path):
-            log.info(
-                f"skipping model {model_filename} since it has already been processed at {model_dir_path}"
-            )
+            log.info(f"skipping model {model_filename} since it has already been processed at {model_dir_path}")
             continue
 
         for vram_usage_level in vram_usage_levels_to_test:
@@ -200,9 +194,7 @@ def run_test():
             os.makedirs(out_dir_path, exist_ok=True)
 
             try:
-                context.model_paths["stable-diffusion"] = os.path.join(
-                    args.models_dir, model_filename
-                )
+                context.model_paths["stable-diffusion"] = os.path.join(args.models_dir, model_filename)
                 load_model(context, "stable-diffusion", scan_model=False)
             except Exception as e:
                 log.exception(e)
@@ -259,9 +251,7 @@ def run_test():
             del context
 
 
-def run_samplers(
-    context, model_filename, out_dir_path, width, height, vram_usage_level
-):
+def run_samplers(context, model_filename, out_dir_path, width, height, vram_usage_level):
     from queue import Queue
     from threading import Event, Thread
 
@@ -269,13 +259,12 @@ def run_samplers(
         # setup
         img_path = os.path.join(out_dir_path, f"{sampler_name}_0.jpeg")
         if args.skip_completed and os.path.exists(img_path):
-            log.info(
-                f"skipping sampler {sampler_name} since it has already been processed at {img_path}"
-            )
+            log.info(f"skipping sampler {sampler_name} since it has already been processed at {img_path}")
             continue
 
         log.info(
-            f"Model: {model_filename}, Sampler: {sampler_name}, Size: {width}x{height}, VRAM Usage Level: {vram_usage_level}"
+            f"Model: {model_filename}, Sampler: {sampler_name}, Size: {width}x{height},"
+            f" VRAM Usage Level: {vram_usage_level}"
         )
 
         # start profiling
@@ -344,9 +333,7 @@ def profiling_thread(device, prof_thread_stop_event, ram_usage, vram_usage):
     import time
 
     while not prof_thread_stop_event.is_set():
-        cpu_used, ram_used, ram_total, vram_used, vram_total = get_device_usage(
-            device, log_info=args.live_perf
-        )
+        cpu_used, ram_used, ram_total, vram_used, vram_total = get_device_usage(device, log_info=args.live_perf)
 
         ram_usage.put(ram_used)
         vram_usage.put(vram_used)
@@ -358,9 +345,7 @@ def is_model_already_tested(out_dir_path):
     if not os.path.exists(out_dir_path):
         return False
 
-    sampler_files = list(
-        map(lambda x: os.path.join(out_dir_path, f"{x}_0.jpeg"), samplers_to_test)
-    )
+    sampler_files = list(map(lambda x: os.path.join(out_dir_path, f"{x}_0.jpeg"), samplers_to_test))
     images_exist = list(map(lambda x: os.path.exists(x), sampler_files))
     return all(images_exist)
 
@@ -368,9 +353,7 @@ def is_model_already_tested(out_dir_path):
 def get_min_size(model_path, default_size=512):
     model_info = get_model_info_from_db(quick_hash=hash_file_quick(model_path))
 
-    return (
-        model_info["metadata"]["min_size"] if model_info is not None else default_size
-    )
+    return model_info["metadata"]["min_size"] if model_info is not None else default_size
 
 
 def log_perf_results():
@@ -395,21 +378,13 @@ def log_perf_results():
 
     df["vram_tp90"] = df["vram_usage"].apply(lambda x: np.percentile(x, 90))
     df["vram_tp100"] = df["vram_usage"].apply(lambda x: np.percentile(x, 100))
-    df["vram_spike_test"] = (
-        abs((df["vram_tp100"] - df["vram_tp90"])) < 0.5
-    )  # okay with a spike of 500 MB
+    df["vram_spike_test"] = abs((df["vram_tp100"] - df["vram_tp90"])) < 0.5  # okay with a spike of 500 MB
     df["vram_tp90"] = df["vram_tp90"].apply(lambda x: f"{x:.1f}")
     df["overall_status"] = df["render_test"] & df["vram_spike_test"]
 
-    df["vram_spike_test"] = df["vram_spike_test"].apply(
-        lambda is_pass: "pass" if is_pass else "FAIL"
-    )
-    df["render_test"] = df["render_test"].apply(
-        lambda is_pass: "pass" if is_pass else "FAIL"
-    )
-    df["overall_status"] = df["overall_status"].apply(
-        lambda is_pass: "pass" if is_pass else "FAIL"
-    )
+    df["vram_spike_test"] = df["vram_spike_test"].apply(lambda is_pass: "pass" if is_pass else "FAIL")
+    df["render_test"] = df["render_test"].apply(lambda is_pass: "pass" if is_pass else "FAIL")
+    df["overall_status"] = df["overall_status"].apply(lambda is_pass: "pass" if is_pass else "FAIL")
 
     del df["vram_tp100"]
 

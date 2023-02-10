@@ -36,9 +36,7 @@ def sample(
 ):
     model = context.models["stable-diffusion"]
     denoiser = (
-        k_diffusion.external.CompVisVDenoiser
-        if model.parameterization == "v"
-        else k_diffusion.external.CompVisDenoiser
+        k_diffusion.external.CompVisVDenoiser if model.parameterization == "v" else k_diffusion.external.CompVisDenoiser
     )
     wrapped_model = DenoiserWrap(denoiser(model))
     sigmas = wrapped_model.inner_model.get_sigmas(steps)
@@ -50,9 +48,7 @@ def sample(
     params = {
         "model": wrapped_model,
         "x": x_latent,
-        "callback": (lambda info: callback(info["x"], info["i"]))
-        if callback is not None
-        else None,
+        "callback": (lambda info: callback(info["x"], info["i"])) if callback is not None else None,
         "extra_args": {
             "uncond": uncond,
             "cond": cond,
@@ -61,9 +57,7 @@ def sample(
     }
 
     if sampler_name in ("dpm_fast", "dpm_adaptive"):
-        params["sigma_min"] = sigmas[
-            -2
-        ]  # sigmas is sorted. the last element is 0, which isn't allowed
+        params["sigma_min"] = sigmas[-2]  # sigmas is sorted. the last element is 0, which isn't allowed
         params["sigma_max"] = sigmas[0]
 
         if sampler_name == "dpm_fast":

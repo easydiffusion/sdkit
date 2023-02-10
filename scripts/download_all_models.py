@@ -29,9 +29,7 @@ from sdkit.utils import hash_file_quick
 
 db = get_models_db()
 
-models_to_download = {
-    model_type: list(models.keys()) for model_type, models in db.items()
-}
+models_to_download = {model_type: list(models.keys()) for model_type, models in db.items()}
 download_dir = args.models_dir
 
 os.makedirs(download_dir, exist_ok=True)
@@ -48,9 +46,7 @@ if os.path.exists(download_dir):
             quick_hash = hash_file_quick(model_path)
             model_info = db[model_type][model_id]
             expected_quick_hash = model_info["quick_hash"]
-            expected_size = int(
-                requests.get(model_info["url"], stream=True).headers["content-length"]
-            )
+            expected_size = int(requests.get(model_info["url"], stream=True).headers["content-length"])
             actual_size = os.path.getsize(model_path)
 
             if quick_hash != expected_quick_hash:

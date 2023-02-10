@@ -43,27 +43,21 @@ def generate_images(
         images = []
 
         seed_everything(seed)
-        precision_scope = (
-            torch.autocast
-            if context.half_precision and context.device != "cpu"
-            else nullcontext
-        )
+        precision_scope = torch.autocast if context.half_precision and context.device != "cpu" else nullcontext
 
         if "stable-diffusion" not in context.models:
             raise RuntimeError(
-                "The model for Stable Diffusion has not been loaded yet! If you've tried to load it, please check the logs above this message for errors (while loading the model)."
+                "The model for Stable Diffusion has not been loaded yet! If you've"
+                " tried to load it, please check the logs above this message for errors"
+                " (while loading the model)."
             )
 
         model = context.models["stable-diffusion"]
         if "hypernetwork" in context.models:
-            context.models["hypernetwork"][
-                "hypernetwork_strength"
-            ] = hypernetwork_strength
+            context.models["hypernetwork"]["hypernetwork_strength"] = hypernetwork_strength
 
         with precision_scope("cuda"):
-            cond, uncond = get_cond_and_uncond(
-                prompt, negative_prompt, num_outputs, model
-            )
+            cond, uncond = get_cond_and_uncond(prompt, negative_prompt, num_outputs, model)
 
         generate_fn = txt2img if init_image is None else img2img
         common_sampler_params = {
@@ -119,9 +113,7 @@ def img2img(
         (
             context.init_image_latent,
             context.init_image_mask_tensor,
-        ) = get_image_latent_and_mask(
-            context, init_image, init_image_mask, width, height, num_outputs
-        )
+        ) = get_image_latent_and_mask(context, init_image, init_image_mask, width, height, num_outputs)
 
     params.update(
         {

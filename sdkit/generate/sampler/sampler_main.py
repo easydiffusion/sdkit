@@ -38,7 +38,8 @@ def make_samples(
     additional args for img2img:
     * init_image_latent: Tensor
     * mask: Tensor
-    * prompt_strength: float - between 0 and 1. Use 0 to ignore the prompt entirely, or 1 to ignore the init image entirely
+    * prompt_strength: float - between 0 and 1.
+        Use 0 to ignore the prompt entirely, or 1 to ignore the init image entirely
     """
     sampler_module = None
     if sampler_name in default_samplers.samplers:

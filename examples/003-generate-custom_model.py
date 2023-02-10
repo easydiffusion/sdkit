@@ -6,9 +6,7 @@ from sdkit.utils import log, save_images
 context = sdkit.Context()
 
 # set the path to the custom model file on the disk
-context.model_paths[
-    "stable-diffusion"
-] = "D:\\path\\to\\cmodelUpgradeStableD.safetensors"
+context.model_paths["stable-diffusion"] = "D:\\path\\to\\cmodelUpgradeStableD.safetensors"
 context.model_configs["stable-diffusion"] = "D:\\path\\to\\Cmodelsafetensor.yaml"
 # the yaml config file is required if it's an unknown model to use.
 # it is not necessary for known models present in the models_db.

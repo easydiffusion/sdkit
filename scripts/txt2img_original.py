@@ -4,18 +4,13 @@ A simplified version of the original txt2img.py script that is included with Sta
 Useful for testing responses and memory usage against the original script.
 """
 
-from contextlib import nullcontext
 from itertools import islice
 
-import numpy as np
 import torch
 from einops import rearrange
-from ldm.models.diffusion.ddim import DDIMSampler
-from ldm.models.diffusion.dpm_solver import DPMSolverSampler
 from ldm.models.diffusion.plms import PLMSSampler
 from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
-from PIL import Image
 from pytorch_lightning import seed_everything
 from torch import autocast
 from tqdm import tqdm, trange
@@ -52,9 +47,7 @@ def main():
     seed_everything(42)
 
     config = OmegaConf.load("path/to/models/stable-diffusion/v1-inference.yaml")
-    model = load_model_from_config(
-        config, f"path/to/models/stable-diffusion/sd-v1-4.ckpt"
-    )
+    model = load_model_from_config(config, "path/to/models/stable-diffusion/sd-v1-4.ckpt")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
@@ -66,7 +59,7 @@ def main():
     assert prompt is not None
     data = [batch_size * [prompt]]
 
-    sample_count = 0
+    # sample_count = 0
 
     start_code = None
 
@@ -95,17 +88,13 @@ def main():
                         )
 
                         x_samples = model.decode_first_stage(samples)
-                        x_samples = torch.clamp(
-                            (x_samples + 1.0) / 2.0, min=0.0, max=1.0
-                        )
+                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
                         for x_sample in x_samples:
-                            x_sample = 255.0 * rearrange(
-                                x_sample.cpu().numpy(), "c h w -> h w c"
-                            )
-                            img = Image.fromarray(x_sample.astype(np.uint8))
-                            base_count += 1
-                            sample_count += 1
+                            x_sample = 255.0 * rearrange(x_sample.cpu().numpy(), "c h w -> h w c")
+                            # img = Image.fromarray(x_sample.astype(np.uint8))
+                            # base_count += 1
+                            # sample_count += 1
                     except Exception as e:
                         print(e)
 

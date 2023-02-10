@@ -23,12 +23,8 @@ del (
     beta["overall_status"],
 )
 
-bad = (
-    stable["max_vram (GB)"] < beta["max_vram (GB)"]
-)  # & (stable['model_filename'] == 'sd-v1-4.ckpt')
-good = (
-    stable["max_vram (GB)"] > beta["max_vram (GB)"]
-)  # & (stable['model_filename'] == 'sd-v1-4.ckpt')
+bad = stable["max_vram (GB)"] < beta["max_vram (GB)"]  # & (stable['model_filename'] == 'sd-v1-4.ckpt')
+good = stable["max_vram (GB)"] > beta["max_vram (GB)"]  # & (stable['model_filename'] == 'sd-v1-4.ckpt')
 
 print("bad results", bad)
 print("good results", good)

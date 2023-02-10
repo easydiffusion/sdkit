@@ -73,18 +73,12 @@ def send_to_device(context: Context, model):
         # set forward_pre_hook (a feature of torch NN module) to move each module to the GPU only when required
         model.first_stage_model.log_name = "model.first_stage_model"
         model.first_stage_model.register_forward_pre_hook(move_to_gpu)
-        model.first_stage_model.encode = wrap_fs_fn(
-            model.first_stage_model.encode, model.first_stage_model
-        )
-        model.first_stage_model.decode = wrap_fs_fn(
-            model.first_stage_model.decode, model.first_stage_model
-        )
+        model.first_stage_model.encode = wrap_fs_fn(model.first_stage_model.encode, model.first_stage_model)
+        model.first_stage_model.decode = wrap_fs_fn(model.first_stage_model.decode, model.first_stage_model)
 
         model.cond_stage_model.log_name = "model.cond_stage_model"
         model.cond_stage_model.register_forward_pre_hook(move_to_gpu)
-        model.cond_stage_model.forward = wrap_fs_fn(
-            model.cond_stage_model.forward, model.cond_stage_model
-        )
+        model.cond_stage_model.forward = wrap_fs_fn(model.cond_stage_model.forward, model.cond_stage_model)
 
     if (
         "KEEP_ENTIRE_MODEL_IN_CPU" in context.vram_optimizations
@@ -128,15 +122,13 @@ def get_context_kv(attention_context):
 # faster iterations/sec than the default SD implementation, and consumes far less VRAM
 # On a 3060 12 GB (with the sd-v1-4.ckpt model):
 # - without this code, the standard SD sampler runs at 4.5 it/sec, and consumes ~6.6 GB of VRAM
-# - using this code makes the sampler run at 5.6 to 5.9 it/sec, and consume ~3.6 GB of VRAM on lower-end PCs, and ~4.9 GB on higher-end PCs
+# - using this code makes the sampler run at 5.6 to 5.9 it/sec,
+#         and consume ~3.6 GB of VRAM on lower-end PCs, and ~4.9 GB on higher-end PCs
 def make_attn_forward(context: Context, attn_precision="fp16"):
     app_context = context
 
     def get_steps(q, k):
-        if (
-            context.device == "cpu"
-            or "SET_ATTENTION_STEP_TO_2" in context.vram_optimizations
-        ):
+        if context.device == "cpu" or "SET_ATTENTION_STEP_TO_2" in context.vram_optimizations:
             return 2
         elif "SET_ATTENTION_STEP_TO_4" in context.vram_optimizations:
             return 4  # use for balanced
@@ -170,8 +162,9 @@ def make_attn_forward(context: Context, attn_precision="fp16"):
         if steps > 64:
             max_res = math.floor(math.sqrt(math.sqrt(mem_free_total / 2.5)) / 8) * 64
             raise RuntimeError(
-                f"Not enough memory, use lower resolution (max approx. {max_res}x{max_res}). "
-                f"Need: {mem_required / 64 / gb:0.1f} GB free, Have:{mem_free_total / gb:0.1f} GB free"
+                "Not enough memory, use lower resolution (max approx."
+                f" {max_res}x{max_res}). Need: {mem_required / 64 / gb:0.1f} GB free,"
+                f" Have:{mem_free_total / gb:0.1f} GB free"
             )
 
         return steps
@@ -187,18 +180,12 @@ def make_attn_forward(context: Context, attn_precision="fp16"):
         k_in *= self.scale
         del context, x
 
-        q, k, v = map(
-            lambda t: rearrange(t, "b n (h d) -> (b h) n d", h=h), (q_in, k_in, v_in)
-        )
+        q, k, v = map(lambda t: rearrange(t, "b n (h d) -> (b h) n d", h=h), (q_in, k_in, v_in))
         del q_in, k_in, v_in
 
-        autocast_device = (
-            "cpu" if app_context.device == "cpu" else "cuda"
-        )  # doesn't accept (or need) 'cuda:N'
+        autocast_device = "cpu" if app_context.device == "cpu" else "cuda"  # doesn't accept (or need) 'cuda:N'
 
-        r1 = torch.zeros(
-            q.shape[0], q.shape[1], v.shape[2], device=q.device, dtype=q.dtype
-        )
+        r1 = torch.zeros(q.shape[0], q.shape[1], v.shape[2], device=q.device, dtype=q.dtype)
         steps = get_steps(q, k)
         slice_size = q.shape[1] // steps if (q.shape[1] % steps) == 0 else q.shape[1]
         for i in range(0, q.shape[1], slice_size):
@@ -248,11 +235,10 @@ def print_model_size_breakdown(model):
             size_output += s
 
     log.info(
-        f"model.diffusion_model (input, middle, output blocks): {mb(size_input)} Mb, {mb(size_middle)} Mb, {mb(size_output)} Mb"
+        f"model.diffusion_model (input, middle, output blocks): {mb(size_input)} Mb,"
+        f" {mb(size_middle)} Mb, {mb(size_output)} Mb"
     )
-    log.info(
-        f"model.diffusion_model (total): {mb(size_input + size_middle + size_output)} Mb"
-    )
+    log.info(f"model.diffusion_model (total): {mb(size_input + size_middle + size_output)} Mb")
 
     # modelFS
     sizeFS = 0
@@ -268,6 +254,4 @@ def print_model_size_breakdown(model):
 
     log.info(f"model.cond_stage_model: {mb(sizeCS)} Mb")
 
-    log.info(
-        f"model (TOTAL): {mb(size_input + size_middle + size_output + sizeFS + sizeCS)} Mb"
-    )
+    log.info(f"model (TOTAL): {mb(size_input + size_middle + size_output + sizeFS + sizeCS)} Mb")
