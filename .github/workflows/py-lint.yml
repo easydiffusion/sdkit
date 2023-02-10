@@ -16,7 +16,7 @@ jobs:
       fail-fast: true
       matrix:
         # apparently only ubuntu latest is available to run a contenairised job
-        os: [ubuntu-latest]
+        os: [windows-latest]
         python-version: ["3.9"]
         architecture: ["x64"]
 
@@ -50,4 +50,3 @@ jobs:
           extra-isort-options: "--profile black"
           use-flake8: true
           extra-flake8-options: "--max-line-length 120 --extend-ignore=E203,E402,E722 --per-file-ignores=__init__.py:F401"
-
