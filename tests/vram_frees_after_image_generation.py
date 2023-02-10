@@ -1,5 +1,5 @@
-import os
 import argparse
+import os
 from collections import namedtuple
 
 parser = argparse.ArgumentParser()
@@ -12,9 +12,9 @@ parser.add_argument(
 args = parser.parse_args()
 
 from sdkit import Context
-from sdkit.models import load_model
 from sdkit.generate import generate_images
-from sdkit.utils import log, get_device_usage
+from sdkit.models import load_model
+from sdkit.utils import get_device_usage, log
 
 DeviceUsage = namedtuple(
     "DeviceUsage", ["cpu_used", "ram_used", "ram_total", "vram_used", "vram_total"]

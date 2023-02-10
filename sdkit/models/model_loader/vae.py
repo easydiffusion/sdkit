@@ -1,9 +1,9 @@
 import os
-import traceback
 import tempfile
+import traceback
 
 from sdkit import Context
-from sdkit.utils import log, load_tensor_file
+from sdkit.utils import load_tensor_file, log
 
 """
 The VAE model overwrites the state_dict of model.first_stage_model.

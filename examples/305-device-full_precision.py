@@ -1,6 +1,6 @@
 import sdkit
-from sdkit.models import load_model
 from sdkit.generate import generate_images
+from sdkit.models import load_model
 
 context = sdkit.Context()
 context.half_precision = False  # loads in full precision (i.e. float32, instead of float16). consumes more VRAM

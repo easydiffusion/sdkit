@@ -1,7 +1,7 @@
 import numpy as np
 import torch
+from einops import rearrange, repeat
 from PIL import Image, ImageOps
-from einops import repeat, rearrange
 
 from sdkit import Context
 

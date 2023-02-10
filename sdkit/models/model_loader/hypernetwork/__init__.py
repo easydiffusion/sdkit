@@ -1,7 +1,7 @@
 import traceback
 
 from sdkit import Context
-from sdkit.utils import log, load_tensor_file
+from sdkit.utils import load_tensor_file, log
 
 
 def load_model(context: Context, **kwargs):

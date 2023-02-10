@@ -1,7 +1,8 @@
-import torch
-import numpy as np
-from PIL import Image
 from threading import Lock
+
+import numpy as np
+import torch
+from PIL import Image
 
 from sdkit import Context
 

@@ -1,8 +1,8 @@
 import sys
-import pandas
 
 # import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas
 
 stable = pandas.read_csv(sys.argv[1])
 beta = pandas.read_csv(sys.argv[2])

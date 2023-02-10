@@ -1,9 +1,9 @@
-import sdkit
-from sdkit.models import load_model
-from sdkit.generate import generate_images
-from sdkit.utils import log
-
 import threading
+
+import sdkit
+from sdkit.generate import generate_images
+from sdkit.models import load_model
+from sdkit.utils import log
 
 
 def render_thread(device):

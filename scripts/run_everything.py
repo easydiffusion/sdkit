@@ -2,10 +2,11 @@
 Runs the desired Stable Diffusion models against the desired samplers. Saves the output images
 to disk, along with the peak RAM and VRAM usage, as well as the sampling performance.
 """
+import argparse
 import os
 import time
-import argparse
-from sdkit.utils import log, get_device_usage
+
+from sdkit.utils import get_device_usage, log
 
 # args
 parser = argparse.ArgumentParser()
@@ -106,8 +107,8 @@ if args.sizes != "auto":
 
 # setup
 log.info("Starting..")
-from sdkit.models import load_model
 from sdkit.generate.sampler import default_samplers, k_samplers
+from sdkit.models import load_model
 
 sd_models = set(
     [
@@ -261,8 +262,8 @@ def run_test():
 def run_samplers(
     context, model_filename, out_dir_path, width, height, vram_usage_level
 ):
-    from threading import Thread, Event
     from queue import Queue
+    from threading import Event, Thread
 
     for sampler_name in samplers_to_test:
         # setup
@@ -373,9 +374,10 @@ def get_min_size(model_path, default_size=512):
 
 
 def log_perf_results():
-    import pandas as pd
-    import numpy as np
     from importlib.metadata import version
+
+    import numpy as np
+    import pandas as pd
 
     pd.set_option("display.max_rows", 1000)
 

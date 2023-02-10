@@ -23,3 +23,6 @@ keywords = ["stable diffusion", "ai", "art"]
 [project.urls]
 "Homepage" = "https://github.com/easydiffusion/sdkit"
 "Bug Tracker" = "https://github.com/easydiffusion/sdkit/issues"
+
+[tool.isort]
+profile = "black"

@@ -3,8 +3,8 @@
 # the unused hypernetwork and modelA.ckpt will be unloaded from memory automatically.
 
 import sdkit
-from sdkit.models import load_model, unload_model
 from sdkit.generate import generate_images
+from sdkit.models import load_model, unload_model
 from sdkit.utils import save_images
 
 context = sdkit.Context()

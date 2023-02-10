@@ -1,11 +1,8 @@
-import os
 import json
-import torch
+import os
+
 import safetensors.torch
-import piexif
-import piexif.helper
-from PIL import Image, PngImagePlugin
-from PIL.PngImagePlugin import PngInfo
+import torch
 
 
 def load_tensor_file(path):

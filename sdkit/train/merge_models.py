@@ -1,6 +1,6 @@
 # loosely inspired by https://github.com/lodimasq/batch-checkpoint-merger/blob/master/batch_checkpoint_merger/main.py#L71
 
-from sdkit.utils import load_tensor_file, save_tensor_file, log
+from sdkit.utils import load_tensor_file, log, save_tensor_file
 
 
 def merge_models(
