@@ -15,7 +15,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # apparently only ubuntu latest is available to run a contenairised job
+        os: [ubuntu-latest]
         python-version: ["3.9", "3.10"]
 
     steps:
