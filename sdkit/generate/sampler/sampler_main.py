@@ -4,7 +4,7 @@ from torch import Tensor
 from sdkit import Context
 from sdkit.utils import log
 
-from . import default_samplers, k_samplers
+from . import default_samplers, k_samplers, unipc_samplers
 
 def make_samples(context: Context, sampler_name: str=None, seed: int=42, batch_size: int=1, shape: tuple=(), steps: int=50, cond: Tensor=None, uncond: Tensor=None, guidance_scale: float=0.8, callback=None, **kwargs):
     """
@@ -30,6 +30,7 @@ def make_samples(context: Context, sampler_name: str=None, seed: int=42, batch_s
     sampler_module = None
     if sampler_name in default_samplers.samplers: sampler_module = default_samplers
     if sampler_name in k_samplers.samplers: sampler_module = k_samplers
+    if sampler_name in unipc_samplers.samplers: sampler_module = unipc_samplers
     if sampler_module is None: raise RuntimeError(f'Unknown sampler "{sampler_name}"!')
 
     noise = make_some_noise(seed, batch_size, shape, context.device)
