@@ -1,0 +1,44 @@
+name: Lint Python
+
+on:
+  push:
+    branches:
+      - "!master"
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  lintpython:
+    name: Lint Python
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10"]
+
+    steps:
+      #----------------------------------------------
+      #       check-out repo and set-up python
+      #----------------------------------------------
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Linting stage
+        uses: weibullguy/python-lint-plus@v1.11.0
+        with:
+          python-root-list: "tests"
+          virtual-env: "python-lint-plus"
+          python-version: ${{ matrix.python-version }}
+          architecture: "x64"
+          use-black: true
+          use-isort: true
+          use-docformatter: true
+          use-pydocstyle: true
+          use-flake8: true
