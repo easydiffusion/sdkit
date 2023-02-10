@@ -22,32 +22,59 @@ jobs:
 
     steps:
       #----------------------------------------------
-      #       check-out repo and set-up python
+      #       check-out repo
       #----------------------------------------------
       - name: Check out code
         uses: actions/checkout@v3
 
+      #----------------------------------------------
+      #       set-up python
+      #----------------------------------------------
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
       #----------------------------------------------
-      #       Formatting and Linting
+      #       Formatting
       #----------------------------------------------
-      - name: Linting stage
-        uses: weibullguy/python-lint-plus@v1.11.0
-        with:
-          python-root-list: "examples scripts sdkit tests"
-          virtual-env: "python-lint-plus"
-          python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.artchitecture }}
-          use-docformatter: false
-          use-pycodestyle: false
-          use-black: true
-          extra-black-options: "--line-length 120"
-          use-isort: true
-          extra-isort-options: "--profile black"
-          use-flake8: true
-          extra-flake8-options: "--max-line-length 120 --extend-ignore=E203,E402,E722 --per-file-ignores=__init__.py:F401"
+      - name: Format code with black
+        run: |
+          pip install black
+          black tests scripts sdkit examples --line-length 120 --include="\.py"
 
+      #----------------------------------------------
+      #       Sorting imports
+      #----------------------------------------------
+      - name: Sorting imports with isort
+        run: |
+          pip install isort
+          isort tests scripts sdkit examples --profile black
+
+      #----------------------------------------------
+      #       Removing unused imports and variables
+      #----------------------------------------------
+      - name: Remove unused imports with autoflake
+        run: |
+          pip install autoflake
+          autoflake --in-place --remove-all-unused-imports --remove-unused-variables --recursive .
+
+      #----------------------------------------------
+      #       Linting
+      #----------------------------------------------
+      - name: Linting code with flake8
+        run: |
+          pip install flake8
+          flake8 tests scripts sdkit examples --max-line-length 120 --extend-ignore=E203,E402,E722 --per-file-ignores=__init__.py:F401
+
+      #----------------------------------------------
+      #       Committing all changes
+      #----------------------------------------------
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v4
+        with:
+          author_name: ${{ github.actor }}
+          author_email: ${{ github.actor }}@users.noreply.github.com
+          message: "Code formatted and linted"
+          add: "."
+          branch: ${{ github.ref }}
