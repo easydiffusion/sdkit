@@ -155,6 +155,12 @@ We'd love to accept code contributions. Please feel free to drop by our [Discord
 
 If you'd like to set up a developer version on your PC (to contribute code changes), please follow [these instructions](https://github.com/easydiffusion/sdkit/blob/main/CONTRIBUTING.md).
 
+If you're getting an error about numpy when running setup.py install, in your powershell do this:
+
+ ```Set-Item env:SKIP_EXTERNAL_DEPS -Value True```
+
+ and try again. You'll need to install the requirements manually.
+
 # Credits
 * Stable Diffusion: https://github.com/Stability-AI/stablediffusion
 * GFPGAN: https://github.com/TencentARC/GFPGAN

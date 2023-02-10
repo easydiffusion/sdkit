@@ -1,12 +1,27 @@
+"""
+    Sampler main module.
+"""
 import torch
 from torch import Tensor
 
 from sdkit import Context
 from sdkit.utils import log
+from sdkit.generate.sampler import default_samplers, k_samplers
 
-from . import default_samplers, k_samplers
 
-def make_samples(context: Context, sampler_name: str=None, seed: int=42, batch_size: int=1, shape: tuple=(), steps: int=50, cond: Tensor=None, uncond: Tensor=None, guidance_scale: float=0.8, callback=None, **kwargs):
+def make_samples(
+    context: Context,
+    sampler_name: str=None,
+    seed: int=42,
+    batch_size: int=1,
+    shape: tuple=(),
+    steps: int=50,
+    cond: Tensor=None,
+    uncond: Tensor=None,
+    guidance_scale: float=0.8,
+    callback=None,
+    **kwargs
+):
     """
     Common args:
     * context: Context

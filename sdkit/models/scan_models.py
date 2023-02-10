@@ -1,4 +1,8 @@
+"""
+    Scans a model file and returns the results.
+"""
 import picklescan.scanner
+
 
 def scan_model(file_path):
     '''

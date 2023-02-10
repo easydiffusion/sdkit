@@ -1,3 +1,6 @@
+"""
+    The default sampler for the SDKIT framework.
+"""
 import torch
 from torch import Tensor
 
@@ -13,9 +16,26 @@ samplers = {
     'dpm_solver_stability': DPMSolverSampler,
 }
 
-def sample(context: Context, sampler_name:str=None, noise: Tensor=None, batch_size: int=1, shape: tuple=(), steps: int=50, cond: Tensor=None, uncond: Tensor=None, guidance_scale: float=0.8, callback=None, **kwargs):
+
+def sample(
+    context: Context,
+    sampler_name: str = None,
+    noise: Tensor = None,
+    batch_size: int = 1,
+    shape: tuple = (),
+    steps: int = 50,
+    cond: Tensor = None,
+    uncond: Tensor = None,
+    guidance_scale: float = 0.8,
+    callback=None,
+    **kwargs
+):
+    """
+        Get samples from the model.
+    """
     model = context.models['stable-diffusion']
-    sample_fn = _sample_txt2img if 'init_image_latent' not in kwargs else _sample_img2img
+    sample_fn = _sample_txt2img \
+        if 'init_image_latent' not in kwargs else _sample_img2img
 
     common_params = {
         'S': steps,
@@ -29,10 +49,25 @@ def sample(context: Context, sampler_name:str=None, noise: Tensor=None, batch_si
         'img_callback': callback,
     }
 
-    samples, _ = sample_fn(model, sampler_name, noise, steps, batch_size, common_params.copy(), **kwargs)
+    samples, _ = sample_fn(
+        model, sampler_name, noise, steps,
+        batch_size, common_params.copy(), **kwargs
+    )
     return samples
 
-def _sample_txt2img(model, sampler_name, noise, steps, batch_size, params, **kwargs):
+
+def _sample_txt2img(
+    model,
+    sampler_name,
+    noise,
+    steps,
+    batch_size,
+    params,
+    **kwargs
+):
+    """
+        Sample from the model using text2img.
+    """
     sampler = samplers[sampler_name](model)
     params.update({
         'x_T': noise,
@@ -40,7 +75,16 @@ def _sample_txt2img(model, sampler_name, noise, steps, batch_size, params, **kwa
 
     return sampler.sample(**params)
 
-def _sample_img2img(model, sampler_name, noise, steps, batch_size, params, **kwargs):
+
+def _sample_img2img(
+    model,
+    sampler_name,
+    noise,
+    steps: int,
+    batch_size,
+    params,
+    **kwargs
+):
     sampler = DDIMSampler(model)
 
     actual_inference_steps = int(steps * kwargs['prompt_strength'])
@@ -48,9 +92,14 @@ def _sample_img2img(model, sampler_name, noise, steps, batch_size, params, **kwa
     mask = kwargs.get('mask')
 
     sampler.make_schedule(ddim_num_steps=steps, ddim_eta=0., verbose=False)
-    z_enc = sampler.stochastic_encode(init_image_latent, torch.tensor([actual_inference_steps] * batch_size).to(model.device), noise=noise)
+    z_enc = sampler.stochastic_encode(
+        init_image_latent,
+        torch.tensor([actual_inference_steps] * batch_size).to(model.device),
+        noise=noise
+    )
 
-    sampler.make_schedule = (lambda **kwargs: kwargs) # we've already called this, don't call this again from within the sampler
+    # we've already called this, don't call this again from within the sampler
+    sampler.make_schedule = lambda **kwargs: kwargs
     sampler.ddim_timesteps = sampler.ddim_timesteps[:actual_inference_steps]
 
     params.update({

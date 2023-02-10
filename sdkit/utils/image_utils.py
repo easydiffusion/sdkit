@@ -33,10 +33,11 @@ def base64_str_to_buffer(img_str):
     buffered = BytesIO(data)
     return buffered
 
-def base64_str_to_img(img_str):
+
+def base64_str_to_img(img_str) -> Image.Image:
     buffered = base64_str_to_buffer(img_str)
-    img = Image.open(buffered)
-    return img
+    return Image.open(buffered)
+
 
 def resize_img(img: Image, desired_width, desired_height, clamp_to_64=False):
     w, h = img.size
@@ -55,3 +56,18 @@ def apply_color_profile(orig_image: Image, image_to_modify: Image):
     matched = exposure.match_histograms(image_to_modify, reference, channel_axis=2)
 
     return Image.fromarray(cv2.cvtColor(matched, cv2.COLOR_LAB2RGB).astype("uint8"))
+
+
+def convert_img_to_np_array(image: Image.Image) -> np.ndarray:
+    """
+        Convert a PIL image to a numpy array.
+    """
+    image = image.convert('RGB')
+    return np.array(image, dtype=np.uint8)[..., ::-1]
+
+
+def convert_np_array_to_img(arr: np.ndarray) -> Image.Image:
+    """
+        Convert a numpy array to a PIL image
+    """
+    return Image.fromarray(arr[:, :, ::-1])

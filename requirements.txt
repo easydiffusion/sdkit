@@ -1,0 +1,7 @@
+stable-diffusion-sdkit
+gfpgan
+realesrgan
+requests
+picklescan
+safetensors
+k-diffusion

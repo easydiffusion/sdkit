@@ -1,10 +1,18 @@
+"""
+    Hypernetwork model loader.
+"""
 import traceback
 
 from sdkit import Context
 from sdkit.utils import log, load_tensor_file
+from sdkit.models.model_loader.hypernetwork.hypernetwork import \
+    override_attention_context_kv, HypernetworkModule
 
-def load_model(context: Context, **kwargs):
-    from .hypernetwork import HypernetworkModule, override_attention_context_kv
+
+def load_model(context: Context, **__) -> dict[str, int] | None:
+    """
+        Load the model.
+    """
     model_path = context.model_paths.get('hypernetwork')
 
     try:
@@ -22,12 +30,12 @@ def load_model(context: Context, **kwargs):
         for size, sd in state_dict.items():
             if type(size) == int:
                 layers[size] = (
-                    HypernetworkModule(size, sd[0], layer_structure, activation_func, weight_init, add_layer_norm,
-                                    use_dropout, activate_output, last_layer_dropout=last_layer_dropout,
-                                    model=layers, device=context.device),
-                    HypernetworkModule(size, sd[1], layer_structure, activation_func, weight_init, add_layer_norm,
-                                    use_dropout, activate_output, last_layer_dropout=last_layer_dropout,
-                                    model=layers, device=context.device),
+                    HypernetworkModule(
+                        size, sd[i], layer_structure, activation_func,
+                        weight_init, add_layer_norm, use_dropout,
+                        activate_output, last_layer_dropout=last_layer_dropout,
+                        model=layers, device=context.device)
+                    for i in range(0, 1)
                 )
 
         override_attention_context_kv(layers)
@@ -35,8 +43,11 @@ def load_model(context: Context, **kwargs):
         return layers
     except:
         log.error(traceback.format_exc())
-        log.error(f'Could not load hypernetwork: {model_path}')
+        log.error('Could not load hypernetwork: %s', model_path)
 
-def unload_model(context: Context, **kwargs):
-    from .hypernetwork import override_attention_context_kv
+
+def unload_model(_: Context, **__) -> None:
+    """
+        Unload the model.
+    """
     override_attention_context_kv(None)
