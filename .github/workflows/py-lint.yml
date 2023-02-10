@@ -40,6 +40,5 @@ jobs:
           architecture: "x64"
           use-black: true
           use-isort: true
-          use-docformatter: true
           use-pydocstyle: true
           use-flake8: true
