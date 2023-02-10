@@ -2,6 +2,7 @@
     Hypernetwork model loader.
 """
 import traceback
+from typing import Dict, Union
 
 from sdkit import Context
 from sdkit.utils import log, load_tensor_file
@@ -9,7 +10,7 @@ from sdkit.models.model_loader.hypernetwork.hypernetwork import \
     override_attention_context_kv, HypernetworkModule
 
 
-def load_model(context: Context, **__) -> dict[str, int] | None:
+def load_model(context: Context, **__) -> Union[Dict[str, int], None]:
     """
         Load the model.
     """

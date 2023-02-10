@@ -31,7 +31,7 @@ def apply_filters(
 
     returns: PIL.Image - filtered image
     '''
-    _images: List[str | Image] = images \
+    _images: List[Union[str, Image]] = images \
         if isinstance(images, list) else [images]
     _filters: List[str] = filters if isinstance(filters, list) else [filters]
 
