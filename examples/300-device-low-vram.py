@@ -8,7 +8,8 @@ context = sdkit.Context()
 context.model_paths["stable-diffusion"] = "D:\\path\\to\\sd-v1-4.ckpt"
 load_model(context, "stable-diffusion")
 
-# TEST 1 - default (balanced) VRAM optimizations (much lower VRAM usage, performance is nearly as fast as max)
+# TEST 1 - default (balanced) VRAM optimizations (much lower VRAM usage,
+# performance is nearly as fast as max)
 images = generate_images(
     context,
     prompt="Photograph of an astronaut riding a horse",

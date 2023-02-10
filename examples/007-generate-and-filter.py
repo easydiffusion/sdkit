@@ -2,6 +2,8 @@ import sdkit
 from sdkit.filter import apply_filters
 from sdkit.generate import generate_images
 from sdkit.utils import save_images
+from sdkit.models import load_model
+
 
 context = sdkit.Context()
 

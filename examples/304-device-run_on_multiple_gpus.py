@@ -36,7 +36,8 @@ def start_thread(device):
     return thread
 
 
-# assuming the PC has two CUDA-compatible GPUs, start on the first two GPUs: cuda:0 and cuda:1
+# assuming the PC has two CUDA-compatible GPUs, start on the first two GPUs:
+# cuda:0 and cuda:1
 t0 = start_thread("cuda:0")
 t1 = start_thread("cuda:1")
 

@@ -3,7 +3,8 @@ from sdkit.generate import generate_images
 from sdkit.models import load_model
 
 context = sdkit.Context()
-context.half_precision = False  # loads in full precision (i.e. float32, instead of float16). consumes more VRAM
+# loads in full precision (i.e. float32, instead of float16). consumes more VRAM
+context.half_precision = False
 context.model_paths["stable-diffusion"] = "D:\\path\\to\\sd-v1-4.ckpt"
 
 load_model(context, "stable-diffusion")
@@ -16,4 +17,4 @@ images = generate_images(
     width=512,
     height=512,
 )
-images[0].save(f"image.jpg")
+images[0].save("image.jpg")
