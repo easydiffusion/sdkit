@@ -137,6 +137,7 @@ This is not to say that `diffusers` doesn't do these. The easy-to-use API of `di
 
 # Who is using sdkit?
 * [cmdr2 UI](https://github.com/cmdr2/stable-diffusion-ui) for Stable Diffusion.
+* [aipromptstudio.com](https://aipromptstudio.com/)
 
 If your project is using sdkit, you can add it to this list. Please feel free to open a pull request (or let us know at our [Discord community](https://discord.com/invite/u9yhsFmEkB)).
 
