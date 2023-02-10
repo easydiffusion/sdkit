@@ -36,35 +36,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       #----------------------------------------------
-      #       Formatting
+      #       Formatting & Linting
       #----------------------------------------------
-      - name: Format code with black
+      - name: Format and lint the code
         run: |
-          pip install black
+          pip install black isort autoflake flake8
           black tests scripts sdkit examples --line-length 120 --include="\.py"
-
-      #----------------------------------------------
-      #       Sorting imports
-      #----------------------------------------------
-      - name: Sorting imports with isort
-        run: |
-          pip install isort
           isort tests scripts sdkit examples --profile black
-
-      #----------------------------------------------
-      #       Removing unused imports and variables
-      #----------------------------------------------
-      - name: Remove unused imports with autoflake
-        run: |
-          pip install autoflake
           autoflake --in-place --remove-all-unused-imports --remove-unused-variables --recursive .
-
-      #----------------------------------------------
-      #       Linting
-      #----------------------------------------------
-      - name: Linting code with flake8
-        run: |
-          pip install flake8
           flake8 tests scripts sdkit examples --max-line-length 120 --extend-ignore=E203,E402,E722 --per-file-ignores=__init__.py:F401
 
       #----------------------------------------------
