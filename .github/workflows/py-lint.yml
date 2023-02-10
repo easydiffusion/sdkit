@@ -33,7 +33,7 @@ jobs:
       - name: Linting stage
         uses: weibullguy/python-lint-plus@v1.11.0
         with:
-          python-root-list: "tests"
+          python-root-list: "examples scripts sdkit tests"
           virtual-env: "python-lint-plus"
           python-version: ${{ matrix.python-version }}
           architecture: "x64"
