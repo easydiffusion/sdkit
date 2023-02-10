@@ -1,4 +1,4 @@
-name: Lint Python
+name: Python Linting
 
 on:
   push:
@@ -9,15 +9,16 @@ on:
       - main
 
 jobs:
-  lintpython:
-    name: Lint Python
+  linting:
+    name: Python Linting
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
         # apparently only ubuntu latest is available to run a contenairised job
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.9"]
+        architecture: ["x64"]
 
     steps:
       #----------------------------------------------
@@ -31,13 +32,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      #----------------------------------------------
+      #       Formatting and Linting
+      #----------------------------------------------
       - name: Linting stage
         uses: weibullguy/python-lint-plus@v1.11.0
         with:
           python-root-list: "examples scripts sdkit tests"
           virtual-env: "python-lint-plus"
           python-version: ${{ matrix.python-version }}
-          architecture: "x64"
+          architecture: ${{ matrix.artchitecture }}
           use-black: true
           extra-black-options: "--line-length 120"
           use-isort: true
