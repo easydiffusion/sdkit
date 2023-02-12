@@ -856,6 +856,13 @@ class UniPCSampler(object):
                log_every_t=100,
                unconditional_guidance_scale=1.,
                unconditional_conditioning=None,
+               variant="bh1",
+               time_skip="time_uniform",
+               order=3,
+               lower_order_final=True,
+               thresholding=False,
+
+
                # this has to come in the same format as the conditioning, # e.g. as encoded tokens, ...
                **kwargs
                ):
@@ -890,7 +897,7 @@ class UniPCSampler(object):
             guidance_scale=unconditional_guidance_scale,
         )
 
-        uni_pc = UniPC(model_fn, ns, predict_x0=True, thresholding=False)
-        x = uni_pc.sample(img, steps=S, skip_type="time_uniform", method="multistep", order=3, lower_order_final=True, callback=callback, img_callback=img_callback)
+        uni_pc = UniPC(model_fn, ns, predict_x0=True, thresholding=thresholding, variant=variant)
+        x = uni_pc.sample(img, steps=S, skip_type=time_skip, method="multistep", order=order, lower_order_final=lower_order_final, callback=callback, img_callback=img_callback)
 
         return x.to(device), None
