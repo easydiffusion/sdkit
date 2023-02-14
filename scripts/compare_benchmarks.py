@@ -1,7 +1,6 @@
 import sys
 
 # import seaborn as sns
-import matplotlib.pyplot as plt
 import pandas
 
 stable = pandas.read_csv(sys.argv[1])

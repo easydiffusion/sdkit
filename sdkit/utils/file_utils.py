@@ -5,7 +5,7 @@ import piexif
 import piexif.helper
 import safetensors.torch
 import torch
-from PIL import Image, PngImagePlugin
+from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 
 

@@ -4,14 +4,11 @@ A simplified version of the original txt2img.py script that is included with Sta
 Useful for testing responses and memory usage against the original script.
 """
 
-from contextlib import nullcontext
 from itertools import islice
 
 import numpy as np
 import torch
 from einops import rearrange
-from ldm.models.diffusion.ddim import DDIMSampler
-from ldm.models.diffusion.dpm_solver import DPMSolverSampler
 from ldm.models.diffusion.plms import PLMSSampler
 from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
@@ -97,8 +94,7 @@ def main():
 
                         for x_sample in x_samples:
                             x_sample = 255.0 * rearrange(x_sample.cpu().numpy(), "c h w -> h w c")
-                            img = Image.fromarray(x_sample.astype(np.uint8))
-                            base_count += 1
+                            Image.fromarray(x_sample.astype(np.uint8))
                             sample_count += 1
                     except Exception as e:
                         print(e)
