@@ -1,8 +1,9 @@
-import torch
-import psutil
 import base64
 from functools import reduce
 from gc import collect, get_objects, get_referrers
+
+import psutil
+import torch
 
 from sdkit import Context
 

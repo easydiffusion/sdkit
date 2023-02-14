@@ -1,7 +1,8 @@
-import requests
 import os
-from tqdm import tqdm
 from shutil import copyfileobj
+
+import requests
+from tqdm import tqdm
 
 
 def download_file(url: str, out_path: str):

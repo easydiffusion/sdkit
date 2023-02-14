@@ -1,11 +1,17 @@
-import torch
-from tqdm import trange
-from pytorch_lightning import seed_everything
 from contextlib import nullcontext
 
+import torch
+from pytorch_lightning import seed_everything
+from tqdm import trange
+
 from sdkit import Context
-from sdkit.utils import latent_samples_to_images, base64_str_to_img, get_image_latent_and_mask, apply_color_profile
-from sdkit.utils import gc
+from sdkit.utils import (
+    apply_color_profile,
+    base64_str_to_img,
+    gc,
+    get_image_latent_and_mask,
+    latent_samples_to_images,
+)
 
 from .prompt_parser import get_cond_and_uncond
 from .sampler import make_samples

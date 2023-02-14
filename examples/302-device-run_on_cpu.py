@@ -1,6 +1,6 @@
 import sdkit
-from sdkit.models import load_model
 from sdkit.generate import generate_images
+from sdkit.models import load_model
 
 context = sdkit.Context()
 context.model_paths['stable-diffusion'] = 'D:\\path\\to\\sd-v1-4.ckpt'

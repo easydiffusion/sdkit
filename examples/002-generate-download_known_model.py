@@ -1,7 +1,7 @@
 import sdkit
-from sdkit.models import load_model, download_model, resolve_downloaded_model_path
 from sdkit.generate import generate_images
-from sdkit.utils import save_images, log
+from sdkit.models import download_model, load_model, resolve_downloaded_model_path
+from sdkit.utils import log, save_images
 
 context = sdkit.Context()
 

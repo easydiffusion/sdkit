@@ -1,9 +1,8 @@
+import k_diffusion.external
+import k_diffusion.sampling as k_samplers
 import torch
 import torch.nn as nn
 from torch import Tensor
-
-import k_diffusion.sampling as k_samplers
-import k_diffusion.external
 
 from sdkit import Context
 

@@ -4,21 +4,21 @@ A simplified version of the original txt2img.py script that is included with Sta
 Useful for testing responses and memory usage against the original script.
 """
 
-import torch
+from contextlib import nullcontext
+from itertools import islice
+
 import numpy as np
+import torch
+from einops import rearrange
+from ldm.models.diffusion.ddim import DDIMSampler
+from ldm.models.diffusion.dpm_solver import DPMSolverSampler
+from ldm.models.diffusion.plms import PLMSSampler
+from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
 from PIL import Image
-from tqdm import tqdm, trange
-from itertools import islice
-from einops import rearrange
 from pytorch_lightning import seed_everything
 from torch import autocast
-from contextlib import nullcontext
-
-from ldm.util import instantiate_from_config
-from ldm.models.diffusion.ddim import DDIMSampler
-from ldm.models.diffusion.plms import PLMSSampler
-from ldm.models.diffusion.dpm_solver import DPMSolverSampler
+from tqdm import tqdm, trange
 
 torch.set_grad_enabled(False)
 

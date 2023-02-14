@@ -1,6 +1,6 @@
 import sdkit
-from sdkit.models import load_model
 from sdkit.generate import generate_images
+from sdkit.models import load_model
 
 # this example will generate an image, using 3 different VRAM configurations.
 

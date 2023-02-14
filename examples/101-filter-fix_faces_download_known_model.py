@@ -1,7 +1,8 @@
-import sdkit
-from sdkit.models import download_model, resolve_downloaded_model_path, load_model
-from sdkit.filter import apply_filters
 from PIL import Image
+
+import sdkit
+from sdkit.filter import apply_filters
+from sdkit.models import download_model, load_model, resolve_downloaded_model_path
 
 context = sdkit.Context()
 image = Image.open('photo of a man.jpg')

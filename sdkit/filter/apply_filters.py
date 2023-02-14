@@ -1,7 +1,7 @@
-from . import gfpgan, realesrgan
-
 from sdkit import Context
-from sdkit.utils import base64_str_to_img, log, gc
+from sdkit.utils import base64_str_to_img, gc, log
+
+from . import gfpgan, realesrgan
 
 filter_modules = {
     "gfpgan": gfpgan,

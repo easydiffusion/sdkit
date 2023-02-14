@@ -1,6 +1,7 @@
+import argparse
 import os
 import sys
-import argparse
+
 import requests
 
 # args
@@ -23,8 +24,7 @@ if len(sys.argv) < 2:
     exit(1)
 
 # setup
-from sdkit.models import download_model, resolve_downloaded_model_path
-from sdkit.models import get_models_db
+from sdkit.models import download_model, get_models_db, resolve_downloaded_model_path
 from sdkit.utils import hash_file_quick
 
 db = get_models_db()

@@ -1,8 +1,7 @@
-from . import hypernetwork
-from . import stable_diffusion, gfpgan, realesrgan, vae
-
 from sdkit import Context
 from sdkit.utils import gc, log
+
+from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae
 
 models = {
     "stable-diffusion": stable_diffusion,

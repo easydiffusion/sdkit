@@ -1,9 +1,10 @@
-import numpy as np
-import cv2
-from skimage import exposure
 import base64
 from io import BytesIO
+
+import cv2
+import numpy as np
 from PIL import Image
+from skimage import exposure
 
 
 # https://stackoverflow.com/a/61114178

@@ -1,23 +1,31 @@
 import os
-from omegaconf import OmegaConf
-from ldm.util import instantiate_from_config
-from transformers import logging as tr_logging
-from torch.nn.functional import silu
+import tempfile
+from pathlib import Path
+from urllib.parse import urlparse
+
 import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
-import tempfile
-from urllib.parse import urlparse
-from pathlib import Path
+from ldm.util import instantiate_from_config
+from omegaconf import OmegaConf
+from torch.nn.functional import silu
+from transformers import logging as tr_logging
 
 from sdkit import Context
-from sdkit.utils import load_tensor_file, save_tensor_file, hash_file_quick, download_file, log
+from sdkit.utils import (
+    download_file,
+    hash_file_quick,
+    load_tensor_file,
+    log,
+    save_tensor_file,
+)
 
 tr_logging.set_verbosity_error()  # suppress unnecessary logging
 
 
 def load_model(context: Context, scan_model=True, check_for_config_with_same_name=True, **kwargs):
-    from . import optimizations
     from sdkit.models import scan_model as scan_model_fn
+
+    from . import optimizations
 
     model_path = context.model_paths.get("stable-diffusion")
     config_file_path = get_model_config_file(context, check_for_config_with_same_name)
