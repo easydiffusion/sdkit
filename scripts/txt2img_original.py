@@ -1,8 +1,8 @@
-'''
+"""
 A simplified version of the original txt2img.py script that is included with Stable Diffusion 2.0.
 
 Useful for testing responses and memory usage against the original script.
-'''
+"""
 
 import torch
 import numpy as np
@@ -22,9 +22,11 @@ from ldm.models.diffusion.dpm_solver import DPMSolverSampler
 
 torch.set_grad_enabled(False)
 
+
 def chunk(it, size):
     it = iter(it)
     return iter(lambda: tuple(islice(it, size)), ())
+
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
@@ -44,6 +46,7 @@ def load_model_from_config(config, ckpt, verbose=False):
     model.cuda()
     model.eval()
     return model
+
 
 def main():
     seed_everything(42)
@@ -67,37 +70,38 @@ def main():
 
     for i in range(4):
         precision_scope = autocast
-        with torch.no_grad(), \
-            precision_scope("cuda"), \
-            model.ema_scope():
-                for n in trange(1, desc="Sampling"):
-                    for prompts in tqdm(data, desc="data"):
-                        uc = None
-                        uc = model.get_learned_conditioning(batch_size * [""])
-                        if isinstance(prompts, tuple):
-                            prompts = list(prompts)
-                        c = model.get_learned_conditioning(prompts)
-                        shape = [4, 2048 // 8, 2048 // 8]
-                        try:
-                            samples, _ = sampler.sample(S=1,
-                                                            conditioning=c,
-                                                            batch_size=1,
-                                                            shape=shape,
-                                                            verbose=False,
-                                                            unconditional_guidance_scale=7.5,
-                                                            unconditional_conditioning=uc,
-                                                            eta=0.,
-                                                            x_T=start_code)
+        with torch.no_grad(), precision_scope("cuda"), model.ema_scope():
+            for n in trange(1, desc="Sampling"):
+                for prompts in tqdm(data, desc="data"):
+                    uc = None
+                    uc = model.get_learned_conditioning(batch_size * [""])
+                    if isinstance(prompts, tuple):
+                        prompts = list(prompts)
+                    c = model.get_learned_conditioning(prompts)
+                    shape = [4, 2048 // 8, 2048 // 8]
+                    try:
+                        samples, _ = sampler.sample(
+                            S=1,
+                            conditioning=c,
+                            batch_size=1,
+                            shape=shape,
+                            verbose=False,
+                            unconditional_guidance_scale=7.5,
+                            unconditional_conditioning=uc,
+                            eta=0.0,
+                            x_T=start_code,
+                        )
 
-                            x_samples = model.decode_first_stage(samples)
-                            x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+                        x_samples = model.decode_first_stage(samples)
+                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
-                            for x_sample in x_samples:
-                                x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                                img = Image.fromarray(x_sample.astype(np.uint8))
-                                base_count += 1
-                                sample_count += 1
-                        except Exception as e:
-                            print(e)
+                        for x_sample in x_samples:
+                            x_sample = 255.0 * rearrange(x_sample.cpu().numpy(), "c h w -> h w c")
+                            img = Image.fromarray(x_sample.astype(np.uint8))
+                            base_count += 1
+                            sample_count += 1
+                    except Exception as e:
+                        print(e)
+
 
 main()
