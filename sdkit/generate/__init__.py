@@ -1,1 +1,3 @@
-from .image_generator import generate_images
+from .image_generator import (
+    generate_images,
+)
