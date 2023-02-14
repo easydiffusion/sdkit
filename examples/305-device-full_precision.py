@@ -10,4 +10,4 @@ load_model(context, "stable-diffusion")
 
 # generate image
 images = generate_images(context, prompt="Photograph of an astronaut riding a horse", seed=42, width=512, height=512)
-images[0].save(f"image.jpg")
+images[0].save("image.jpg")

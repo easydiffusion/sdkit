@@ -11,7 +11,7 @@ scan_result = scan_model(model_path)
 
 if scan_result.issues_count > 0 or scan_result.infected_files > 0:
     log.warn(
-        f":warning: [bold red]Scan %s: %d scanned, %d issue, %d infected.[/bold red]"
+        ":warning: [bold red]Scan %s: %d scanned, %d issue, %d infected.[/bold red]"
         % (model_path, scan_result.scanned_files, scan_result.issues_count, scan_result.infected_files)
     )
 else:

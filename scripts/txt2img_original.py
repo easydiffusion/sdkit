@@ -49,7 +49,7 @@ def main():
     seed_everything(42)
 
     config = OmegaConf.load("path/to/models/stable-diffusion/v1-inference.yaml")
-    model = load_model_from_config(config, f"path/to/models/stable-diffusion/sd-v1-4.ckpt")
+    model = load_model_from_config(config, "path/to/models/stable-diffusion/sd-v1-4.ckpt")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
