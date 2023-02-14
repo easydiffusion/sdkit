@@ -6,10 +6,16 @@ from sdkit.utils import log
 # lots of models, and then disable model-scanning each time a model is loaded
 # to improve load time.
 
-model_path = 'D:\\path\\to\\malicious_model.ckpt'
+model_path = "D:\\path\\to\\malicious_model.ckpt"
 scan_result = scan_model(model_path)
 
 if scan_result.issues_count > 0 or scan_result.infected_files > 0:
-    log.warn(f":warning: [bold red]Scan %s: %d scanned, %d issue, %d infected.[/bold red]" % (model_path, scan_result.scanned_files, scan_result.issues_count, scan_result.infected_files))
+    log.warn(
+        f":warning: [bold red]Scan %s: %d scanned, %d issue, %d infected.[/bold red]"
+        % (model_path, scan_result.scanned_files, scan_result.issues_count, scan_result.infected_files)
+    )
 else:
-    log.debug("Scan %s: [green]%d scanned, %d issue, %d infected.[/green]" % (model_path, scan_result.scanned_files, scan_result.issues_count, scan_result.infected_files))
+    log.debug(
+        "Scan %s: [green]%d scanned, %d issue, %d infected.[/green]"
+        % (model_path, scan_result.scanned_files, scan_result.issues_count, scan_result.infected_files)
+    )
