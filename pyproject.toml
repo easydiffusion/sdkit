@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdkit"
-version = "1.0.36"
+version = "1.0.37"
 authors = [
   {name="cmdr2", email="secondary.cmdr2@gmail.com"},
 ]
@@ -23,3 +23,23 @@ keywords = ["stable diffusion", "ai", "art"]
 [project.urls]
 "Homepage" = "https://github.com/easydiffusion/sdkit"
 "Bug Tracker" = "https://github.com/easydiffusion/sdkit/issues"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''

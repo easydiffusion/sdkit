@@ -1,7 +1,7 @@
 import numpy as np
 import torch
+from einops import rearrange, repeat
 from PIL import Image, ImageOps
-from einops import repeat, rearrange
 
 from sdkit import Context
 from sdkit.utils import log
@@ -22,6 +22,7 @@ def to_tensor(x, device, dtype=torch.float32):
     else:
         log.debug(f"X:{x} and X's type{type(x)}")
         return torch.tensor(x).to(device=device, dtype=dtype)
+
 
 
 def img_to_tensor(img: Image, batch_size, device, half_precision: bool, shift_range=False, unsqueeze=False):
