@@ -1,12 +1,8 @@
 import logging
 
-log = logging.getLogger('sdkit')
-LOG_FORMAT = '%(asctime)s.%(msecs)03d %(levelname)s %(threadName)s %(message)s'
-logging.basicConfig(
-        level=logging.INFO,
-        format=LOG_FORMAT,
-        datefmt="%X"
-)
+log = logging.getLogger("sdkit")
+LOG_FORMAT = "%(asctime)s.%(msecs)03d %(levelname)s %(threadName)s %(message)s"
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, datefmt="%X")
 
 from .file_utils import (
     load_tensor_file,
@@ -36,7 +32,7 @@ from .latent_utils import (
     get_image_latent_and_mask,
     latent_samples_to_images,
     to_tensor,
-    floatArrayToGrayscaleBitmap,
+    tensor_to_bitmap,
 )
 
 from .memory_utils import (
