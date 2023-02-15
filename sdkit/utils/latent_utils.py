@@ -4,6 +4,23 @@ from PIL import Image, ImageOps
 from einops import repeat, rearrange
 
 from sdkit import Context
+from sdkit.utils import log
+
+def to_tensor(x, device, dtype=torch.float32):
+    if torch.is_tensor(x):
+        return x.to(device=device, dtype=dtype)
+    elif isinstance(x, np.ndarray):
+        return torch.from_numpy(x).to(device=device, dtype=dtype)
+    elif isinstance(x, list):
+        if all(isinstance(item, torch.Tensor) for item in x):
+            return torch.stack(x).to(device=device, dtype=dtype)
+        elif all(isinstance(item, np.ndarray) for item in x):
+           return [torch.from_numpy(item).to(device=device, dtype=dtype) for item in x]
+    elif isinstance(x, tuple):
+        return tuple(torch.from_numpy(item).to(device=device, dtype=dtype) for item in x)
+    else:
+        log.debug(f"X:{x} and X's type{type(x)}")
+        return torch.tensor(x).to(device=device, dtype=dtype)
 
 def img_to_tensor(img: Image, batch_size, device, half_precision: bool, shift_range=False, unsqueeze=False):
     if img is None:
@@ -65,3 +82,17 @@ def latent_samples_to_images(context: Context, samples):
         images.append(Image.fromarray(sample))
 
     return images
+
+def floatArrayToGrayscaleBitmap(tensor):
+    assert np.ndim(tensor) < 5
+    if np.ndim(tensor) == 4:
+        assert tensor.shape[0] == 1
+        tensor = tensor[0]
+    if np.ndim(tensor) == 3:
+        return [floatArrayToGrayscaleBitmap(tensor[i]) for i in range(tensor.shape[0])]
+    minVal = torch.min(tensor)
+    maxVal = torch.max(tensor)
+    delta = maxVal - minVal
+    tensor = (tensor - minVal) / delta * 255
+    tensor = np.array(tensor.cpu(), dtype=np.uint8)
+    return Image.fromarray(tensor)

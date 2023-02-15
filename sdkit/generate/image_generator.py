@@ -7,7 +7,7 @@ from sdkit import Context
 from sdkit.utils import latent_samples_to_images, base64_str_to_img, get_image_latent_and_mask, apply_color_profile
 from sdkit.utils import gc
 
-from .prompt_parser import get_cond_and_uncond
+from .tokenizer_conditionings import get_cond_and_uncond
 from .sampler import make_samples
 
 def generate_images(

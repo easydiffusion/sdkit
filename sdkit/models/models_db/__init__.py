@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from sdkit.utils import log
 
 db = None
 index = None
@@ -23,7 +24,7 @@ def get_model_info_from_db(quick_hash=None, model_type=None, model_id=None):
     if quick_hash:
         if index is None:
             rebuild_index()
-
+        log.debug('Cheking model_db for %s', quick_hash)
         return index.get(quick_hash)
     elif model_id and model_type:
         m = db.get(model_type, {})
