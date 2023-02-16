@@ -56,31 +56,70 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
         if 'embed', the metadata will be embedded in PNG files in tEXt chunks, and as EXIF UserComment for JPEG files
     """
     if dir_path is None:
-        return
+        raise ValueError("No directory specified")
     os.makedirs(dir_path, exist_ok=True)
 
     for i, metadata in enumerate(entries):
         actual_file_name = file_name(i) if callable(file_name) else f"{file_name}_{i}"
         path = os.path.join(dir_path, actual_file_name)
 
-        if output_format.lower() == "embed" and file_format.lower() == "png":
-            targetImage = Image.open(f"{path}.{file_format.lower()}")
-            embedded_metadata = PngInfo()
-            for key, val in metadata.items():
-                embedded_metadata.add_text(key, str(val))
-            targetImage.save(f"{path}.{file_format.lower()}", pnginfo=embedded_metadata)
-        elif output_format.lower() == "embed" and file_format.lower() == "jpeg":
-            targetImage = Image.open(f"{path}.{file_format.lower()}")
-            user_comment = json.dumps(metadata)
-            exif_dict = {
-                "Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}
-            }
-            exif_bytes = piexif.dump(exif_dict)
-            targetImage.save(f"{path}.{file_format.lower()}", exif=exif_bytes)
+        file_format = file_format.lower()
+        output_format = output_format.lower()
+
+        if output_format == "embed":
+            if file_format == "png":
+                save_png_metadata(file_format, metadata, path)
+            elif file_format == "jpeg":
+                save_jpeg_exif(file_format, metadata, path)
+            else:
+                raise ValueError(f"Unknown format image type: {file_format}")
         else:
-            with open(f"{path}.{output_format.lower()}", "w", encoding="utf-8") as f:
-                if output_format.lower() == "txt":
-                    for key, val in metadata.items():
-                        f.write(f"{key}: {val}\n")
-                elif output_format.lower() == "json":
-                    json.dump(metadata, f, indent=2)
+            save_text_metadata(output_format, metadata, path)
+
+
+def save_text_metadata(output_format: str, metadata: dict, path: str):
+    """Save the metadata in a text file either as text or as json
+
+    Args:
+      output_format (str): the file format (choice: text or json)
+      metadata (dict): the metadata to save to the file
+      path (str): path the output file
+    """
+    with open(f"{path}.{output_format}", "w", encoding="utf-8") as f:
+        if output_format == "txt":
+            for key, val in metadata.items():
+                f.write(f"{key}: {val}\n")
+        elif output_format == "json":
+            json.dump(metadata, f, indent=2)
+        else:
+            raise ValueError(f"Unknown format file type {output_format}")
+
+
+def save_png_metadata(file_format: str, metadata: dict, path: str):
+    """Save the metadata in a PNG
+
+    Args:
+        file_format (str): file format
+        metadata (dict): the metadata to save to the file
+        path (str): path to the image file
+    """
+    target_image = Image.open(f"{path}.{file_format}")
+    embedded_metadata = PngInfo()
+    for key, val in metadata.items():
+        embedded_metadata.add_text(key, str(val))
+    target_image.save(f"{path}.{file_format}", pnginfo=embedded_metadata)
+
+
+def save_jpeg_exif(file_format: str, metadata: dict, path: str):
+    """Save the metadata as EXIF in a JPEG
+
+    Args:
+        file_format (str): file format
+        metadata (dict): the metadata to save to the file
+        path (str): path to the image file
+    """
+    target_image = Image.open(f"{path}.{file_format}")
+    user_comment = json.dumps(metadata)
+    exif_dict = {"Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}}
+    exif_bytes = piexif.dump(exif_dict)
+    target_image.save(f"{path}.{file_format}", exif=exif_bytes)
