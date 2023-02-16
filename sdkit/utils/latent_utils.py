@@ -24,7 +24,6 @@ def to_tensor(x, device, dtype=torch.float32):
         return torch.tensor(x).to(device=device, dtype=dtype)
 
 
-
 def img_to_tensor(img: Image, batch_size, device, half_precision: bool, shift_range=False, unsqueeze=False):
     if img is None:
         return None

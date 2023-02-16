@@ -1,6 +1,8 @@
+from typing import List, Tuple, Union
+
 import regex as re
+
 from sdkit.utils import log
-from typing import List, Union, Tuple
 
 ROUND_PRECISION = 3
 DELIMITERS = ["()", "[]", "`", '"']
@@ -103,7 +105,7 @@ def parse_prompt(prompt: str) -> Tuple[str, dict]:
     """
     transforms = []
     prompt_cleaned = ""
-    for (delimiter, quoted_prompt) in split_quotes(prompt, DELIMITERS):
+    for delimiter, quoted_prompt in split_quotes(prompt, DELIMITERS):
         if delimiter == "()":
             level = 1
         elif delimiter == "[]":
@@ -277,7 +279,7 @@ def split_quotes(stringToSplit: str, delimiters: List[str]) -> List[Tuple[str, s
         if quoteChar:
             # Found an unmatched char and was removed, resume parsing.
             first = True
-            for (delim_state, substring) in split_quotes(lastResult, delimiters):
+            for delim_state, substring in split_quotes(lastResult, delimiters):
                 if first:
                     first = False
                     # Add first unmatched delimiter char to string result.

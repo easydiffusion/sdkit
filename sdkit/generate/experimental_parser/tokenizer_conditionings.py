@@ -17,10 +17,12 @@ Notes:
     https://github.com/JoaoLages/diffusers-interpret/tree/main/src/diffusers_interpret
     https://github.com/isaac-bender/stable_diffusion_interp/blob/main/DrEyeBender's_Stable_Diffusion_notebook_Public_copy.ipynb
 """
-import torch
 import numpy as np
+import torch
 import torch.nn.functional as F
+
 from sdkit.utils import log, to_tensor
+
 from .prompt_parser import clean_text, parse_prompt
 
 # Default size for both SD1 and SD2 with open_CLIP

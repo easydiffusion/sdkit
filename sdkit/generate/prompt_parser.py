@@ -1,7 +1,10 @@
 import torch
 
 from sdkit.utils import log
-from .experimental_parser.tokenizer_conditionings import get_cond_and_uncond as get_cond_and_uncond_experimental
+
+from .experimental_parser.tokenizer_conditionings import (
+    get_cond_and_uncond as get_cond_and_uncond_experimental,
+)
 
 
 def get_cond_and_uncond(prompt, negative_prompt, batch_size, model):

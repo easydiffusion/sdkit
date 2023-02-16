@@ -1,8 +1,8 @@
 from torch import Tensor
 
-from .unipc_sampler import UniPCSampler
-
 from sdkit import Context
+
+from .unipc_sampler import UniPCSampler
 
 # unipc is highly customizable
 
@@ -63,7 +63,7 @@ def sample(
     uncond: Tensor = None,
     guidance_scale: float = 0.8,
     callback=None,
-    **kwargs
+    **kwargs,
 ):
     model = context.models["stable-diffusion"]
 
