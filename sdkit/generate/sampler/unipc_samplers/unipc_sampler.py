@@ -100,7 +100,7 @@ class NoiseScheduleVP:
         # For continuous-time DPMs (VPSDE), linear schedule:
         >>> ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20.)
 
-        """
+        """  # noqa
 
         if schedule not in ["discrete", "linear", "cosine"]:
             raise ValueError(
