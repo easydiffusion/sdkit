@@ -46,7 +46,7 @@ def clean_transforms(transforms: Union[dict, list], parent_text: str) -> Union[d
             return newList
         return None
     if isinstance(transforms, dict):
-        if not "text" in transforms:
+        if "text" not in transforms:
             log.warn("Invalid transform! Missing text field to apply transform. Removed from list.", transforms)
             return None  # Cant apply a transform without a target.
         if "weight" in transforms and round(transforms["weight"], ROUND_PRECISION) == 1.0:
@@ -89,7 +89,7 @@ def clean_transforms(transforms: Union[dict, list], parent_text: str) -> Union[d
             and "text" in transforms
             and "transforms" in transforms
             and len(transforms["transforms"]) == 1
-            and not "slerp" in transforms["transforms"][0]
+            and "slerp" not in transforms["transforms"][0]
         ):
             return transforms["transforms"][0]
         if len(transforms) == 1 and "text" in transforms:

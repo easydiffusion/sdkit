@@ -173,7 +173,7 @@ def print_token_loss(encoder_model, tokens, max_size=None):
 
 
 def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model, **kwargs):
-    if not "conditioning_transforms" in kwargs:
+    if "conditioning_transforms" not in kwargs:
         kwargs["conditioning_transforms"] = None
     conditioning = build_conditioning(model, prompt, kwargs["conditioning_transforms"])
     log.debug("conditioning %s %s", conditioning.size(), conditioning)
@@ -185,7 +185,7 @@ def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model, **kwarg
 
     if not unconditional_prompt:
         unconditional_prompt = ""
-    if not "unconditional_transforms" in kwargs:
+    if "unconditional_transforms" not in kwargs:
         rndSeed = None
         if unconditional_prompt.startswith("**"):  # Random float to tensors.
             if len(unconditional_prompt) > 2:
