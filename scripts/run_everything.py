@@ -77,11 +77,13 @@ if args.sizes != "auto":
 
 # setup
 log.info("Starting..")
-from sdkit.generate.sampler import default_samplers, k_samplers
+from sdkit.generate.sampler import default_samplers, k_samplers, unipc_samplers
 from sdkit.models import load_model
 
 sd_models = set([f for f in os.listdir(args.models_dir) if os.path.splitext(f)[1] in (".ckpt", ".safetensors")])
-all_samplers = set(default_samplers.samplers.keys()) | set(k_samplers.samplers.keys())
+all_samplers = (
+    set(default_samplers.samplers.keys()) | set(k_samplers.samplers.keys()) | set(unipc_samplers.samplers.keys())
+)
 args.vram_usage_levels = args.vram_usage_levels.split(",")
 
 if isinstance(args.exclude_models, str) and "*" in args.exclude_models:

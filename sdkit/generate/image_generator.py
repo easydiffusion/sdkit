@@ -35,6 +35,7 @@ def generate_images(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
+    sampler_params={},
     callback=None,
 ):
     req_args = locals()
@@ -67,6 +68,7 @@ def generate_images(
             "cond": cond,
             "uncond": uncond,
             "guidance_scale": guidance_scale,
+            "sampler_params": sampler_params,
             "callback": callback,
         }
 

@@ -4,7 +4,7 @@ from torch import Tensor
 from sdkit import Context
 from sdkit.utils import log
 
-from . import default_samplers, k_samplers
+from . import default_samplers, k_samplers, unipc_samplers
 
 
 def make_samples(
@@ -45,6 +45,8 @@ def make_samples(
         sampler_module = default_samplers
     if sampler_name in k_samplers.samplers:
         sampler_module = k_samplers
+    if sampler_name in unipc_samplers.samplers:
+        sampler_module = unipc_samplers
     if sampler_module is None:
         raise RuntimeError(f'Unknown sampler "{sampler_name}"!')
 
