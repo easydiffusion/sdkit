@@ -13,7 +13,7 @@ from sdkit.utils import (
     latent_samples_to_images,
 )
 
-from .tokenizer_conditionings import get_cond_and_uncond
+from .prompt_parser import get_cond_and_uncond
 from .sampler import make_samples
 
 
