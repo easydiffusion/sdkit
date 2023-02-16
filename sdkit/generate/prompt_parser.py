@@ -9,10 +9,10 @@ from .experimental_parser.tokenizer_conditionings import (
 
 def get_cond_and_uncond(prompt, negative_prompt, batch_size, model):
     if prompt.startswith("!"):
-        log.info(f"Using the experimental prompt parser")
+        log.info("Using the experimental prompt parser")
         return get_cond_and_uncond_experimental(prompt, negative_prompt, batch_size, model)
 
-    log.info(f"Using the regular prompt parser")
+    log.info("Using the regular prompt parser")
     cond = parse_prompt(prompt, batch_size, model)
     uncond = parse_prompt(negative_prompt, batch_size, model)
 
