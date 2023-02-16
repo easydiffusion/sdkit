@@ -6,7 +6,7 @@ import piexif
 import pytest
 import safetensors.torch
 import torch
-from PIL import ExifTags, Image
+from PIL import Image
 
 from sdkit.utils.file_utils import (
     load_tensor_file,
