@@ -34,6 +34,7 @@ def generate_images(
         hypernetwork_strength: float = 0,
 
         callback=None,
+        sampler_params={}
     ):
     req_args = locals()
 
@@ -64,6 +65,7 @@ def generate_images(
             'uncond': uncond,
             'guidance_scale': guidance_scale,
             'callback': callback,
+            'sampler_params': sampler_params,
         }
 
         with torch.no_grad(), precision_scope("cuda"):
