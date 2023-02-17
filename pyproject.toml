@@ -26,6 +26,7 @@ keywords = ["stable diffusion", "ai", "art"]
 
 [tool.isort]
 profile = "black"
+src_paths = ["tests", "scripts", "sdkit", "examples"]
 
 [tool.black]
 line-length = 120
@@ -47,7 +48,7 @@ exclude = '''
 [tool.pytest.ini_options]
 log_cli = "true"
 testpaths = [
-  "tests",
+  "tests/unit/",
 ]
 pythonpath = [
   "sdkit/",

@@ -1,4 +1,4 @@
--r requirements.txt
+-e .
 coverage==7.1.0
 pytest==7.2.1
 pytest-clarity==1.0.1
