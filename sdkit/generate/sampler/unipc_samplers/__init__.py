@@ -42,7 +42,7 @@ samplers = {
         "lower_order_final": True,
         "thresholding": False,
     },
-    "unipc_tu_2": {  # automatic1111 default
+    "unipc_tu_2": {
         "variant": "bh1",
         "time_skip": "time_uniform",
         "order": 3,
