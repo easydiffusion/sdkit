@@ -21,8 +21,8 @@ from .latent_utils import (
     get_image_latent_and_mask,
     img_to_tensor,
     latent_samples_to_images,
-    to_tensor,
     tensor_to_bitmap,
+    to_tensor,
 )
 from .memory_utils import (
     gc,

@@ -17,10 +17,12 @@ Notes:
     https://github.com/JoaoLages/diffusers-interpret/tree/main/src/diffusers_interpret
     https://github.com/isaac-bender/stable_diffusion_interp/blob/main/DrEyeBender's_Stable_Diffusion_notebook_Public_copy.ipynb
 """
-import torch
 import numpy as np
+import torch
 import torch.nn.functional as F
+
 from sdkit.utils import log, to_tensor
+
 from .prompt_parser import clean_text, parse_prompt
 
 # Default size for both SD1 and SD2 with open_CLIP
@@ -171,7 +173,7 @@ def print_token_loss(encoder_model, tokens, max_size=None):
 
 
 def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model, **kwargs):
-    if not "conditioning_transforms" in kwargs:
+    if "conditioning_transforms" not in kwargs:
         kwargs["conditioning_transforms"] = None
     conditioning = build_conditioning(model, prompt, kwargs["conditioning_transforms"])
     log.debug("conditioning %s %s", conditioning.size(), conditioning)
@@ -183,7 +185,7 @@ def get_cond_and_uncond(prompt, unconditional_prompt, batch_size, model, **kwarg
 
     if not unconditional_prompt:
         unconditional_prompt = ""
-    if not "unconditional_transforms" in kwargs:
+    if "unconditional_transforms" not in kwargs:
         rndSeed = None
         if unconditional_prompt.startswith("**"):  # Random float to tensors.
             if len(unconditional_prompt) > 2:

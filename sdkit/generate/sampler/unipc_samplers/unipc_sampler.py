@@ -7,12 +7,9 @@
 #   year={2023}
 # }
 
-import torch
-
-import torch
-import torch.nn.functional as F
 import math
 
+import torch
 from tqdm import tqdm
 
 
@@ -103,7 +100,7 @@ class NoiseScheduleVP:
         # For continuous-time DPMs (VPSDE), linear schedule:
         >>> ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20.)
 
-        """
+        """  # noqa
 
         if schedule not in ["discrete", "linear", "cosine"]:
             raise ValueError(
@@ -467,15 +464,21 @@ class UniPC:
         if order == 3:
             K = steps // 3 + 1
             if steps % 3 == 0:
-                orders = [3,] * (
+                orders = [
+                    3,
+                ] * (
                     K - 2
                 ) + [2, 1]
             elif steps % 3 == 1:
-                orders = [3,] * (
+                orders = [
+                    3,
+                ] * (
                     K - 1
                 ) + [1]
             else:
-                orders = [3,] * (
+                orders = [
+                    3,
+                ] * (
                     K - 1
                 ) + [2]
         elif order == 2:
@@ -486,7 +489,9 @@ class UniPC:
                 ] * K
             else:
                 K = steps // 2 + 1
-                orders = [2,] * (
+                orders = [
+                    2,
+                ] * (
                     K - 1
                 ) + [1]
         elif order == 1:

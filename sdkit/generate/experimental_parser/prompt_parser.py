@@ -1,6 +1,8 @@
+from typing import List, Tuple, Union
+
 import regex as re
+
 from sdkit.utils import log
-from typing import List, Union, Tuple
 
 ROUND_PRECISION = 3
 DELIMITERS = ["()", "[]", "`", '"']
@@ -44,7 +46,7 @@ def clean_transforms(transforms: Union[dict, list], parent_text: str) -> Union[d
             return newList
         return None
     if isinstance(transforms, dict):
-        if not "text" in transforms:
+        if "text" not in transforms:
             log.warn("Invalid transform! Missing text field to apply transform. Removed from list.", transforms)
             return None  # Cant apply a transform without a target.
         if "weight" in transforms and round(transforms["weight"], ROUND_PRECISION) == 1.0:
@@ -87,7 +89,7 @@ def clean_transforms(transforms: Union[dict, list], parent_text: str) -> Union[d
             and "text" in transforms
             and "transforms" in transforms
             and len(transforms["transforms"]) == 1
-            and not "slerp" in transforms["transforms"][0]
+            and "slerp" not in transforms["transforms"][0]
         ):
             return transforms["transforms"][0]
         if len(transforms) == 1 and "text" in transforms:
@@ -103,7 +105,7 @@ def parse_prompt(prompt: str) -> Tuple[str, dict]:
     """
     transforms = []
     prompt_cleaned = ""
-    for (delimiter, quoted_prompt) in split_quotes(prompt, DELIMITERS):
+    for delimiter, quoted_prompt in split_quotes(prompt, DELIMITERS):
         if delimiter == "()":
             level = 1
         elif delimiter == "[]":
@@ -277,7 +279,7 @@ def split_quotes(stringToSplit: str, delimiters: List[str]) -> List[Tuple[str, s
         if quoteChar:
             # Found an unmatched char and was removed, resume parsing.
             first = True
-            for (delim_state, substring) in split_quotes(lastResult, delimiters):
+            for delim_state, substring in split_quotes(lastResult, delimiters):
                 if first:
                     first = False
                     # Add first unmatched delimiter char to string result.

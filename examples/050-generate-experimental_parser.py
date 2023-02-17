@@ -1,7 +1,7 @@
 import sdkit
-from sdkit.models import load_model
 from sdkit.generate import generate_images
-from sdkit.utils import save_images, log
+from sdkit.models import load_model
+from sdkit.utils import log, save_images
 
 # experimental parser, which provides better control over the assignment of weights to tokens,
 # as well as smoother transition between concepts

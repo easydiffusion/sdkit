@@ -1,7 +1,7 @@
 import sdkit
 from sdkit.generate import get_cond_and_uncond
 from sdkit.models import load_model
-from sdkit.utils import log, tensor_to_bitmap, save_images
+from sdkit.utils import log, save_images, tensor_to_bitmap
 
 # Convert a prompt conditionings to a bitmap.
 

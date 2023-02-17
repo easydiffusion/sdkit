@@ -1,7 +1,8 @@
 from pprint import pformat
+
 import sdkit
-from sdkit.models import load_model
 from sdkit.generate import parse_prompt
+from sdkit.models import load_model
 
 # Parser test/Demo
 

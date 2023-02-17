@@ -43,3 +43,12 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.pytest.ini_options]
+log_cli = "true"
+testpaths = [
+  "tests",
+]
+pythonpath = [
+  "sdkit/",
+]
