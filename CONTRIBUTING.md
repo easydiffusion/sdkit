@@ -24,5 +24,7 @@ If you're on Windows or Linux, please install CUDA-compatible `torch` and `torch
 ![image](https://user-images.githubusercontent.com/844287/209371553-38ef7144-897e-4211-a186-5a235ff71375.png)
 
 3. Install an editable copy of your fork using: `pip install -e git+git@github.com:YOUR_FORK_NAME/sdkit.git#egg=sdkit` or `pip install -e git+https://github.com/YOUR_FORK_NAME/sdkit.git#egg=sdkit`. Replace `YOUR_FORK_NAME` with what your fork has.
-4. This will checkout a working copy of sdkit, along with any required dependencies.
+4. This will checkout a working copy of sdkit, along with any required dependencies. Additional dependencies for local development and local testing can be installed by running:
+   * `pip install -r requirements_dev.txt` for linting/formating 
+   * `pip install -r requirements_test.txt` for unit tests
 5. You can now edit the code and submit pull-requests for any changes you'd like to contribute.
