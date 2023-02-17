@@ -1,15 +1,9 @@
 import torch
 
 from sdkit.utils import log
-from .experimental_parser.tokenizer_conditionings import get_cond_and_uncond as get_cond_and_uncond_experimental
 
 
 def get_cond_and_uncond(prompt, negative_prompt, batch_size, model):
-    if prompt.startswith("!"):
-        log.info(f"Using the experimental prompt parser")
-        return get_cond_and_uncond_experimental(prompt, negative_prompt, batch_size, model)
-
-    log.info(f"Using the regular prompt parser")
     cond = parse_prompt(prompt, batch_size, model)
     uncond = parse_prompt(negative_prompt, batch_size, model)
 
