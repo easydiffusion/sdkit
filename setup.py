@@ -2,8 +2,7 @@ import setuptools
 
 setuptools.setup(
     install_requires=[
-        "stable-diffusion-sdkit", # wrapper around stable-diffusion, to allow pip install
-
+        "stable-diffusion-sdkit==2.1.3",  # wrapper around stable-diffusion, to allow pip install
         "gfpgan",
         "piexif",
         "realesrgan",
@@ -11,5 +10,6 @@ setuptools.setup(
         "picklescan",
         "safetensors",
         "k-diffusion",
+        "diffusers",
     ],
 )

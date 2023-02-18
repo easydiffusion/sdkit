@@ -1,11 +1,12 @@
 from sdkit import Context
 from sdkit.utils import base64_str_to_img, gc, log
 
-from . import gfpgan, realesrgan
+from . import gfpgan, nsfw_checker, realesrgan
 
 filter_modules = {
     "gfpgan": gfpgan,
     "realesrgan": realesrgan,
+    "nsfw_checker": nsfw_checker,
 }
 
 
@@ -15,7 +16,7 @@ def apply_filters(context: Context, filters, images, **kwargs):
     * filters: filter_type (string) or list of strings
     * images: str or PIL.Image or list of str/PIL.Image - image to filter. if a string is passed, it needs to be a base64-encoded image
 
-    returns: PIL.Image - filtered image
+    returns: [PIL.Image] - list of filtered images
     """
     images = images if isinstance(images, list) else [images]
     filters = filters if isinstance(filters, list) else [filters]

@@ -1,7 +1,7 @@
 from sdkit import Context
 from sdkit.utils import gc, log
 
-from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae
+from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae, nsfw_checker
 
 models = {
     "stable-diffusion": stable_diffusion,
@@ -9,11 +9,12 @@ models = {
     "realesrgan": realesrgan,
     "vae": vae,
     "hypernetwork": hypernetwork,
+    "nsfw_checker": nsfw_checker,
 }
 
 
 def load_model(context: Context, model_type: str, **kwargs):
-    if context.model_paths.get(model_type) is None:
+    if context.model_paths.get(model_type) is None and model_type != "nsfw_checker":
         return
 
     if model_type in context.models:
