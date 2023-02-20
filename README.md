@@ -94,7 +94,7 @@ For models that don't match a known hash (e.g. custom models), or if you want to
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 14 samplers (including k-samplers), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
+**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 19 samplers (including k-samplers and UniPC), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
 
 📢 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
 
