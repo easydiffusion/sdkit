@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from skimage import exposure
+import re
 
 
 # https://stackoverflow.com/a/61114178
@@ -15,10 +16,10 @@ def img_to_base64_str(img, output_format="PNG", output_quality=75):
 
 def img_to_buffer(img, output_format="PNG", output_quality=75):
     buffered = BytesIO()
-    if output_format.upper() == "JPEG":
-        img.save(buffered, format=output_format, quality=output_quality)
-    else:
+    if output_format.upper() == "PNG":
         img.save(buffered, format=output_format)
+    else:
+        img.save(buffered, format=output_format, quality=output_quality)
     buffered.seek(0)
     return buffered
 
@@ -26,14 +27,13 @@ def img_to_buffer(img, output_format="PNG", output_quality=75):
 def buffer_to_base64_str(buffered, output_format="PNG"):
     buffered.seek(0)
     img_byte = buffered.getvalue()
-    mime_type = "image/png" if output_format.lower() == "png" else "image/jpeg"
+    mime_type = f"image/{output_format.lower()}"
     img_str = f"data:{mime_type};base64," + base64.b64encode(img_byte).decode()
     return img_str
 
 
 def base64_str_to_buffer(img_str):
-    mime_type = "image/png" if img_str.startswith("data:image/png;") else "image/jpeg"
-    img_str = img_str[len(f"data:{mime_type};base64,") :]
+    img_str = re.sub(r"^data:image/[a-z]+;base64,", "", img_str)
     data = base64.b64decode(img_str)
     buffered = BytesIO(data)
     return buffered
