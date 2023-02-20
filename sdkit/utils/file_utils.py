@@ -31,8 +31,8 @@ def save_images(images: list, dir_path: str, file_name="image", output_format="J
         if a string, the actual file name will be `{file_name}_{index}`.
         if a function, the callback function will be passed the `index` (int),
           and the returned value will be used as the actual file name. e.g `def fn(i): return 'foo' + i`
-    * output_format: 'JPEG' or 'PNG'
-    * output_quality: an integer between 0 and 100, used for JPEG
+    * output_format: 'JPEG', 'PNG', or 'WEBP'
+    * output_quality: an integer between 0 and 100, used for JPEG and WEBP
     """
     if dir_path is None:
         return
@@ -53,7 +53,7 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
         if a function, the callback function will be passed the `index` (int),
           and the returned value will be used as the actual file name. e.g `def fn(i): return 'foo' + i`
     * output_format: 'txt', 'json', or 'embed'
-        if 'embed', the metadata will be embedded in PNG files in tEXt chunks, and as EXIF UserComment for JPEG files
+        if 'embed', the metadata will be embedded in PNG files in tEXt chunks, and as EXIF UserComment for JPEG and WEBP files
     """
     if dir_path is None:
         return
@@ -63,20 +63,20 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
         actual_file_name = file_name(i) if callable(file_name) else f"{file_name}_{i}"
         path = os.path.join(dir_path, actual_file_name)
 
-        if output_format.lower() == "embed" and file_format.lower() == "png":
+        if output_format.lower() == "embed":
             targetImage = Image.open(f"{path}.{file_format.lower()}")
-            embedded_metadata = PngInfo()
-            for key, val in metadata.items():
-                embedded_metadata.add_text(key, str(val))
-            targetImage.save(f"{path}.{file_format.lower()}", pnginfo=embedded_metadata)
-        elif output_format.lower() == "embed" and file_format.lower() == "jpeg":
-            targetImage = Image.open(f"{path}.{file_format.lower()}")
-            user_comment = json.dumps(metadata)
-            exif_dict = {
-                "Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}
-            }
-            exif_bytes = piexif.dump(exif_dict)
-            targetImage.save(f"{path}.{file_format.lower()}", exif=exif_bytes)
+            if file_format.lower() == "png":
+                embedded_metadata = PngInfo()
+                for key, val in metadata.items():
+                    embedded_metadata.add_text(key, str(val))
+                targetImage.save(f"{path}.{file_format.lower()}", pnginfo=embedded_metadata)
+            else:
+                user_comment = json.dumps(metadata)
+                exif_dict = {
+                    "Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}
+                }
+                exif_bytes = piexif.dump(exif_dict)
+                targetImage.save(f"{path}.{file_format.lower()}", exif=exif_bytes)
         else:
             with open(f"{path}.{output_format.lower()}", "w", encoding="utf-8") as f:
                 if output_format.lower() == "txt":
