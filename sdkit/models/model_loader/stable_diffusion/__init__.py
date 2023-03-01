@@ -2,6 +2,7 @@ import os
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
+import traceback
 
 import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
@@ -26,6 +27,9 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
     from sdkit.models import scan_model as scan_model_fn
 
     from . import optimizations
+
+    if hasattr(context, "orig_half_precision"):
+        context.half_precision = context.orig_half_precision
 
     model_path = context.model_paths.get("stable-diffusion")
     config_file_path = get_model_config_file(context, check_for_config_with_same_name)
@@ -90,6 +94,8 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
         context, attn_precision=attn_precision
     )
     ldm.modules.diffusionmodules.model.nonlinearity = silu
+
+    test_and_fix_precision(context, model, config, attn_precision)
 
     # save the model vae into a temp folder (used for restoring the default VAE, if a custom VAE is unloaded)
     save_tensor_file(
@@ -193,6 +199,40 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         "img2img": pipe_img2img,
         "inpainting": pipe_inpainting,
     }
+
+
+def test_and_fix_precision(context, model, config, attn_precision):
+    prev_model = context.models.get("stable-diffusion")
+    context.models["stable-diffusion"] = model
+
+    # TODO - the VAE may also need such a check
+
+    # test precision
+    try:
+        from sdkit.generate import generate_images
+        from . import optimizations
+
+        images = generate_images(context, prompt="Horse", width=64, height=64, num_inference_steps=1)
+        is_black_image = not images[0].getbbox()
+        if is_black_image and attn_precision == "fp16":
+            attn_precision = "fp32"
+            log.info(f"trying attn_precision: {attn_precision}")
+            ldm.modules.attention.CrossAttention.forward = optimizations.make_attn_forward(
+                context, attn_precision=attn_precision
+            )
+            images = generate_images(context, prompt="Horse", width=64, height=64, num_inference_steps=1)
+            is_black_image = not images[0].getbbox()
+
+        if is_black_image and attn_precision == "fp32" and context.half_precision:
+            log.info(f"trying full precision")
+            context.orig_half_precision = context.half_precision
+            context.half_precision = False
+            config.model.params.unet_config.params.use_fp16 = False
+            model = model.float()
+    except:
+        log.error(traceback.format_exc())
+
+    context.models["stable-diffusion"] = prev_model
 
 
 def get_model_config_file(context: Context, check_for_config_with_same_name):
