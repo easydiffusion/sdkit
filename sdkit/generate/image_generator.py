@@ -44,7 +44,7 @@ def generate_images(
         images = []
 
         seed_everything(seed)
-        precision_scope = torch.autocast if context.half_precision and context.device != "cpu" else nullcontext
+        precision_scope = torch.autocast if context.half_precision else nullcontext
 
         if "stable-diffusion" not in context.models:
             raise RuntimeError(
