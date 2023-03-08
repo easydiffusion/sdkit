@@ -117,6 +117,7 @@ from sdkit.utils import hash_file_quick
 perf_results = [
     [
         "model_filename",
+        "model_load_time",
         "vram_usage_level",
         "sampler_name",
         "max_ram (GB)",
@@ -142,9 +143,12 @@ log.info(f"Available models: {sd_models}")
 log.info(f"Available samplers: {all_samplers}")
 log.info("---")
 
+model_load_time = 0
 
 # run the test
 def run_test():
+    global model_load_time
+
     for model_filename in models_to_test:
         model_dir_path = os.path.join(args.out_dir, model_filename)
 
@@ -161,13 +165,30 @@ def run_test():
             out_dir_path = os.path.join(model_dir_path, vram_usage_level)
             os.makedirs(out_dir_path, exist_ok=True)
 
+            model_load_time = 0
+
             try:
                 context.model_paths["stable-diffusion"] = os.path.join(args.models_dir, model_filename)
+                t = time.time()
                 load_model(context, "stable-diffusion", scan_model=False)
+                model_load_time = time.time() - t
             except Exception as e:
                 log.exception(e)
                 perf_results.append(
-                    [model_filename, vram_usage_level, "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", False, [], []]
+                    [
+                        model_filename,
+                        model_load_time,
+                        vram_usage_level,
+                        "n/a",
+                        "n/a",
+                        "n/a",
+                        "n/a",
+                        "n/a",
+                        "n/a",
+                        False,
+                        [],
+                        [],
+                    ]
                 )
                 log_perf_results()
                 continue
@@ -249,6 +270,10 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             render_success = True
 
             images[0].save(img_path)
+
+            if not images[0].getbbox():
+                log.error("Image is fully black! Precision issue!")
+                render_success = False
         except Exception as e:
             render_success = False
             log.exception(e)
@@ -261,6 +286,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
         perf_results.append(
             [
                 model_filename,
+                model_load_time,
                 vram_usage_level,
                 sampler_name,
                 f"{max(ram_usage.queue):.1f}",
@@ -324,8 +350,8 @@ def log_perf_results():
     df = df.sort_values(by=["image_size", "model_filename"], ascending=False)
     df = df.reset_index(drop=True)
 
-    df["vram_tp90"] = df["vram_usage"].apply(lambda x: np.percentile(x, 90))
-    df["vram_tp100"] = df["vram_usage"].apply(lambda x: np.percentile(x, 100))
+    df["vram_tp90"] = df["vram_usage"].apply(lambda x: np.percentile(x, 90) if len(x) > 0 else 0)
+    df["vram_tp100"] = df["vram_usage"].apply(lambda x: np.percentile(x, 100) if len(x) > 0 else 0)
     df["vram_spike_test"] = abs((df["vram_tp100"] - df["vram_tp90"])) < 0.5  # okay with a spike of 500 MB
     df["vram_tp90"] = df["vram_tp90"].apply(lambda x: f"{x:.1f}")
     df["overall_status"] = df["render_test"] & df["vram_spike_test"]
