@@ -46,10 +46,10 @@ class Context(local):
     @device.setter
     def device(self, d):
         self._device = d
-        if d == "cpu":
+        if "cuda" not in d:
             from sdkit.utils import log
 
-            log.info("forcing full precision for device: cpu")
+            log.info(f"forcing full precision for device: {d}")
             self._half_precision = False
 
     @property
@@ -58,7 +58,9 @@ class Context(local):
 
     @half_precision.setter
     def half_precision(self, h):
-        self._half_precision = h if self._device != "cpu" else False
+        if h and "cuda" not in self._device:
+            raise RuntimeError(f"half precision is not supported on device: {self._device}")
+        self._half_precision = h
 
     @property
     def vram_usage_level(self):

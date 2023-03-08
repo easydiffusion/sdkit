@@ -13,17 +13,15 @@ recorded_tensor_names = {}
 
 def gc(context: Context):
     collect()
-    if context.device == "cpu":
-        return
-
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
+    if "cuda" in context.device:
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
 
 def get_device_usage(device, log_info=False):
     cpu_used = psutil.cpu_percent()
     ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
-    vram_free, vram_total = torch.cuda.mem_get_info(device) if device != "cpu" else (0, 0)
+    vram_free, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
     vram_used = vram_total - vram_free
 
     ram_used /= 1024**3
@@ -35,7 +33,7 @@ def get_device_usage(device, log_info=False):
         from sdkit.utils import log
 
         msg = f"CPU utilization: {cpu_used:.1f}%, System RAM used: {ram_used:.1f} of {ram_total:.1f} GiB"
-        if device != "cpu":
+        if "cuda" in device:
             msg += f", GPU RAM used ({device}): {vram_used:.1f} of {vram_total:.1f} GiB"
         log.info(msg)
 
