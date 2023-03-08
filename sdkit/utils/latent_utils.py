@@ -35,7 +35,7 @@ def img_to_tensor(img: Image, batch_size, device, half_precision: bool, shift_ra
     img = 2.0 * img - 1.0 if shift_range else img
     img = img.to(device)
 
-    if device != "cpu" and half_precision:
+    if "cuda" in device and half_precision:
         img = img.half()
 
     if unsqueeze:

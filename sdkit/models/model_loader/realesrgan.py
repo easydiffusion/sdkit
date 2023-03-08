@@ -21,12 +21,12 @@ def load_model(context: Context, **kwargs):
     model_to_use, _ = os.path.splitext(model_to_use)
     model_to_use = RealESRGAN_models[model_to_use]
 
-    half = context.half_precision if context.device != "cpu" else False
+    half = context.half_precision
     model = RealESRGANer(
         device=torch.device(context.device), scale=4, model_path=model_path, model=model_to_use, pre_pad=0, half=half
     )
-    if context.device == "cpu":
-        model.model.to("cpu")
+    if "cuda" not in context.device:
+        model.model.to(context.device)
 
     model.model.name = model_to_use
 
