@@ -95,6 +95,6 @@ def register_buffer_mps_aware(self, name, attr):
     setattr(self, name, attr)
 
 
-DDIMSampler.register_buffer = register_buffer_mps_aware
-PLMSSampler.register_buffer = register_buffer_mps_aware
-DPMSolverSampler.register_buffer = register_buffer_mps_aware
+# DDIMSampler.register_buffer = register_buffer_mps_aware
+# PLMSSampler.register_buffer = register_buffer_mps_aware
+# DPMSolverSampler.register_buffer = register_buffer_mps_aware
