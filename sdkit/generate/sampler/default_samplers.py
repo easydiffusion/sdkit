@@ -90,11 +90,12 @@ def _sample_img2img(model, sampler_name, noise, steps, batch_size, params, **kwa
 def register_buffer_mps_aware(self, name, attr):
     if type(attr) == torch.Tensor:
         model_device = torch.device(self.model.device)
+        is_mps_device = hasattr(torch.backends, "mps") and model_device == torch.device("mps")
         if attr.device != model_device:
-            attr = attr.to(device=model_device, dtype=torch.float32 if model_device == torch.device("mps") else None)
+            attr = attr.to(device=model_device, dtype=torch.float32 if is_mps_device else None)
     setattr(self, name, attr)
 
 
-# DDIMSampler.register_buffer = register_buffer_mps_aware
-# PLMSSampler.register_buffer = register_buffer_mps_aware
-# DPMSolverSampler.register_buffer = register_buffer_mps_aware
+DDIMSampler.register_buffer = register_buffer_mps_aware
+PLMSSampler.register_buffer = register_buffer_mps_aware
+DPMSolverSampler.register_buffer = register_buffer_mps_aware
