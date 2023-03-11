@@ -83,3 +83,18 @@ def _sample_img2img(model, sampler_name, noise, steps, batch_size, params, **kwa
     )
 
     return sampler.sample(**params)
+
+
+# fix the precision used for sampler buffers on M1/M2 Macs
+# based on the approach used in https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/sd_hijack.py
+def register_buffer_mps_aware(self, name, attr):
+    if type(attr) == torch.Tensor:
+        model_device = torch.device(self.model.device)
+        if attr.device != model_device:
+            attr = attr.to(device=model_device, dtype=torch.float32 if model_device == torch.device("mps") else None)
+    setattr(self, name, attr)
+
+
+DDIMSampler.register_buffer = register_buffer_mps_aware
+PLMSSampler.register_buffer = register_buffer_mps_aware
+DPMSolverSampler.register_buffer = register_buffer_mps_aware
