@@ -15,12 +15,14 @@ The goal is to let you be productive quickly (at your AI art project), so it bun
 Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
 # Installation
-Tested with Python 3.8.
+Tested with Python 3.8. Supports Windows, Linux and Mac.
 
-1. On Windows and Linux only: `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu116`
+**Windows/Linux:**
+1. `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu116`
 2. Run `pip install sdkit`
 
-We don't support Mac yet, but we'd love to accept code contributions!
+**Mac:**
+1. Run `pip install sdkit`
 
 # Example
 ### Local model
@@ -94,7 +96,7 @@ For models that don't match a known hash (e.g. custom models), or if you want to
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, gfpgan (fix faces), realesrgan (upscale), 19 samplers (including k-samplers and UniPC), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
+**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, Mac Support, gfpgan (fix faces), realesrgan (upscale), 19 samplers (including k-samplers and UniPC), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
 
 📢 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
 
@@ -115,7 +117,7 @@ No xformers. No VRAM optimizations for low-memory usage.
 | `automatic1111` webui | 4.95 sec | 6.15 it/s | 5.1 GB |
 
 ## Does it work on lower-end GPUs, or without GPUs?
-Yes. It works on NVIDIA GPUs with atleast 3GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
+Yes. It works on NVIDIA/Mac GPUs with atleast 3GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
 
 📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
@@ -130,7 +132,7 @@ You can certainly use diffusers. `sdkit` is just a different attempt at a produc
 5. built-in support for running on multiple GPUs.
 6. can download models from any server.
 7. auto-scans for malicious models.
-8. includes 14 samplers (including k-samplers).
+8. includes 19 samplers (including k-samplers).
 9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022.
 
 This is not to say that `diffusers` doesn't do these. The easy-to-use API of `diffusers` is an inspiration for `sdkit`.
@@ -149,7 +151,6 @@ We'd love to accept code contributions. Please feel free to drop by our [Discord
 - Using custom Textual Inversion embeddings.
 - Seamless tiling.
 - Outpainting.
-- Mac support.
 - AMD support.
 - Allow other samplers for img2img (instead of only DDIM).
 
