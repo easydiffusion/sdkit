@@ -1,6 +1,19 @@
 """
 Runs the desired Stable Diffusion models against the desired samplers. Saves the output images
 to disk, along with the peak RAM and VRAM usage, as well as the sampling performance.
+
+Mandatory arguments: `--models-dir` and `--out-dir`
+
+Example:
+`python path/to/run_everything.py --models-dir /path/to/models/stable-diffusion --out-dir /path/to/output-dir`
+
+By default, these arguments will run all the samplers against all the model files found inside the `--models-dir` directory.
+
+To specify the models and/or samplers to use, specify a comma-separated list of models and/or samplers. For e.g. `--models sd-v1-4.ckpt,512-base-ema.safetensors` and/or `--samplers plms,euler_a,ddim`
+
+You can also set a comma-separated list of VRAM usage levels to run. By default it'll run against `balanced`, but you can specify `--vram-usage-levels low,balanced,high` to run against all three.
+
+There are a few more options (`--prompt`, `--seed`, `--init-image` etc), which you can explore using `--help`).
 """
 import argparse
 import os
