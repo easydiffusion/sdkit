@@ -39,6 +39,11 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
     sd = load_tensor_file(model_path)
     sd = sd["state_dict"] if "state_dict" in sd else sd
 
+    if is_lora(sd):
+        raise Exception(
+            "The model file doesn't contain a model's checkpoint. Instead, it seems to be a LORA file."
+        )
+
     # try to guess the config, if no config file was given
     # check if a key specific to SD 2.0 is missing
     if config_file_path is None and "cond_stage_model.model.ln_final.bias" not in sd.keys():
@@ -133,3 +138,9 @@ def resolve_model_config_file_path(model_info, model_path):
         config_file_path = models_db_path / config_url
 
     return config_file_path
+
+def is_lora(sd):
+    heads = list(set([s[:5] for s in sd.keys()]))
+    for h in heads:
+       log.info(f"Header '{h}'")
+    return 'lora_' in heads and 'first' not in heads and 'cond_' not in heads
