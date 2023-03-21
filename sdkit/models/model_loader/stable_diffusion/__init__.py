@@ -104,7 +104,7 @@ def unload_model(context: Context, **kwargs):
 
 def load_diffusers_model(context: Context, model_path, config_file_path):
     import torch
-    from diffusers.pipelines.stable_diffusion.convert_from_ckpt import download_from_original_stable_diffusion_ckpt
+    from diffusers.pipelines.stable_diffusion.convert_from_ckpt import load_pipeline_from_original_stable_diffusion_ckpt
     from diffusers import (
         StableDiffusionImg2ImgPipeline,
         StableDiffusionInpaintPipelineLegacy,
@@ -122,7 +122,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     log.info(f"using attn_precision: {attn_precision}")
 
     # txt2img
-    default_pipe = download_from_original_stable_diffusion_ckpt(
+    default_pipe = load_pipeline_from_original_stable_diffusion_ckpt(
         checkpoint_path=model_path,
         original_config_file=config_file_path,
         extract_ema=False,
