@@ -11,10 +11,13 @@ from sdkit.utils import (
     gc,
     get_image_latent_and_mask,
     latent_samples_to_images,
+    resize_img,
 )
 
 from .prompt_parser import get_cond_and_uncond
 from .sampler import make_samples
+
+from PIL import Image
 
 
 def generate_images(
@@ -35,6 +38,7 @@ def generate_images(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
+    lora_alpha: float = 0,
     sampler_params={},
     callback=None,
 ):
@@ -52,6 +56,29 @@ def generate_images(
             )
 
         model = context.models["stable-diffusion"]
+
+        if context.test_diffusers:
+            return make_with_diffusers(
+                context,
+                prompt,
+                negative_prompt,
+                seed,
+                width,
+                height,
+                num_outputs,
+                num_inference_steps,
+                guidance_scale,
+                init_image,
+                init_image_mask,
+                prompt_strength,
+                # preserve_init_image_color_profile,
+                sampler_name,
+                # hypernetwork_strength,
+                lora_alpha,
+                # sampler_params,
+                callback,
+            )
+
         if "hypernetwork" in context.models:
             context.models["hypernetwork"]["hypernetwork_strength"] = hypernetwork_strength
 
@@ -131,6 +158,93 @@ def img2img(
             images[i] = apply_color_profile(init_image, img)
 
     return images
+
+
+def make_with_diffusers(
+    context: Context,
+    prompt: str = "",
+    negative_prompt: str = "",
+    seed: int = 42,
+    width: int = 512,
+    height: int = 512,
+    num_outputs: int = 1,
+    num_inference_steps: int = 25,
+    guidance_scale: float = 7.5,
+    init_image=None,
+    init_image_mask=None,
+    prompt_strength: float = 0.8,
+    # preserve_init_image_color_profile=False,
+    sampler_name: str = "euler_a",  # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
+    # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
+    # "dpm_adaptive"
+    # hypernetwork_strength: float = 0,
+    lora_alpha: float = 0,
+    # sampler_params={},
+    callback=None,
+):
+    from sdkit.generate.sampler import diffusers_samplers
+    from diffusers import (
+        StableDiffusionInpaintPipeline,
+        StableDiffusionInpaintPipelineLegacy,
+        StableDiffusionImg2ImgPipeline,
+    )
+
+    model = context.models["stable-diffusion"]
+    generator = torch.Generator(context.device).manual_seed(seed)
+
+    cmd = {
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "guidance_scale": guidance_scale,
+        "generator": generator,
+        "width": width,
+        "height": height,
+        "num_inference_steps": num_inference_steps,
+        "num_images_per_prompt": num_outputs,
+    }
+    if init_image:
+        cmd["image"] = get_image(init_image)
+        cmd["strength"] = prompt_strength
+    if init_image_mask:
+        cmd["mask_image"] = get_image(init_image_mask)
+
+    if init_image:
+        operation_to_apply = "inpainting" if init_image_mask else "img2img"
+    else:
+        operation_to_apply = "txt2img"
+
+    if operation_to_apply not in model:
+        if "inpainting" in model and len(model) == 1:
+            raise RuntimeError(
+                f"This model does not support {operation_to_apply}! This model requires an initial image and mask."
+            )
+
+        raise NotImplementedError(
+            f"This model does not support {operation_to_apply}! Supported operations: {model.keys()}"
+        )
+
+    operation_to_apply = model[operation_to_apply]
+    if diffusers_samplers.samplers.get(sampler_name) is None:
+        raise NotImplementedError(f"The sampler '{sampler_name}' is not supported (yet)!")
+
+    operation_to_apply.scheduler = diffusers_samplers.samplers[sampler_name]
+    print(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")
+
+    if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy) or isinstance(
+        operation_to_apply, StableDiffusionImg2ImgPipeline
+    ):
+        cmd["image"] = resize_img(cmd["image"], width, height, clamp_to_64=True)
+        del cmd["width"]
+        del cmd["height"]
+    elif isinstance(operation_to_apply, StableDiffusionInpaintPipeline):
+        del cmd["strength"]
+
+    cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
+
+    print("applying", operation_to_apply)
+    print("Running on diffusers", cmd)
+
+    return operation_to_apply(**cmd).images
 
 
 def get_image(img):

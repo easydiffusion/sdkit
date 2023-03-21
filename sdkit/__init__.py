@@ -36,6 +36,8 @@ class Context(local):
         """
         self.vram_usage_level = "balanced"
 
+        self.test_diffusers = False
+
     # hacky approach, but we need to enforce full precision for some devices
     # we also need to force full precision for these devices (haven't implemented this yet):
     # (('nvidia' in device_name or 'geforce' in device_name) and (' 1660' in device_name or ' 1650' in device_name)) or ('Quadro T2000' in device_name)

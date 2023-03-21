@@ -1,7 +1,7 @@
 from sdkit import Context
 from sdkit.utils import gc, log
 
-from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae, nsfw_checker
+from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae, nsfw_checker, lora
 
 models = {
     "stable-diffusion": stable_diffusion,
@@ -10,6 +10,7 @@ models = {
     "vae": vae,
     "hypernetwork": hypernetwork,
     "nsfw_checker": nsfw_checker,
+    "lora": lora,
 }
 
 
@@ -30,14 +31,20 @@ def load_model(context: Context, model_type: str, **kwargs):
     if model_type == "stable-diffusion":
         load_model(context, "vae")
         load_model(context, "hypernetwork")
+        load_model(context, "lora")
 
 
 def unload_model(context: Context, model_type: str, **kwargs):
     if model_type not in context.models:
         return
 
-    del context.models[model_type]
-    models[model_type].unload_model(context)
+    if context.test_diffusers:
+        models[model_type].unload_model(context)
+        del context.models[model_type]
+    else:
+        del context.models[model_type]
+        models[model_type].unload_model(context)
+
     gc(context)
 
     log.info(f"unloaded {model_type} model from device: {context.device}")

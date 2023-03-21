@@ -18,7 +18,33 @@ def load_model(context: Context, **kwargs):
 
     try:
         vae = load_tensor_file(vae_model_path)
-        vae_dict = {k: v for k, v in vae["state_dict"].items() if k[0:4] != "loss"}
+        vae = vae["state_dict"]
+
+        if context.test_diffusers:
+            from diffusers.pipelines.stable_diffusion.convert_from_ckpt import (
+                convert_ldm_vae_checkpoint,
+                create_vae_diffusers_config,
+            )
+
+            # the ckpt converter requires the VAE dict in the original SD style
+            vae_converted = {}
+            for key, value in vae.items():
+                vae_converted["first_stage_model." + key] = value
+
+            vae = vae_converted
+
+            model = context.models["stable-diffusion"]
+            m = model["default"]
+            image_size = m.vae.sample_size
+
+            original_config = model["config"]
+            vae_config = create_vae_diffusers_config(original_config, image_size=image_size)
+            vae_dict = convert_ldm_vae_checkpoint(vae, vae_config)
+
+            log.info(f"Loading diffusers vae")
+        else:
+            vae_dict = {k: v for k, v in vae.items() if k[0:4] != "loss"}
+
         if context.half_precision:
             for key in vae_dict.keys():
                 vae_dict[key] = vae_dict[key].half()
@@ -46,7 +72,12 @@ def _set_vae(context: Context, vae: dict):
         return
 
     model = context.models["stable-diffusion"]
-    model.first_stage_model.load_state_dict(vae, strict=False)
+
+    if context.test_diffusers:
+        m = model["default"]
+        m.vae.load_state_dict(vae, strict=False)
+    else:
+        model.first_stage_model.load_state_dict(vae, strict=False)
 
 
 def _get_base_model_vae(context: Context):

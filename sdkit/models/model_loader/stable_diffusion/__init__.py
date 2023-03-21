@@ -35,6 +35,16 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
         if scan_result.issues_count > 0 or scan_result.infected_files > 0:
             raise Exception(f"Model scan failed! Potentially infected model: {model_path}")
 
+    if context.test_diffusers:
+        if config_file_path is None:
+            # try using an SD 1.4 config
+            from sdkit.models import get_model_info_from_db
+
+            sd_v1_4_info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.4")
+            config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
+
+        return load_diffusers_model(context, model_path, config_file_path)
+
     # load the model file
     sd = load_tensor_file(model_path)
     sd = sd["state_dict"] if "state_dict" in sd else sd
@@ -90,6 +100,96 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
 
 def unload_model(context: Context, **kwargs):
     context.module_in_gpu = None  # don't keep a dangling reference, prevents gc
+
+
+def load_diffusers_model(context: Context, model_path, config_file_path):
+    import torch
+    from diffusers.pipelines.stable_diffusion.convert_from_ckpt import download_from_original_stable_diffusion_ckpt
+    from diffusers import (
+        StableDiffusionImg2ImgPipeline,
+        StableDiffusionInpaintPipelineLegacy,
+        StableDiffusionInpaintPipeline,
+    )
+
+    log.info("loading on diffusers")
+
+    log.info(f"using config: {config_file_path}")
+    config = OmegaConf.load(config_file_path)
+    config.model.params.unet_config.params.use_fp16 = context.half_precision
+
+    extra_config = config.get("extra", {})
+    attn_precision = extra_config.get("attn_precision", "fp16" if context.half_precision else "fp32")
+    log.info(f"using attn_precision: {attn_precision}")
+
+    # txt2img
+    default_pipe = download_from_original_stable_diffusion_ckpt(
+        checkpoint_path=model_path,
+        original_config_file=config_file_path,
+        extract_ema=False,
+        scheduler_type="ddim",
+        from_safetensors=model_path.endswith(".safetensors"),
+        upcast_attention=(attn_precision == "fp32"),
+        is_img2img=False,
+    )
+
+    default_pipe.requires_safety_checker = False
+    default_pipe.safety_checker = None
+
+    default_pipe = default_pipe.to(context.device)
+    if context.half_precision:
+        default_pipe = default_pipe.to(torch.float16)
+    default_pipe.enable_attention_slicing()
+
+    if isinstance(default_pipe, StableDiffusionInpaintPipeline):
+        log.info("Loaded on diffusers")
+        return {
+            "config": config,
+            "default": default_pipe,
+            "inpainting": default_pipe,
+        }
+
+    pipe_txt2img = default_pipe
+
+    # img2img
+    pipe_img2img = StableDiffusionImg2ImgPipeline(
+        vae=pipe_txt2img.vae,
+        text_encoder=pipe_txt2img.text_encoder,
+        tokenizer=pipe_txt2img.tokenizer,
+        unet=pipe_txt2img.unet,
+        scheduler=pipe_txt2img.scheduler,
+        safety_checker=None,
+        feature_extractor=None,
+        requires_safety_checker=False,
+    )
+
+    # inpainting
+    # TODO - use legacy only if not an Inpainting Model. confirm this.
+    pipe_inpainting = StableDiffusionInpaintPipelineLegacy(
+        vae=pipe_txt2img.vae,
+        text_encoder=pipe_txt2img.text_encoder,
+        tokenizer=pipe_txt2img.tokenizer,
+        unet=pipe_txt2img.unet,
+        scheduler=pipe_txt2img.scheduler,
+        safety_checker=None,
+        feature_extractor=None,
+        requires_safety_checker=False,
+    )
+
+    save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
+
+    from sdkit.generate.sampler import diffusers_samplers
+
+    diffusers_samplers.make_samplers(default_pipe.scheduler)
+
+    log.info("Loaded on diffusers")
+
+    return {
+        "config": config,
+        "default": default_pipe,
+        "txt2img": pipe_txt2img,
+        "img2img": pipe_img2img,
+        "inpainting": pipe_inpainting,
+    }
 
 
 def get_model_config_file(context: Context, check_for_config_with_same_name):
