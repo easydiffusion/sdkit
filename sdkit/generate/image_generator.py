@@ -188,13 +188,12 @@ def make_with_diffusers(
         StableDiffusionInpaintPipelineLegacy,
         StableDiffusionImg2ImgPipeline,
     )
+    from compel import Compel
 
     model = context.models["stable-diffusion"]
     generator = torch.Generator(context.device).manual_seed(seed)
 
     cmd = {
-        "prompt": prompt,
-        "negative_prompt": negative_prompt,
         "guidance_scale": guidance_scale,
         "generator": generator,
         "width": width,
@@ -241,6 +240,12 @@ def make_with_diffusers(
 
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
 
+    # make the prompt embeds
+    compel = Compel(tokenizer=operation_to_apply.tokenizer, text_encoder=operation_to_apply.text_encoder)
+    cmd["prompt_embeds"] = compel.build_conditioning_tensor(prompt)
+    cmd["negative_prompt_embeds"] = compel.build_conditioning_tensor(negative_prompt)
+
+    # apply
     print("applying", operation_to_apply)
     print("Running on diffusers", cmd)
 
