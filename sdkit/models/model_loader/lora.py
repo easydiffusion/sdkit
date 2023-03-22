@@ -36,6 +36,8 @@ def apply_lora_model(context, lora_model_path, direction):
         log.error(f"Could not load LoRA: {lora_model_path}")
 
 
+# Temporarily dumped from https://github.com/huggingface/diffusers/blob/main/scripts/convert_lora_safetensor_to_diffusers.py
+# Need to move this function into the `convert_from_ckpt.py` module (in diffusers), and use that instead.
 def apply_lora(
     context,
     pipeline,
