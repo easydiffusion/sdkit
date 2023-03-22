@@ -62,8 +62,8 @@ def apply_lora(
             layer_infos = key.split(".")[0].split(lora_prefix_text_encoder + "_")[-1].split("_")
             curr_layer = pipeline.text_encoder
         else:
-            "lora_unet_down_blocks_0_attentions_0_transformer_blocks_0_attn2_to_v.lora_down.weight"
-            layer_infos = "down_blocks_0_attentions_0_transformer_blocks_0_attn2_to_v".split("_")
+            # "lora_unet_down_blocks_0_attentions_0_transformer_blocks_0_attn2_to_v.lora_down.weight"
+            # layer_infos = "down_blocks_0_attentions_0_transformer_blocks_0_attn2_to_v".split("_")
 
             layer_infos = key.split(".")[0].split(lora_prefix_unet + "_")[-1].split("_")
             curr_layer = pipeline.unet
