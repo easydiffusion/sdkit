@@ -242,8 +242,8 @@ def make_with_diffusers(
 
     # make the prompt embeds
     compel = Compel(tokenizer=operation_to_apply.tokenizer, text_encoder=operation_to_apply.text_encoder)
-    cmd["prompt_embeds"] = compel.build_conditioning_tensor(prompt)
-    cmd["negative_prompt_embeds"] = compel.build_conditioning_tensor(negative_prompt)
+    cmd["prompt_embeds"] = compel(prompt)
+    cmd["negative_prompt_embeds"] = compel(negative_prompt)
 
     # apply
     print("applying", operation_to_apply)
