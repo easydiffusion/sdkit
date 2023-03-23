@@ -122,20 +122,18 @@ Yes. It works on NVIDIA/Mac GPUs with atleast 3GB of VRAM. For PCs without a com
 📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
 ## Why not just use diffusers?
-You can certainly use diffusers. `sdkit` is just a different attempt at a productive toolkit, so use `sdkit` if you find its features useful.
+You can certainly use diffusers. `sdkit` is infact using `diffusers` internally, so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
 
 `sdkit`:
-1. is a fresh attempt at a simple, lightweight toolkit for Stable Diffusion projects.
+1. is a simple, lightweight toolkit for Stable Diffusion projects.
 2. natively includes frequently-used projects like GFPGAN and RealESRGAN.
-3. works with the popular `.ckpt` and `.safetensors` model format (instead of only the diffusers format).
+3. works with the popular `.ckpt` and `.safetensors` model format.
 4. includes memory optimizations for low-end GPUs.
 5. built-in support for running on multiple GPUs.
 6. can download models from any server.
 7. auto-scans for malicious models.
 8. includes 19 samplers (including k-samplers).
 9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022.
-
-This is not to say that `diffusers` doesn't do these. The easy-to-use API of `diffusers` is an inspiration for `sdkit`.
 
 # Who is using sdkit?
 * [Easy Diffusion (cmdr2 UI)](https://github.com/cmdr2/stable-diffusion-ui) for Stable Diffusion.
