@@ -150,7 +150,6 @@ We'd love to accept code contributions. Please feel free to drop by our [Discord
 - Seamless tiling.
 - Outpainting.
 - AMD support.
-- Allow other samplers for img2img (instead of only DDIM).
 
 If you'd like to set up a developer version on your PC (to contribute code changes), please follow [these instructions](https://github.com/easydiffusion/sdkit/blob/main/CONTRIBUTING.md).
 
