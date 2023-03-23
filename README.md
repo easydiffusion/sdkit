@@ -122,7 +122,7 @@ Yes. It works on NVIDIA/Mac GPUs with atleast 3GB of VRAM. For PCs without a com
 📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
 ## Why not just use diffusers?
-You can certainly use diffusers. `sdkit` is infact using `diffusers` internally, so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
+You can certainly use diffusers. `sdkit` is infact using `diffusers` internally (currently in beta), so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
 
 `sdkit`:
 1. is a simple, lightweight toolkit for Stable Diffusion projects.
