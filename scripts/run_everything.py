@@ -74,7 +74,9 @@ parser.add_argument(
     "--device", default="cuda:0", type=str, help="Specify the device to run on. E.g. cpu or cuda:0 or cuda:1 etc"
 )
 parser.add_argument("--live-perf", action="store_true", help="Print the RAM and VRAM usage stats every few seconds")
+parser.add_argument("--diffusers", action="store_true", help="Use the new diffusers backend")
 parser.set_defaults(live_perf=False)
+parser.set_defaults(diffusers=False)
 args = parser.parse_args()
 
 if args.models != "all":
@@ -173,6 +175,7 @@ def run_test():
             context = Context()
             context.device = args.device
             context.vram_usage_level = vram_usage_level
+            context.test_diffusers = args.diffusers
 
             # setup the model
             out_dir_path = os.path.join(model_dir_path, vram_usage_level)
