@@ -241,9 +241,16 @@ def make_with_diffusers(
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
 
     # make the prompt embeds
-    compel = Compel(tokenizer=operation_to_apply.tokenizer, text_encoder=operation_to_apply.text_encoder)
+    compel = Compel(
+        tokenizer=operation_to_apply.tokenizer,
+        text_encoder=operation_to_apply.text_encoder,
+        truncate_long_prompts=False,
+    )
     cmd["prompt_embeds"] = compel(prompt)
     cmd["negative_prompt_embeds"] = compel(negative_prompt)
+    cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
+        [cmd["prompt_embeds"], cmd["negative_prompt_embeds"]]
+    )
 
     # apply
     print("applying", operation_to_apply)
