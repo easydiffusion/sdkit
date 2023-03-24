@@ -183,6 +183,7 @@ def make_with_diffusers(
     callback=None,
 ):
     from sdkit.generate.sampler import diffusers_samplers
+    from sdkit.utils import log
     from diffusers import (
         StableDiffusionInpaintPipeline,
         StableDiffusionInpaintPipelineLegacy,
@@ -227,7 +228,7 @@ def make_with_diffusers(
         raise NotImplementedError(f"The sampler '{sampler_name}' is not supported (yet)!")
 
     operation_to_apply.scheduler = diffusers_samplers.samplers[sampler_name]
-    print(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")
+    log.info(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")
 
     if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy) or isinstance(
         operation_to_apply, StableDiffusionImg2ImgPipeline
@@ -240,21 +241,28 @@ def make_with_diffusers(
 
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
 
+    log.info("Parsing the prompt..")
+
     # make the prompt embeds
     compel = Compel(
         tokenizer=operation_to_apply.tokenizer,
         text_encoder=operation_to_apply.text_encoder,
         truncate_long_prompts=False,
     )
+    log.info("compel is ready")
     cmd["prompt_embeds"] = compel(prompt)
+    log.info("Made prompt embeds")
     cmd["negative_prompt_embeds"] = compel(negative_prompt)
+    log.info("Made negative prompt embeds")
     cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
         [cmd["prompt_embeds"], cmd["negative_prompt_embeds"]]
     )
 
+    log.info("Done parsing the prompt")
+
     # apply
-    print("applying", operation_to_apply)
-    print("Running on diffusers", cmd)
+    log.info(f"applying: {operation_to_apply}")
+    log.info(f"Running on diffusers: {cmd}")
 
     return operation_to_apply(**cmd).images
 
