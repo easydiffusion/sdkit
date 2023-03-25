@@ -23,7 +23,14 @@ def save_tensor_file(data, path):
         return torch.save(data, path)
 
 
-def save_images(images: list, dir_path: str, file_name="image", output_format="JPEG", output_quality=75):
+def save_images(
+    images: list,
+    dir_path: str,
+    file_name="image",
+    output_format="JPEG",
+    output_quality=75,
+    output_lossless=False,
+):
     """
     * images: a list of of PIL.Image images to save
     * dir_path: the directory path where the images will be saved
@@ -33,6 +40,7 @@ def save_images(images: list, dir_path: str, file_name="image", output_format="J
           and the returned value will be used as the actual file name. e.g `def fn(i): return 'foo' + i`
     * output_format: 'JPEG', 'PNG', or 'WEBP'
     * output_quality: an integer between 0 and 100, used for JPEG and WEBP
+    * output_lossless: whether to save lossless images (WEBP only)
     """
     if dir_path is None:
         return
@@ -41,7 +49,8 @@ def save_images(images: list, dir_path: str, file_name="image", output_format="J
     for i, img in enumerate(images):
         actual_file_name = file_name(i) if callable(file_name) else f"{file_name}_{i}"
         path = os.path.join(dir_path, actual_file_name)
-        img.save(f"{path}.{output_format.lower()}", quality=output_quality)
+        output_lossless = output_lossless and output_format.lower() == "webp"
+        img.save(f"{path}.{output_format.lower()}", quality=output_quality, lossless=output_lossless)
 
 
 def save_dicts(entries: list, dir_path: str, file_name="data", output_format="txt", file_format=""):
