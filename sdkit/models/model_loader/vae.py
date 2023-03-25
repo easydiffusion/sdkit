@@ -41,7 +41,7 @@ def load_model(context: Context, **kwargs):
             vae_config = create_vae_diffusers_config(original_config, image_size=image_size)
             vae_dict = convert_ldm_vae_checkpoint(vae, vae_config)
 
-            log.info(f"Loading diffusers vae")
+            log.info("Loading diffusers vae")
         else:
             vae_dict = {k: v for k, v in vae.items() if k[0:4] != "loss"}
 
