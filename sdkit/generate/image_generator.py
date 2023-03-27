@@ -236,6 +236,12 @@ def make_with_diffusers(
         cmd["image"] = resize_img(cmd["image"], width, height, clamp_to_64=True)
         del cmd["width"]
         del cmd["height"]
+
+        if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy):
+            cmd["prompt"] = ""
+            # workaround for a bug in diffusers 0.14 and before. the actual prompt used is
+            # in the prompt_embeds field, but the legacy inpainting implementation still
+            # looks for the prompt field (will submit a PR to diffusers)
     elif isinstance(operation_to_apply, StableDiffusionInpaintPipeline):
         del cmd["strength"]
 
