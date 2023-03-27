@@ -203,10 +203,10 @@ def make_with_diffusers(
         "num_images_per_prompt": num_outputs,
     }
     if init_image:
-        cmd["image"] = get_image(init_image)
+        cmd["image"] = get_image(init_image).convert("RGB")
         cmd["strength"] = prompt_strength
     if init_image_mask:
-        cmd["mask_image"] = get_image(init_image_mask)
+        cmd["mask_image"] = get_image(init_image_mask).convert("RGB")
 
     if init_image:
         operation_to_apply = "inpainting" if init_image_mask else "img2img"
