@@ -203,10 +203,12 @@ def make_with_diffusers(
         "num_images_per_prompt": num_outputs,
     }
     if init_image:
-        cmd["image"] = get_image(init_image)
+        cmd["image"] = get_image(init_image).convert("RGB")
+        cmd["image"] = resize_img(cmd["image"], width, height, clamp_to_64=True)
         cmd["strength"] = prompt_strength
     if init_image_mask:
-        cmd["mask_image"] = get_image(init_image_mask)
+        cmd["mask_image"] = get_image(init_image_mask).convert("RGB")
+        cmd["mask_image"] = resize_img(cmd["mask_image"], width, height, clamp_to_64=True)
 
     if init_image:
         operation_to_apply = "inpainting" if init_image_mask else "img2img"
@@ -233,9 +235,14 @@ def make_with_diffusers(
     if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy) or isinstance(
         operation_to_apply, StableDiffusionImg2ImgPipeline
     ):
-        cmd["image"] = resize_img(cmd["image"], width, height, clamp_to_64=True)
         del cmd["width"]
         del cmd["height"]
+
+        if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy):
+            cmd["prompt"] = ""
+            # workaround for a bug in diffusers 0.14 and before. the actual prompt used is
+            # in the prompt_embeds field, but the legacy inpainting implementation still
+            # looks for the prompt field (pending PR: https://github.com/huggingface/diffusers/pull/2842)
     elif isinstance(operation_to_apply, StableDiffusionInpaintPipeline):
         del cmd["strength"]
 
