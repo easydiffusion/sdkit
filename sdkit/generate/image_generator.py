@@ -241,7 +241,7 @@ def make_with_diffusers(
             cmd["prompt"] = ""
             # workaround for a bug in diffusers 0.14 and before. the actual prompt used is
             # in the prompt_embeds field, but the legacy inpainting implementation still
-            # looks for the prompt field (will submit a PR to diffusers)
+            # looks for the prompt field (pending PR: https://github.com/huggingface/diffusers/pull/2842)
     elif isinstance(operation_to_apply, StableDiffusionInpaintPipeline):
         del cmd["strength"]
 
