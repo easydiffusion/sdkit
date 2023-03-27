@@ -62,12 +62,12 @@ class NoiseScheduleVP:
             Note that we always have alphas_cumprod = cumprod(betas). Therefore, we only need to set one of `betas` and `alphas_cumprod`.
 
             **Important**:  Please pay special attention for the args for `alphas_cumprod`:
-                The `alphas_cumprod` is the \hat{alpha_n} arrays in the notations of DDPM. Specifically, DDPMs assume that
-                    q_{t_n | 0}(x_{t_n} | x_0) = N ( \sqrt{\hat{alpha_n}} * x_0, (1 - \hat{alpha_n}) * I ).
-                Therefore, the notation \hat{alpha_n} is different from the notation alpha_t in DPM-Solver. In fact, we have
-                    alpha_{t_n} = \sqrt{\hat{alpha_n}},
+                The `alphas_cumprod` is the \\hat{alpha_n} arrays in the notations of DDPM. Specifically, DDPMs assume that
+                    q_{t_n | 0}(x_{t_n} | x_0) = N ( \\sqrt{\\hat{alpha_n}} * x_0, (1 - \\hat{alpha_n}) * I ).
+                Therefore, the notation \\hat{alpha_n} is different from the notation alpha_t in DPM-Solver. In fact, we have
+                    alpha_{t_n} = \\sqrt{\\hat{alpha_n}},
                 and
-                    log(alpha_{t_n}) = 0.5 * log(\hat{alpha_n}).
+                    log(alpha_{t_n}) = 0.5 * log(\\hat{alpha_n}).
 
 
         2. For continuous-time DPMs:
@@ -97,7 +97,7 @@ class NoiseScheduleVP:
         # For discrete-time DPMs, given betas (the beta array for n = 0, 1, ..., N - 1):
         >>> ns = NoiseScheduleVP('discrete', betas=betas)
 
-        # For discrete-time DPMs, given alphas_cumprod (the \hat{alpha_n} array for n = 0, 1, ..., N - 1):
+        # For discrete-time DPMs, given alphas_cumprod (the \\hat{alpha_n} array for n = 0, 1, ..., N - 1):
         >>> ns = NoiseScheduleVP('discrete', alphas_cumprod=alphas_cumprod)
 
         # For continuous-time DPMs (VPSDE), linear schedule:
@@ -161,7 +161,8 @@ class NoiseScheduleVP:
         elif self.schedule == "linear":
             return -0.25 * t**2 * (self.beta_1 - self.beta_0) - 0.5 * t * self.beta_0
         elif self.schedule == "cosine":
-            log_alpha_fn = lambda s: torch.log(torch.cos((s + self.cosine_s) / (1.0 + self.cosine_s) * math.pi / 2.0))
+            def log_alpha_fn(s):
+                return torch.log(torch.cos((s + self.cosine_s) / (1.0 + self.cosine_s) * math.pi / 2.0))
             log_alpha_t = log_alpha_fn(t) - self.cosine_log_alpha_0
             return log_alpha_t
 
@@ -722,7 +723,7 @@ class UniPC:
                 x_t = x_t_ - expand_dims(alpha_t * B_h, dims) * (corr_res + rhos_c[-1] * D1_t)
         else:
             x_t_ = (
-                expand_dims(torch.exp(log_alpha_t - log_alpha_prev_0), dimss) * x
+                expand_dims(torch.exp(log_alpha_t - log_alpha_prev_0), dims) * x
                 - expand_dims(sigma_t * h_phi_1, dims) * model_prev_0
             )
             if x_t is None:
@@ -893,7 +894,8 @@ class UniPCSampler(object):
     def __init__(self, model, **kwargs):
         super().__init__()
         self.model = model
-        to_torch = lambda x: x.clone().detach().to(torch.float32).to(model.device)
+        def to_torch(x):
+            return x.clone().detach().to(torch.float32).to(model.device)
         self.register_buffer("alphas_cumprod", to_torch(model.alphas_cumprod))
 
     def register_buffer(self, name, attr):
