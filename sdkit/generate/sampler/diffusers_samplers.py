@@ -50,6 +50,8 @@ def make_samplers(ddim_scheduler):
         elif sampler_name in ("euler-ancestral", "euler_a"):
             scheduler = EulerAncestralDiscreteScheduler.from_config(ddim_scheduler.config)
         elif sampler_name in ("dpm", "dpm_solver_stability"):
+            scheduler = DPMSolverMultistepScheduler.from_config(ddim_scheduler.config, algorithm_type="dpmsolver")
+        elif sampler_name == "dpmpp_2m":
             scheduler = DPMSolverMultistepScheduler.from_config(ddim_scheduler.config)
         elif sampler_name == "dpm2":
             scheduler = KDPM2DiscreteScheduler.from_config(ddim_scheduler.config)
