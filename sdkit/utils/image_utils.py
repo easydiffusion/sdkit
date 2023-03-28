@@ -9,15 +9,17 @@ import re
 
 
 # https://stackoverflow.com/a/61114178
-def img_to_base64_str(img, output_format="PNG", output_quality=75):
-    buffered = img_to_buffer(img, output_format, output_quality=output_quality)
+def img_to_base64_str(img, output_format="PNG", output_quality=75, output_lossless=False):
+    buffered = img_to_buffer(img, output_format, output_quality=output_quality, output_lossless=output_lossless)
     return buffer_to_base64_str(buffered, output_format)
 
 
-def img_to_buffer(img, output_format="PNG", output_quality=75):
+def img_to_buffer(img, output_format="PNG", output_quality=75, output_lossless=False):
     buffered = BytesIO()
     if output_format.upper() == "PNG":
         img.save(buffered, format=output_format)
+    elif output_format.upper() == "WEBP":
+        img.save(buffered, format=output_format, quality=output_quality, lossless=output_lossless)
     else:
         img.save(buffered, format=output_format, quality=output_quality)
     buffered.seek(0)
