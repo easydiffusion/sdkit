@@ -31,6 +31,8 @@ def load_model(context: Context, model_type: str, **kwargs):
     if model_type == "stable-diffusion":
         load_model(context, "vae")
         load_model(context, "hypernetwork")
+        if "lora" in context.models:
+            del context.models["lora"]
         load_model(context, "lora")
 
 
