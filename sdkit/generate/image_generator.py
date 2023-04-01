@@ -183,6 +183,7 @@ def make_with_diffusers(
     callback=None,
 ):
     from sdkit.generate.sampler import diffusers_samplers
+    from sdkit.models.model_loader.lora import apply_lora_model
     from sdkit.utils import log
     from diffusers import (
         StableDiffusionInpaintPipeline,
@@ -247,6 +248,15 @@ def make_with_diffusers(
         del cmd["strength"]
 
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
+
+    # apply the LoRA (if necessary)
+    if context.models.get("lora"):
+        log.info("Applying LoRA..")
+        if hasattr(context, "_last_lora_alpha"):
+            apply_lora_model(context, -context._last_lora_alpha)  # undo the last LoRA apply
+
+        apply_lora_model(context, lora_alpha)
+        context._last_lora_alpha = lora_alpha
 
     log.info("Parsing the prompt..")
 

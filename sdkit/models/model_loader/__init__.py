@@ -32,7 +32,7 @@ def load_model(context: Context, model_type: str, **kwargs):
         load_model(context, "vae")
         load_model(context, "hypernetwork")
         if "lora" in context.models:
-            del context.models["lora"]
+            del context._last_lora_alpha
         load_model(context, "lora")
 
 

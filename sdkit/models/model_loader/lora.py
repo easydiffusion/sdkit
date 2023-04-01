@@ -7,10 +7,7 @@ from sdkit.utils import load_tensor_file, log
 
 def load_model(context: Context, **kwargs):
     lora_model_path = context.model_paths.get("lora")
-
-    apply_lora_model(context, lora_model_path, direction=1)
-
-    return lora_model_path
+    return load_tensor_file(lora_model_path)
 
 
 def move_model_to_cpu(context: Context):
@@ -18,11 +15,13 @@ def move_model_to_cpu(context: Context):
 
 
 def unload_model(context: Context, **kwargs):
-    lora_model_path = context.models["lora"]
-    apply_lora_model(context, lora_model_path, direction=-1)
+    if hasattr(context, "_last_lora_alpha"):
+        removal_alpha = -1 * context._last_lora_alpha
+        del context._last_lora_alpha
+        apply_lora_model(context, alpha=removal_alpha)
 
 
-def apply_lora_model(context, lora_model_path, direction):
+def apply_lora_model(context, alpha):
     if not context.test_diffusers:
         return
 
@@ -30,24 +29,24 @@ def apply_lora_model(context, lora_model_path, direction):
         model = context.models["stable-diffusion"]
         default_pipe = model["default"]
 
-        apply_lora(context, default_pipe, lora_path=lora_model_path, direction=direction)
+        _apply_lora(context, default_pipe, alpha)
     except:
         log.error(traceback.format_exc())
-        log.error(f"Could not load LoRA: {lora_model_path}")
+        log.error(f"Could not apply LoRA!")
 
 
 # Temporarily dumped from https://github.com/huggingface/diffusers/blob/main/scripts/convert_lora_safetensor_to_diffusers.py
 # Need to move this function into the `convert_from_ckpt.py` module (in diffusers), and use that instead.
-def apply_lora(
+def _apply_lora(
     context,
     pipeline,
-    lora_path,
-    alpha=0.75,
-    direction=1,
+    alpha,
     lora_prefix_text_encoder="lora_te",
     lora_prefix_unet="lora_unet",
 ):
-    state_dict = load_tensor_file(lora_path)
+    state_dict = context.models["lora"]
+
+    print("Applying lora", alpha)
 
     visited = []
 
@@ -97,11 +96,11 @@ def apply_lora(
         if len(state_dict[pair_keys[0]].shape) == 4:
             weight_up = state_dict[pair_keys[0]].squeeze(3).squeeze(2).to(torch.float32).to(context.device)
             weight_down = state_dict[pair_keys[1]].squeeze(3).squeeze(2).to(torch.float32).to(context.device)
-            curr_layer.weight.data += direction * alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
+            curr_layer.weight.data += alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
         else:
             weight_up = state_dict[pair_keys[0]].to(torch.float32).to(context.device)
             weight_down = state_dict[pair_keys[1]].to(torch.float32).to(context.device)
-            curr_layer.weight.data += direction * alpha * torch.mm(weight_up, weight_down)
+            curr_layer.weight.data += alpha * torch.mm(weight_up, weight_down)
 
         # update visited list
         for item in pair_keys:
