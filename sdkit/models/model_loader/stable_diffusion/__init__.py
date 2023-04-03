@@ -113,6 +113,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         StableDiffusionInpaintPipelineLegacy,
         StableDiffusionInpaintPipeline,
     )
+    from sdkit.generate.sampler import diffusers_samplers
 
     log.info("loading on diffusers")
 
@@ -142,6 +143,9 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     if context.half_precision:
         default_pipe = default_pipe.to(torch.float16)
     default_pipe.enable_attention_slicing()
+
+    # make samplers
+    diffusers_samplers.make_samplers(default_pipe.scheduler)
 
     if isinstance(default_pipe, StableDiffusionInpaintPipeline):
         log.info("Loaded on diffusers")
@@ -179,10 +183,6 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     )
 
     save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
-
-    from sdkit.generate.sampler import diffusers_samplers
-
-    diffusers_samplers.make_samplers(default_pipe.scheduler)
 
     log.info("Loaded on diffusers")
 
