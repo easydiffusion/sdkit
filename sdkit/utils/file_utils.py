@@ -73,8 +73,8 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
         path = os.path.join(dir_path, actual_file_name)
 
         if output_format.lower() == "embed":
-            targetImage = Image.open(f"{path}.{file_format.lower()}")
             if file_format.lower() == "png":
+                targetImage = Image.open(f"{path}.{file_format.lower()}")
                 embedded_metadata = PngInfo()
                 for key, val in metadata.items():
                     embedded_metadata.add_text(key, str(val))
@@ -85,7 +85,7 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
                     "Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}
                 }
                 exif_bytes = piexif.dump(exif_dict)
-                targetImage.save(f"{path}.{file_format.lower()}", exif=exif_bytes)
+                piexif.insert(exif_bytes, f"{path}.{file_format.lower()}")
         else:
             with open(f"{path}.{output_format.lower()}", "w", encoding="utf-8") as f:
                 if output_format.lower() == "txt":
