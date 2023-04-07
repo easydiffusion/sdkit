@@ -11,6 +11,6 @@ setuptools.setup(
         "safetensors",
         "k-diffusion",
         "diffusers==0.14.0",
-        "compel==1.0.4",
+        "compel==1.0.5",
     ],
 )
