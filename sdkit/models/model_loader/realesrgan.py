@@ -23,7 +23,13 @@ def load_model(context: Context, **kwargs):
 
     half = context.half_precision
     model = RealESRGANer(
-        device=torch.device(context.device), scale=4, model_path=model_path, model=model_to_use, pre_pad=0, half=half
+        device=torch.device(context.device),
+        scale=4,
+        model_path=model_path,
+        model=model_to_use,
+        pre_pad=0,
+        half=half,
+        tile=128,
     )
     if "cuda" not in context.device:
         model.model.to(context.device)
