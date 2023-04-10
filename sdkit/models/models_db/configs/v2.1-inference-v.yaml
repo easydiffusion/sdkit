@@ -66,5 +66,3 @@ model:
       params:
         freeze: True
         layer: "penultimate"
-extra:
-  attn_precision: "fp32"

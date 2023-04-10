@@ -30,6 +30,7 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
 
     if hasattr(context, "orig_half_precision"):
         context.half_precision = context.orig_half_precision
+        del context.orig_half_precision
 
     model_path = context.model_paths.get("stable-diffusion")
     config_file_path = get_model_config_file(context, check_for_config_with_same_name)
@@ -204,8 +205,6 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 def test_and_fix_precision(context, model, config, attn_precision):
     prev_model = context.models.get("stable-diffusion")
     context.models["stable-diffusion"] = model
-
-    # TODO - the VAE may also need such a check
 
     # test precision
     try:
