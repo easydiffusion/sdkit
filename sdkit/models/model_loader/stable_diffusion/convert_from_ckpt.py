@@ -604,6 +604,9 @@ def convert_ldm_vae_checkpoint(checkpoint, config):
 
     new_checkpoint = {}
 
+    if len(vae_state_dict.keys()) == 0:
+        return new_checkpoint
+
     new_checkpoint["encoder.conv_in.weight"] = vae_state_dict["encoder.conv_in.weight"]
     new_checkpoint["encoder.conv_in.bias"] = vae_state_dict["encoder.conv_in.bias"]
     new_checkpoint["encoder.conv_out.weight"] = vae_state_dict["encoder.conv_out.weight"]
@@ -757,11 +760,14 @@ def convert_ldm_clip_checkpoint(checkpoint):
 
     text_model_dict = {}
 
+    text_model_dict["text_model.embeddings.position_ids"] = text_model.text_model.embeddings.get_buffer("position_ids")
+
     for key in keys:
         if key.startswith("cond_stage_model.transformer"):
             text_model_dict[key[len("cond_stage_model.transformer.") :]] = checkpoint[key]
 
-    text_model.load_state_dict(text_model_dict)
+    if len(text_model_dict) > 0:
+        text_model.load_state_dict(text_model_dict)
 
     return text_model
 
@@ -1194,7 +1200,8 @@ def download_from_original_stable_diffusion_ckpt(
     converted_vae_checkpoint = convert_ldm_vae_checkpoint(checkpoint, vae_config)
 
     vae = AutoencoderKL(**vae_config)
-    vae.load_state_dict(converted_vae_checkpoint)
+    if len(converted_vae_checkpoint) > 0:
+        vae.load_state_dict(converted_vae_checkpoint)
 
     # Convert the text model.
     if model_type is None:
