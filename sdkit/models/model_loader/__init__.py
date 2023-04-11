@@ -31,7 +31,7 @@ def load_model(context: Context, model_type: str, **kwargs):
     if model_type == "stable-diffusion":
         load_model(context, "vae")
         load_model(context, "hypernetwork")
-        if "lora" in context.models and hasattr("_last_lora_alpha", context):
+        if "lora" in context.models and hasattr(context, "_last_lora_alpha"):
             del context._last_lora_alpha
         load_model(context, "lora")
 
