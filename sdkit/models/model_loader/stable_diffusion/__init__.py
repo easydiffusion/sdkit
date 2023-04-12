@@ -211,7 +211,9 @@ def test_and_fix_precision(context, model, config, attn_precision):
         from sdkit.generate import generate_images
         from . import optimizations
 
-        images = generate_images(context, prompt="Horse", width=64, height=64, num_inference_steps=1)
+        images = generate_images(
+            context, prompt="Horse", width=64, height=64, num_inference_steps=1, sampler_name="plms"
+        )
         is_black_image = not images[0].getbbox()
         if is_black_image and attn_precision == "fp16":
             attn_precision = "fp32"
