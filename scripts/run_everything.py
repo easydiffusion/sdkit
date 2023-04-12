@@ -160,6 +160,7 @@ log.info("---")
 
 model_load_time = 0
 
+
 # run the test
 def run_test():
     global model_load_time
@@ -208,21 +209,6 @@ def run_test():
                 )
                 log_perf_results()
                 continue
-
-            # run a warm-up, before running the actual samplers
-            log.info("Warming up..")
-            try:
-                generate_images(
-                    context,
-                    prompt="Photograph of an astronaut riding a horse",
-                    num_inference_steps=10,
-                    seed=42,
-                    width=512,
-                    height=512,
-                    sampler_name="euler_a",
-                )
-            except:
-                pass
 
             if args.sizes == "auto":
                 min_size = get_min_size(context.model_paths["stable-diffusion"])
