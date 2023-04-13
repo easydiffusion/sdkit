@@ -151,6 +151,13 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         default_pipe = default_pipe.to(torch.float16)
     default_pipe.enable_attention_slicing()
 
+    try:
+        import xformers
+
+        default_pipe.enable_xformers_memory_efficient_attention()
+    except:
+        pass
+
     # make samplers
     diffusers_samplers.make_samplers(default_pipe.scheduler)
 
