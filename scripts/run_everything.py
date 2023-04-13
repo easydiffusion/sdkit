@@ -160,6 +160,7 @@ log.info("---")
 
 model_load_time = 0
 
+
 # run the test
 def run_test():
     global model_load_time
@@ -357,6 +358,9 @@ def log_perf_results():
     print("\n-- Performance summary --")
     print(f"sdkit version: {version('sdkit')}")
     print(f"stable-diffusion-sdkit version: {version('stable-diffusion-sdkit')}")
+    print(f"torch version: {version('torch')}")
+    if args.diffusers:
+        print(f"diffusers version: {version('diffusers')}")
     print(f"Device: {args.device}")
     print(f"Num inference steps: {args.steps}")
     print("")
