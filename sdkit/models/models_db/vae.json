@@ -1,0 +1,7 @@
+{
+    "vae-ft-mse-840000-ema-pruned": {
+        "name": "vae-ft-mse-840000-ema-pruned",
+        "url": "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.ckpt",
+        "quick_hash": "624b0a6cb704569795eb58ed03e4c03ca45b51288016e8f3973e9e449490b8ca"
+    }
+}

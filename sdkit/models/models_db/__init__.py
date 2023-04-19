@@ -20,6 +20,8 @@ def get_models_db():
         db["gfpgan"] = json.load(f)
     with open(db_path / "realesrgan.json") as f:
         db["realesrgan"] = json.load(f)
+    with open(db_path / "vae.json") as f:
+        db["vae"] = json.load(f)
     return db
 
 
@@ -29,7 +31,7 @@ def get_model_info_from_db(quick_hash=None, model_type=None, model_id=None):
     if quick_hash:
         if index is None:
             rebuild_index()
-        log.debug('Cheking model_db for %s', quick_hash)
+        log.debug("Checking model_db for %s", quick_hash)
         return index.get(quick_hash)
     elif model_id and model_type:
         m = db.get(model_type, {})
