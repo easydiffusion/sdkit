@@ -10,7 +10,7 @@ setuptools.setup(
         "picklescan",
         "safetensors",
         "k-diffusion",
-        "diffusers==0.14.0",
+        "diffusers==0.15.1",
         "compel==1.0.5",
     ],
 )
