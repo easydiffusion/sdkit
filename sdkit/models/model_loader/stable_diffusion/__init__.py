@@ -146,9 +146,11 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
 
-    default_pipe = default_pipe.to(context.device)
     if context.half_precision:
-        default_pipe = default_pipe.to(torch.float16)
+        default_pipe = default_pipe.to(context.device, torch.float16)
+    else:
+        default_pipe = default_pipe.to(context.device)
+
     default_pipe.enable_attention_slicing()
 
     try:
