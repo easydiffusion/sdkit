@@ -29,7 +29,7 @@ def load_model(context: Context, **kwargs):
         model=model_to_use,
         pre_pad=0,
         half=half,
-        tile=128,
+        tile=256,
     )
     if "cuda" not in context.device:
         model.model.to(context.device)
