@@ -94,6 +94,8 @@ def latent_samples_to_images(context: Context, samples):
 def diffusers_latent_samples_to_images(context: Context, samples):
     samples, model = samples
     samples = model.decode_latents(samples)
+    if isinstance(samples, torch.Tensor):
+        samples = samples.numpy()
 
     return model.numpy_to_pil(samples)
 
