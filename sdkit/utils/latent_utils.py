@@ -6,6 +6,8 @@ from PIL import Image, ImageOps
 from sdkit import Context
 from sdkit.utils import log
 
+from diffusers import StableDiffusionImg2ImgPipeline
+
 
 def to_tensor(x, device, dtype=torch.float32):
     if torch.is_tensor(x):
@@ -94,8 +96,9 @@ def latent_samples_to_images(context: Context, samples):
 def diffusers_latent_samples_to_images(context: Context, samples):
     samples, model = samples
     samples = model.decode_latents(samples)
-    if isinstance(samples, torch.Tensor):
-        samples = samples.cpu().numpy()
+
+    if isinstance(model, StableDiffusionImg2ImgPipeline):
+        return model.image_processor.postprocess(samples, output_type="pil")
 
     return model.numpy_to_pil(samples)
 
