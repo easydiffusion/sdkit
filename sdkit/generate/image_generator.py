@@ -19,6 +19,9 @@ from .sampler import make_samples
 
 from PIL import Image
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 
 def generate_images(
     context: Context,
