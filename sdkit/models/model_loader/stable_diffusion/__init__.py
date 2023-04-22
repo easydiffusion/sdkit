@@ -234,7 +234,7 @@ def test_and_fix_precision(context, model, config, attn_precision):
             is_black_image = not images[0].getbbox()
 
         if is_black_image and attn_precision == "fp32" and context.half_precision:
-            log.info(f"trying full precision")
+            log.info("trying full precision")
             context.orig_half_precision = context.half_precision
             context.half_precision = False
             config.model.params.unet_config.params.use_fp16 = False

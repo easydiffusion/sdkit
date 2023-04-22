@@ -32,7 +32,7 @@ def apply_lora_model(context, alpha):
         _apply_lora(context, default_pipe, alpha)
     except:
         log.error(traceback.format_exc())
-        log.error(f"Could not apply LoRA!")
+        log.error("Could not apply LoRA!")
 
 
 # Temporarily dumped from https://github.com/huggingface/diffusers/blob/main/scripts/convert_lora_safetensor_to_diffusers.py
