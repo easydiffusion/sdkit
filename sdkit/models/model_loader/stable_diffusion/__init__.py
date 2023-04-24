@@ -160,6 +160,9 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     except:
         pass
 
+    if torch.__version__.startswith("2."):
+        default_pipe.enable_vae_slicing()
+
     # make samplers
     diffusers_samplers.make_samplers(default_pipe.scheduler)
 
