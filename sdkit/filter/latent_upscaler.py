@@ -13,7 +13,7 @@ def apply(context: Context, image, latent_upscaler_options=None, **kwargs):
     upscaler = context.models["latent_upscaler"]
 
     options = {}
-    if latent_upscaler_options != None:
+    if latent_upscaler_options is not None:
         task_data = latent_upscaler_options
         latent_upscaler_options = latent_upscaler_options.use_latent_upscaler
         from pprint import pprint
