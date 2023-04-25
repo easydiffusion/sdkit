@@ -1,7 +1,7 @@
 from sdkit import Context
 from sdkit.utils import gc, log
 
-from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae, nsfw_checker, lora
+from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae, nsfw_checker, lora, latent_upscaler
 
 models = {
     "stable-diffusion": stable_diffusion,
@@ -11,6 +11,7 @@ models = {
     "hypernetwork": hypernetwork,
     "nsfw_checker": nsfw_checker,
     "lora": lora,
+    "latent_upscaler": latent_upscaler
 }
 
 
