@@ -1,8 +1,8 @@
 import os
 import tempfile
+import traceback
 from pathlib import Path
 from urllib.parse import urlparse
-import traceback
 
 import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
@@ -114,13 +114,15 @@ def unload_model(context: Context, **kwargs):
 
 def load_diffusers_model(context: Context, model_path, config_file_path):
     import torch
-    from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
     from diffusers import (
         StableDiffusionImg2ImgPipeline,
-        StableDiffusionInpaintPipelineLegacy,
         StableDiffusionInpaintPipeline,
+        StableDiffusionInpaintPipelineLegacy,
     )
+
     from sdkit.generate.sampler import diffusers_samplers
+
+    from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
     log.info("loading on diffusers")
 
@@ -221,6 +223,7 @@ def test_and_fix_precision(context, model, config, attn_precision):
     # test precision
     try:
         from sdkit.generate import generate_images
+
         from . import optimizations
 
         images = generate_images(

@@ -17,8 +17,6 @@ from sdkit.utils import (
 from .prompt_parser import get_cond_and_uncond
 from .sampler import make_samples
 
-from PIL import Image
-
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
@@ -185,15 +183,16 @@ def make_with_diffusers(
     # sampler_params={},
     callback=None,
 ):
+    from compel import Compel
+    from diffusers import (
+        StableDiffusionImg2ImgPipeline,
+        StableDiffusionInpaintPipeline,
+        StableDiffusionInpaintPipelineLegacy,
+    )
+
     from sdkit.generate.sampler import diffusers_samplers
     from sdkit.models.model_loader.lora import apply_lora_model
     from sdkit.utils import log
-    from diffusers import (
-        StableDiffusionInpaintPipeline,
-        StableDiffusionInpaintPipelineLegacy,
-        StableDiffusionImg2ImgPipeline,
-    )
-    from compel import Compel
 
     model = context.models["stable-diffusion"]
     generator = torch.Generator(context.device).manual_seed(seed)

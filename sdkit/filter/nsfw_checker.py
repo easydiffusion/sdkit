@@ -1,7 +1,7 @@
-from sdkit import Context
-
 import torch
 from PIL import ImageFilter
+
+from sdkit import Context
 
 
 def apply(context: Context, image, blur_radius: float = 75, **kwargs):
