@@ -60,7 +60,7 @@ def compute_quick_hash(total_size_fn, read_bytes_fn):
     Do not use if the file size is less than 3 MB
     """
     total_size = total_size_fn()
-    
+
     if total_size < 0x300000:
         all_bytes = read_bytes_fn(offset=0, count=total_size)
         return hash_bytes(all_bytes)

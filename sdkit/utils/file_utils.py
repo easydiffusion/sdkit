@@ -82,7 +82,9 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
             else:
                 user_comment = json.dumps(metadata)
                 exif_dict = {
-                    "Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")}
+                    "Exif": {
+                        piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")
+                    }
                 }
                 exif_bytes = piexif.dump(exif_dict)
                 piexif.insert(exif_bytes, f"{path}.{file_format.lower()}")

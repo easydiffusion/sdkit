@@ -24,10 +24,10 @@ def get_device_usage(device, log_info=False):
     vram_free, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
     vram_used = vram_total - vram_free
 
-    ram_used /= 1024**3
-    ram_total /= 1024**3
-    vram_used /= 1024**3
-    vram_total /= 1024**3
+    ram_used /= 1024 ** 3
+    ram_total /= 1024 ** 3
+    vram_used /= 1024 ** 3
+    vram_total /= 1024 ** 3
 
     if log_info:
         from sdkit.utils import log
@@ -75,7 +75,7 @@ def print_tensor_info(t, name="t"):
     from sdkit.utils import log
 
     obj_id = get_object_id(t)
-    obj_size = t.nelement() * t.element_size() / 1024**2  # MiB
+    obj_size = t.nelement() * t.element_size() / 1024 ** 2  # MiB
     log.info(
         f" {name} id: {obj_id}, size: {obj_size} MiB, shape: {t.shape}, requires_grad: {t.requires_grad}, type: {t.dtype}, device: {t.device}"
     )
@@ -160,7 +160,7 @@ def _get_tensor_entries(device, sorted_by_size=True):
     tensors = get_tensors_in_memory(device)
     total_mem = 0
     for t in tensors:
-        size = t.nelement() * t.element_size() / 1024**2  # MiB
+        size = t.nelement() * t.element_size() / 1024 ** 2  # MiB
         obj_id = get_object_id(t)
         entry = [obj_id, size, t.shape, len(get_referrers(t)), t.requires_grad, t.dtype]
         entries.append(entry)
