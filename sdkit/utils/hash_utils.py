@@ -60,12 +60,16 @@ def compute_quick_hash(total_size_fn, read_bytes_fn):
     Do not use if the file size is less than 3 MB
     """
     total_size = total_size_fn()
+    
+    if total_size < 0x300000:
+        all_bytes = read_bytes_fn(offset=0, count=total_size)
+        return hash_bytes(all_bytes)
+    else:
+        start_bytes = read_bytes_fn(offset=0x100000, count=0x10000)
+        middle_bytes = read_bytes_fn(offset=int(total_size / 2), count=0x10000)
+        end_bytes = read_bytes_fn(offset=total_size - 0x100000, count=0x10000)
 
-    start_bytes = read_bytes_fn(offset=0x100000, count=0x10000)
-    middle_bytes = read_bytes_fn(offset=int(total_size / 2), count=0x10000)
-    end_bytes = read_bytes_fn(offset=total_size - 0x100000, count=0x10000)
-
-    return hash_bytes(start_bytes + middle_bytes + end_bytes)
+        return hash_bytes(start_bytes + middle_bytes + end_bytes)
 
 
 def hash_bytes(bytes):
