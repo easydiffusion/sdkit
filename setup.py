@@ -12,5 +12,6 @@ setuptools.setup(
         "k-diffusion",
         "diffusers==0.15.1",
         "compel==1.0.5",
+        "accelerate==0.18.0",
     ],
 )
