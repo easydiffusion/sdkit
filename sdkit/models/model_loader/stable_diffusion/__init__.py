@@ -119,8 +119,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         StableDiffusionInpaintPipeline,
         StableDiffusionInpaintPipelineLegacy,
     )
+    from compel import Compel
 
     from sdkit.generate.sampler import diffusers_samplers
+    from sdkit.utils import gc
 
     from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
@@ -143,15 +145,21 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         from_safetensors=model_path.endswith(".safetensors"),
         upcast_attention=(attn_precision == "fp32"),
         is_img2img=False,
+        device="cpu",
     )
 
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
 
-    if context.half_precision:
-        default_pipe = default_pipe.to(context.device, torch.float16)
+    save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
+
+    if context.vram_usage_level == "low":
+        default_pipe.enable_sequential_cpu_offload()
     else:
-        default_pipe = default_pipe.to(context.device)
+        if context.half_precision:
+            default_pipe = default_pipe.to(context.device, torch.float16)
+        else:
+            default_pipe = default_pipe.to(context.device)
 
     default_pipe.enable_attention_slicing()
 
@@ -165,6 +173,13 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     if torch.__version__.startswith("2."):
         default_pipe.enable_vae_slicing()
 
+    # make the compel prompt parser object
+    compel = Compel(
+        tokenizer=default_pipe.tokenizer,
+        text_encoder=default_pipe.text_encoder,
+        truncate_long_prompts=False,
+    )
+
     # make samplers
     diffusers_samplers.make_samplers(default_pipe.scheduler)
 
@@ -174,6 +189,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
             "config": config,
             "default": default_pipe,
             "inpainting": default_pipe,
+            "compel": compel,
         }
 
     pipe_txt2img = default_pipe
@@ -203,7 +219,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         requires_safety_checker=False,
     )
 
-    save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
+    gc(context)
 
     log.info("Loaded on diffusers")
 
@@ -213,6 +229,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         "txt2img": pipe_txt2img,
         "img2img": pipe_img2img,
         "inpainting": pipe_inpainting,
+        "compel": compel,
     }
 
 

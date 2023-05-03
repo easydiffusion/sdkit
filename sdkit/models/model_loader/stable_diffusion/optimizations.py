@@ -149,7 +149,7 @@ def make_attn_forward(context: Context, attn_precision="fp16"):
         mem_free_total = mem_free_cuda + mem_free_torch
 
         # figure out the required memory
-        gb = 1024 ** 3
+        gb = 1024**3
         tensor_size = q.shape[0] * q.shape[1] * k.shape[1] * q.element_size()
         modifier = 3 if q.element_size() == 2 else 2.5
         mem_required = tensor_size * modifier
@@ -217,7 +217,7 @@ def print_model_size_breakdown(model):
     """
 
     def mb(n_bytes):
-        return int(n_bytes / float(10 ** 6))
+        return int(n_bytes / float(10**6))
 
     log.info(f"precision: {model.dtype}")
 
