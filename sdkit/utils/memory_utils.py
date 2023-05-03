@@ -18,11 +18,14 @@ def gc(context: Context):
         torch.cuda.ipc_collect()
 
 
-def get_device_usage(device, log_info=False):
+def get_device_usage(device, log_info=False, process_usage_only=True):
     cpu_used = psutil.cpu_percent()
     ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
-    _, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
-    vram_used = torch.cuda.memory_allocated(device) if "cuda" in device else 0
+    vram_free_device, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
+    if process_usage_only:
+        vram_used = torch.cuda.memory_allocated(device) if "cuda" in device else 0
+    else:
+        vram_used = vram_total - vram_free_device
     vram_peak = torch.cuda.memory_stats(device)["allocated_bytes.all.peak"] if "cuda" in device else 0
 
     ram_used /= 1024**3
