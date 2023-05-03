@@ -13,7 +13,7 @@ from sdkit.generate import generate_images
 from sdkit.models import load_model
 from sdkit.utils import get_device_usage, log
 
-DeviceUsage = namedtuple("DeviceUsage", ["cpu_used", "ram_used", "ram_total", "vram_used", "vram_total"])
+DeviceUsage = namedtuple("DeviceUsage", ["cpu_used", "ram_used", "ram_total", "vram_used", "vram_total", "vram_peak"])
 
 c = Context()
 
