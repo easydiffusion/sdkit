@@ -161,7 +161,8 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         else:
             default_pipe = default_pipe.to(context.device)
 
-    default_pipe.enable_attention_slicing()
+    if context.vram_usage_level != "high":
+        default_pipe.enable_attention_slicing()
 
     try:
         import xformers
