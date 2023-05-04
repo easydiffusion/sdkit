@@ -153,7 +153,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
 
-    if context.vram_usage_level == "low":
+    if context.vram_usage_level == "low" and context.device != "mps":
         default_pipe.enable_sequential_cpu_offload()
     else:
         if context.half_precision:
