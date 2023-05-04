@@ -194,7 +194,7 @@ def make_with_diffusers(
     from sdkit.utils import log
 
     model = context.models["stable-diffusion"]
-    if torch.backends.mps.is_available():
+    if context.device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         generator = torch.Generator().manual_seed(seed)
     else:
         generator = torch.Generator(context.device).manual_seed(seed)
