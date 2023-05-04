@@ -194,7 +194,10 @@ def make_with_diffusers(
     from sdkit.utils import log
 
     model = context.models["stable-diffusion"]
-    generator = torch.Generator(context.device).manual_seed(seed)
+    if torch.backends.mps.is_available():
+        generator = torch.Generator().manual_seed(seed)
+    else:
+        generator = torch.Generator(context.device).manual_seed(seed)
 
     cmd = {
         "guidance_scale": guidance_scale,
