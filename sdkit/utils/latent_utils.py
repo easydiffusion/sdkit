@@ -1,12 +1,11 @@
 import numpy as np
 import torch
+from diffusers import StableDiffusionImg2ImgPipeline
 from einops import rearrange, repeat
 from PIL import Image, ImageOps
 
 from sdkit import Context
 from sdkit.utils import log
-
-from diffusers import StableDiffusionImg2ImgPipeline
 
 
 def to_tensor(x, device, dtype=torch.float32):

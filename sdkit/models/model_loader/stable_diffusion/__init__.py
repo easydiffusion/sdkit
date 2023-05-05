@@ -1,8 +1,8 @@
 import os
 import tempfile
+import traceback
 from pathlib import Path
 from urllib.parse import urlparse
-import traceback
 
 import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
@@ -114,13 +114,17 @@ def unload_model(context: Context, **kwargs):
 
 def load_diffusers_model(context: Context, model_path, config_file_path):
     import torch
-    from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
     from diffusers import (
         StableDiffusionImg2ImgPipeline,
-        StableDiffusionInpaintPipelineLegacy,
         StableDiffusionInpaintPipeline,
+        StableDiffusionInpaintPipelineLegacy,
     )
+    from compel import Compel
+
     from sdkit.generate.sampler import diffusers_samplers
+    from sdkit.utils import gc
+
+    from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
     log.info("loading on diffusers")
 
@@ -141,17 +145,24 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         from_safetensors=model_path.endswith(".safetensors"),
         upcast_attention=(attn_precision == "fp32"),
         is_img2img=False,
+        device="cpu",
     )
 
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
 
-    if context.half_precision:
-        default_pipe = default_pipe.to(context.device, torch.float16)
-    else:
-        default_pipe = default_pipe.to(context.device)
+    save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
 
-    default_pipe.enable_attention_slicing()
+    if context.vram_usage_level == "low" and context.device != "mps":
+        default_pipe.enable_sequential_cpu_offload()
+    else:
+        if context.half_precision:
+            default_pipe = default_pipe.to(context.device, torch.float16)
+        else:
+            default_pipe = default_pipe.to(context.device)
+
+    if context.vram_usage_level != "high":
+        default_pipe.enable_attention_slicing()
 
     try:
         import xformers
@@ -159,6 +170,16 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         default_pipe.enable_xformers_memory_efficient_attention()
     except:
         pass
+
+    if torch.__version__.startswith("2."):
+        default_pipe.enable_vae_slicing()
+
+    # make the compel prompt parser object
+    compel = Compel(
+        tokenizer=default_pipe.tokenizer,
+        text_encoder=default_pipe.text_encoder,
+        truncate_long_prompts=False,
+    )
 
     # make samplers
     diffusers_samplers.make_samplers(default_pipe.scheduler)
@@ -169,6 +190,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
             "config": config,
             "default": default_pipe,
             "inpainting": default_pipe,
+            "compel": compel,
         }
 
     pipe_txt2img = default_pipe
@@ -198,7 +220,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         requires_safety_checker=False,
     )
 
-    save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
+    gc(context)
 
     log.info("Loaded on diffusers")
 
@@ -208,6 +230,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         "txt2img": pipe_txt2img,
         "img2img": pipe_img2img,
         "inpainting": pipe_inpainting,
+        "compel": compel,
     }
 
 
@@ -218,6 +241,7 @@ def test_and_fix_precision(context, model, config, attn_precision):
     # test precision
     try:
         from sdkit.generate import generate_images
+
         from . import optimizations
 
         images = generate_images(

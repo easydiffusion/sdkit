@@ -17,8 +17,6 @@ from sdkit.utils import (
 from .prompt_parser import get_cond_and_uncond
 from .sampler import make_samples
 
-from PIL import Image
-
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
@@ -185,18 +183,21 @@ def make_with_diffusers(
     # sampler_params={},
     callback=None,
 ):
+    from diffusers import (
+        StableDiffusionImg2ImgPipeline,
+        StableDiffusionInpaintPipeline,
+        StableDiffusionInpaintPipelineLegacy,
+    )
+
     from sdkit.generate.sampler import diffusers_samplers
     from sdkit.models.model_loader.lora import apply_lora_model
     from sdkit.utils import log
-    from diffusers import (
-        StableDiffusionInpaintPipeline,
-        StableDiffusionInpaintPipelineLegacy,
-        StableDiffusionImg2ImgPipeline,
-    )
-    from compel import Compel
 
     model = context.models["stable-diffusion"]
-    generator = torch.Generator(context.device).manual_seed(seed)
+    if context.device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        generator = torch.Generator().manual_seed(seed)
+    else:
+        generator = torch.Generator(context.device).manual_seed(seed)
 
     cmd = {
         "guidance_scale": guidance_scale,
@@ -258,15 +259,27 @@ def make_with_diffusers(
     log.info("Parsing the prompt..")
 
     # make the prompt embeds
-    compel = Compel(
-        tokenizer=operation_to_apply.tokenizer,
-        text_encoder=operation_to_apply.text_encoder,
-        truncate_long_prompts=False,
-    )
+    compel = model["compel"]
+
+    # temporary hack until compel 1.1.4 is released
+    if hasattr(operation_to_apply.text_encoder, "_hf_hook"):
+        [m._hf_hook.pre_forward(m) for m in operation_to_apply.text_encoder.modules() if hasattr(m, "_hf_hook")]
+        print(compel.device)
+
     log.info("compel is ready")
     cmd["prompt_embeds"] = compel(prompt)
+
+    if hasattr(operation_to_apply.text_encoder, "_hf_hook"):
+        [m._hf_hook.pre_forward(m) for m in operation_to_apply.text_encoder.modules() if hasattr(m, "_hf_hook")]
+        print(compel.device)
+
     log.info("Made prompt embeds")
     cmd["negative_prompt_embeds"] = compel(negative_prompt)
+
+    if hasattr(operation_to_apply.text_encoder, "_hf_hook"):
+        [m._hf_hook.pre_forward(m) for m in operation_to_apply.text_encoder.modules() if hasattr(m, "_hf_hook")]
+        print(compel.device)
+
     log.info("Made negative prompt embeds")
     cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
         [cmd["prompt_embeds"], cmd["negative_prompt_embeds"]]

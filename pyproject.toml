@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdkit"
-version = "1.0.81"
+version = "1.0.87"
 authors = [
   {name="cmdr2", email="secondary.cmdr2@gmail.com"},
 ]
@@ -17,6 +17,7 @@ classifiers = [
 	"Operating System :: Microsoft :: Windows :: Windows 10",
 	"Operating System :: Microsoft :: Windows :: Windows 11",
 	"Operating System :: POSIX :: Linux",
+	"Operating System :: MacOS",
 ]
 keywords = ["stable diffusion", "ai", "art"]
 

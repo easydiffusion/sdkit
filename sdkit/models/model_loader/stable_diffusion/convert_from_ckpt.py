@@ -20,17 +20,6 @@ from typing import Optional
 
 import requests
 import torch
-from transformers import (
-    AutoFeatureExtractor,
-    BertTokenizerFast,
-    CLIPImageProcessor,
-    CLIPTextModel,
-    CLIPTextModelWithProjection,
-    CLIPTokenizer,
-    CLIPVisionConfig,
-    CLIPVisionModelWithProjection,
-)
-
 from diffusers import (
     AutoencoderKL,
     ControlNetModel,
@@ -45,23 +34,38 @@ from diffusers import (
     PNDMScheduler,
     PriorTransformer,
     StableDiffusionControlNetPipeline,
-    StableDiffusionPipeline,
     StableDiffusionImg2ImgPipeline,
     StableDiffusionInpaintPipeline,
-    StableDiffusionDepth2ImgPipeline,
+    StableDiffusionPipeline,
     StableUnCLIPImg2ImgPipeline,
     StableUnCLIPPipeline,
     UnCLIPScheduler,
     UNet2DConditionModel,
 )
-from diffusers.pipelines.latent_diffusion.pipeline_latent_diffusion import LDMBertConfig, LDMBertModel
-from diffusers.pipelines.paint_by_example import PaintByExampleImageEncoder, PaintByExamplePipeline
+from diffusers.pipelines.latent_diffusion.pipeline_latent_diffusion import (
+    LDMBertConfig,
+    LDMBertModel,
+)
+from diffusers.pipelines.paint_by_example import (
+    PaintByExampleImageEncoder,
+    PaintByExamplePipeline,
+)
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
-from diffusers.pipelines.stable_diffusion.stable_unclip_image_normalizer import StableUnCLIPImageNormalizer
-
+from diffusers.pipelines.stable_diffusion.stable_unclip_image_normalizer import (
+    StableUnCLIPImageNormalizer,
+)
 from diffusers.utils import is_omegaconf_available, is_safetensors_available, logging
 from diffusers.utils.import_utils import BACKENDS_MAPPING
-
+from transformers import (
+    AutoFeatureExtractor,
+    BertTokenizerFast,
+    CLIPImageProcessor,
+    CLIPTextModel,
+    CLIPTextModelWithProjection,
+    CLIPTokenizer,
+    CLIPVisionConfig,
+    CLIPVisionModelWithProjection,
+)
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -1237,25 +1241,25 @@ def download_from_original_stable_diffusion_ckpt(
                         feature_extractor=None,
                         requires_safety_checker=False,
                     )
-                elif "LatentDepth2ImageDiffusion" in original_config.model.target:
-                    # Convert the depth estimator model.
-                    depth_config = create_depth_diffusers_config(original_config)
-                    converted_depth_checkpoint = convert_ldm_depth_checkpoint(checkpoint, depth_config)
+                # elif "LatentDepth2ImageDiffusion" in original_config.model.target:
+                #     # Convert the depth estimator model.
+                #     depth_config = create_depth_diffusers_config(original_config)
+                #     converted_depth_checkpoint = convert_ldm_depth_checkpoint(checkpoint, depth_config)
 
-                    depth_estimator = DPTForDepthEstimation(depth_estimator_config)
-                    feature_extractor = DPTFeatureExtractor.from_pretrained(
-                        "hf-internal-testing/tiny-random-DPTForDepthEstimation"
-                    )
+                #     depth_estimator = DPTForDepthEstimation(depth_estimator_config)
+                #     feature_extractor = DPTFeatureExtractor.from_pretrained(
+                #         "hf-internal-testing/tiny-random-DPTForDepthEstimation"
+                #     )
 
-                    pipe = StableDiffusionDepth2ImgPipeline(
-                        vae=vae,
-                        text_encoder=text_model,
-                        tokenizer=tokenizer,
-                        unet=unet,
-                        scheduler=scheduler,
-                        depth_estimator=foo,
-                        feature_extractor=bar,
-                    )
+                #     pipe = StableDiffusionDepth2ImgPipeline(
+                #         vae=vae,
+                #         text_encoder=text_model,
+                #         tokenizer=tokenizer,
+                #         unet=unet,
+                #         scheduler=scheduler,
+                #         depth_estimator=foo,
+                #         feature_extractor=bar,
+                #     )
                 else:
                     if is_img2img:
                         pipe = StableDiffusionImg2ImgPipeline(

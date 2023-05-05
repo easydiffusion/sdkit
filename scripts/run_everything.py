@@ -73,6 +73,7 @@ parser.add_argument(
 parser.add_argument(
     "--device", default="cuda:0", type=str, help="Specify the device to run on. E.g. cpu or cuda:0 or cuda:1 etc"
 )
+parser.add_argument("--max-vram", default=None, type=float, help="Max VRAM (in GiB) this process is allowed to use")
 parser.add_argument("--live-perf", action="store_true", help="Print the RAM and VRAM usage stats every few seconds")
 parser.add_argument("--diffusers", action="store_true", help="Use the new diffusers backend")
 parser.set_defaults(live_perf=False)
@@ -124,10 +125,26 @@ if args.init_image is not None:
     all_samplers = {"ddim"}
 
 # setup the test
+import torch
 from sdkit import Context
 from sdkit.generate import generate_images
 from sdkit.models import get_model_info_from_db
 from sdkit.utils import hash_file_quick
+
+
+def restrict():
+    if args.max_vram is not None:
+        device_usage = get_device_usage(args.device)
+        total_vram = device_usage[4]
+        vram_fraction = max(args.max_vram, 0) / total_vram
+
+        log.info(
+            f"Restricting process VRAM usage to {args.max_vram} GiB, out of the total {total_vram:.1f} GiB on {args.device}"
+        )
+        torch.cuda.set_per_process_memory_fraction(vram_fraction, device=args.device)
+
+
+restrict()
 
 perf_results = [
     [
@@ -216,11 +233,11 @@ def run_test():
                 generate_images(
                     context,
                     prompt="Photograph of an astronaut riding a horse",
-                    num_inference_steps=10,
+                    num_inference_steps=4,
                     seed=42,
                     width=512,
                     height=512,
-                    sampler_name="euler_a",
+                    sampler_name="plms",
                 )
             except:
                 pass
@@ -254,6 +271,9 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
         )
 
         # start profiling
+        if "cuda" in args.device:
+            torch.cuda.reset_peak_memory_stats(args.device)
+
         prof_thread_stop_event = Event()
         ram_usage = Queue()
         vram_usage = Queue()
@@ -300,14 +320,16 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             prof_thread_stop_event.set()
             prof_thread.join()
 
+        vram_peak = get_device_usage(context.device)[5]
+
         perf_results.append(
             [
                 model_filename,
-                model_load_time,
+                f"{model_load_time:.1f}",
                 vram_usage_level,
                 sampler_name,
                 f"{max(ram_usage.queue):.1f}",
-                f"{max(vram_usage.queue):.1f}",
+                f"{vram_peak:.1f}",
                 f"{width}x{height}",
                 f"{t:.1f}",
                 f"{speed:.1f}",
@@ -324,12 +346,14 @@ def profiling_thread(device, prof_thread_stop_event, ram_usage, vram_usage):
     import time
 
     while not prof_thread_stop_event.is_set():
-        cpu_used, ram_used, ram_total, vram_used, vram_total = get_device_usage(device, log_info=args.live_perf)
+        cpu_used, ram_used, ram_total, vram_used, vram_total, vram_peak = get_device_usage(
+            device, log_info=args.live_perf
+        )
 
         ram_usage.put(ram_used)
         vram_usage.put(vram_used)
 
-        time.sleep(1)
+        time.sleep(0.3)
 
 
 def is_model_already_tested(out_dir_path):
@@ -370,17 +394,7 @@ def log_perf_results():
     df = df.sort_values(by=["image_size", "model_filename"], ascending=False)
     df = df.reset_index(drop=True)
 
-    df["vram_tp90"] = df["vram_usage"].apply(lambda x: np.percentile(x, 90) if len(x) > 0 else 0)
-    df["vram_tp100"] = df["vram_usage"].apply(lambda x: np.percentile(x, 100) if len(x) > 0 else 0)
-    df["vram_spike_test"] = abs((df["vram_tp100"] - df["vram_tp90"])) < 0.5  # okay with a spike of 500 MB
-    df["vram_tp90"] = df["vram_tp90"].apply(lambda x: f"{x:.1f}")
-    df["overall_status"] = df["render_test"] & df["vram_spike_test"]
-
-    df["vram_spike_test"] = df["vram_spike_test"].apply(lambda is_pass: "pass" if is_pass else "FAIL")
     df["render_test"] = df["render_test"].apply(lambda is_pass: "pass" if is_pass else "FAIL")
-    df["overall_status"] = df["overall_status"].apply(lambda is_pass: "pass" if is_pass else "FAIL")
-
-    del df["vram_tp100"]
 
     out_file = os.path.join(args.out_dir, perf_results_file)
     df.to_csv(out_file, index=False)

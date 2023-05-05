@@ -18,26 +18,31 @@ def gc(context: Context):
         torch.cuda.ipc_collect()
 
 
-def get_device_usage(device, log_info=False):
+def get_device_usage(device, log_info=False, process_usage_only=True):
     cpu_used = psutil.cpu_percent()
     ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
-    vram_free, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
-    vram_used = vram_total - vram_free
+    vram_free_device, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
+    if process_usage_only:
+        vram_used = torch.cuda.memory_allocated(device) if "cuda" in device else 0
+    else:
+        vram_used = vram_total - vram_free_device
+    vram_peak = torch.cuda.memory_stats(device)["allocated_bytes.all.peak"] if "cuda" in device else 0
 
     ram_used /= 1024**3
     ram_total /= 1024**3
     vram_used /= 1024**3
     vram_total /= 1024**3
+    vram_peak /= 1024**3
 
     if log_info:
         from sdkit.utils import log
 
         msg = f"CPU utilization: {cpu_used:.1f}%, System RAM used: {ram_used:.1f} of {ram_total:.1f} GiB"
         if "cuda" in device:
-            msg += f", GPU RAM used ({device}): {vram_used:.1f} of {vram_total:.1f} GiB"
+            msg += f", GPU RAM used ({device}): {vram_used:.1f} of {vram_total:.1f} GiB (peak: {vram_peak:.1f} GiB)"
         log.info(msg)
 
-    return cpu_used, ram_used, ram_total, vram_used, vram_total
+    return cpu_used, ram_used, ram_total, vram_used, vram_total, vram_peak
 
 
 def get_object_id(o):

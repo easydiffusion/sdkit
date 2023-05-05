@@ -1,5 +1,6 @@
-import torch
 import traceback
+
+import torch
 
 from sdkit import Context
 from sdkit.utils import load_tensor_file, log

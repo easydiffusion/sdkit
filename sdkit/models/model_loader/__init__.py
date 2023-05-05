@@ -1,7 +1,16 @@
 from sdkit import Context
 from sdkit.utils import gc, log
 
-from . import gfpgan, hypernetwork, realesrgan, stable_diffusion, vae, nsfw_checker, lora, latent_upscaler
+from . import (
+    gfpgan,
+    hypernetwork,
+    latent_upscaler,
+    lora,
+    nsfw_checker,
+    realesrgan,
+    stable_diffusion,
+    vae,
+)
 
 models = {
     "stable-diffusion": stable_diffusion,

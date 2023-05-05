@@ -1,16 +1,15 @@
-from sdkit import Context
-
 from diffusers import (
     DPMSolverMultistepScheduler,
     EulerAncestralDiscreteScheduler,
     EulerDiscreteScheduler,
     HeunDiscreteScheduler,
+    KDPM2AncestralDiscreteScheduler,
+    KDPM2DiscreteScheduler,
     LMSDiscreteScheduler,
     PNDMScheduler,
-    KDPM2DiscreteScheduler,
-    KDPM2AncestralDiscreteScheduler,
     UniPCMultistepScheduler,
 )
+
 
 samplers = {
     "plms": None,

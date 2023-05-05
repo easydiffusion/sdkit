@@ -1,8 +1,8 @@
-from sdkit import Context
-from sdkit.models import load_model
-from sdkit.filter import apply_filters
-
 from PIL import Image
+
+from sdkit import Context
+from sdkit.filter import apply_filters
+from sdkit.models import load_model
 
 c = Context()
 
