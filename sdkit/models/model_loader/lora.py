@@ -93,15 +93,20 @@ def _apply_lora(
             pair_keys.append(key)
             pair_keys.append(key.replace("lora_up", "lora_down"))
 
+        if hasattr(curr_layer, "_hf_hook"):
+            weight = curr_layer._hf_hook.weights_map["weight"]
+        else:
+            weight = curr_layer.weight
+
         # update weight
         if len(state_dict[pair_keys[0]].shape) == 4:
-            weight_up = state_dict[pair_keys[0]].squeeze(3).squeeze(2).to(torch.float32).to(context.device)
-            weight_down = state_dict[pair_keys[1]].squeeze(3).squeeze(2).to(torch.float32).to(context.device)
-            curr_layer.weight.data += alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
+            weight_up = state_dict[pair_keys[0]].squeeze(3).squeeze(2).to(torch.float32).to(weight.device)
+            weight_down = state_dict[pair_keys[1]].squeeze(3).squeeze(2).to(torch.float32).to(weight.device)
+            weight.data += alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
         else:
-            weight_up = state_dict[pair_keys[0]].to(torch.float32).to(context.device)
-            weight_down = state_dict[pair_keys[1]].to(torch.float32).to(context.device)
-            curr_layer.weight.data += alpha * torch.mm(weight_up, weight_down)
+            weight_up = state_dict[pair_keys[0]].to(torch.float32).to(weight.device)
+            weight_down = state_dict[pair_keys[1]].to(torch.float32).to(weight.device)
+            weight.data += alpha * torch.mm(weight_up, weight_down)
 
         # update visited list
         for item in pair_keys:
