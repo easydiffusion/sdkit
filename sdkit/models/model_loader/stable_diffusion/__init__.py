@@ -155,7 +155,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     if context.vram_usage_level == "low" and context.device != "mps":
         if context.half_precision:
-            default_pipe = default_pipe.to("cpu", torch.float16)
+            default_pipe = default_pipe.to("cpu", torch.float16, silence_dtype_warnings=True)
         default_pipe.enable_sequential_cpu_offload()
         default_pipe.enable_attention_slicing(1)
     else:
