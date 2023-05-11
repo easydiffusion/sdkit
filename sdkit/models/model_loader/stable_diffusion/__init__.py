@@ -157,13 +157,14 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         if context.half_precision:
             default_pipe = default_pipe.to("cpu", torch.float16)
         default_pipe.enable_sequential_cpu_offload()
+        default_pipe.enable_attention_slicing(1)
     else:
         if context.half_precision:
             default_pipe = default_pipe.to(context.device, torch.float16)
         else:
             default_pipe = default_pipe.to(context.device)
 
-    if context.vram_usage_level != "high":
+    if context.vram_usage_level == "balanced":
         default_pipe.enable_attention_slicing()
 
     try:
