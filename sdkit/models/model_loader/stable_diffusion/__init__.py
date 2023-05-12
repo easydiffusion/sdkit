@@ -126,6 +126,12 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
+    from .optimizations import optimized_get_attention_scores
+
+    from diffusers.models.attention_processor import Attention
+
+    Attention.get_attention_scores = optimized_get_attention_scores
+
     log.info("loading on diffusers")
 
     log.info(f"using config: {config_file_path}")
