@@ -118,7 +118,7 @@ if args.init_image is not None:
         log.error(f"Error! Could not an initial image at the path specified: {args.init_image}")
         exit(1)
 
-    if samplers_to_test != {"ddim"}:
+    if samplers_to_test != {"ddim"} and not args.diffusers:
         log.error('We only support the "ddim" sampler for img2img right now!')
         exit(1)
 
