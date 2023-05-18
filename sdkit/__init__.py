@@ -37,6 +37,7 @@ class Context(local):
         self.vram_usage_level = "balanced"
 
         self.test_diffusers = False
+        self._clip_skip = False
 
     # hacky approach, but we need to enforce full precision for some devices
     # we also need to force full precision for these devices (haven't implemented this yet):
@@ -78,3 +79,12 @@ class Context(local):
             self.vram_optimizations = {"KEEP_FS_AND_CS_IN_CPU", "SET_ATTENTION_STEP_TO_16"}
         elif level == "high":
             self.vram_optimizations = {"SET_ATTENTION_STEP_TO_2"}
+
+    @property
+    def clip_skip(self):
+        return self._clip_skip
+
+    @clip_skip.setter
+    def clip_skip(self, value):
+        self._clip_skip = bool(value)
+
