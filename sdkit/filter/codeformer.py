@@ -190,7 +190,7 @@ def inference(image, background_enhance, face_upsample, upscale, codeformer_fide
                 )
 
         restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
-        return restored_img
+        return restored_img, upscale
     except Exception as error:
         print('Global exception', error)
         return None
@@ -207,7 +207,7 @@ def apply(context: Context, input_img, background_enhance=False, face_upsample=T
     input_img = cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR)
 
     # Run inference
-    result = inference(
+    result, rescaling_factor = inference(
             input_img,
             background_enhance,
             face_upsample,
@@ -227,8 +227,8 @@ def apply(context: Context, input_img, background_enhance=False, face_upsample=T
         original_width, original_height = pil_image.size
 
         # Calculate new dimensions
-        new_width = int(original_width * 0.25)
-        new_height = int(original_height * 0.25)
+        new_width = int(original_width / rescaling_factor)
+        new_height = int(original_height / rescaling_factor)
 
         # Resize the image, using the high-quality downsampling filter
         rescaled_image = pil_image.resize((new_width, new_height), Image.ANTIALIAS)
