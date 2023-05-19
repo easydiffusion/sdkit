@@ -165,18 +165,20 @@ def apply(context: Context, input_img, background_enhance=False, face_upsample=T
         #result = cv2.cvtColor(result, cv2.COLOR_BGR2RGB) # uncommenting this line turns people blue, which is a very convenient way to check CodeFormer is being used
         pil_image = Image.fromarray(result)
 
-        # Get original image dimensions
-        original_width, original_height = pil_image.size
+        # Only resize if rescaling_factor is not 1
+        if rescaling_factor != 1:
+            # Get original image dimensions
+            original_width, original_height = pil_image.size
 
-        # Calculate new dimensions
-        new_width = int(original_width / rescaling_factor)
-        new_height = int(original_height / rescaling_factor)
+            # Calculate new dimensions
+            new_width = int(original_width / rescaling_factor)
+            new_height = int(original_height / rescaling_factor)
 
-        # Resize the image, using the high-quality downsampling filter
-        rescaled_image = pil_image.resize((new_width, new_height), Image.ANTIALIAS)
+            # Resize the image, using the high-quality downsampling filter
+            pil_image = pil_image.resize((new_width, new_height), Image.ANTIALIAS)
 
-        # Return the rescaled image
-        return rescaled_image
+        # Return the rescaled/unchanged image
+        return pil_image
     else:
         print('Error during inference.')
         return None
