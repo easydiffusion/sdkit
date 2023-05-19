@@ -12,7 +12,7 @@ def load_model(context: Context, **kwargs):
     upscaler.to(context._device)
 
     if context._vram_usage_level != "high":
-        upscaler.enable_sequential_cpu_offload()   # GPU?
+        #upscaler.enable_sequential_cpu_offload()   # GPU?
         upscaler.enable_attention_slicing()   # GPU?
     log.info('Loading completed')
 
