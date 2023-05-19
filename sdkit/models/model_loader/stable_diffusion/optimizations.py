@@ -315,6 +315,8 @@ def get_optimized_attentionblock_forward(self, hidden_states):
 
     if self._use_memory_efficient_attention_xformers:
         # Memory efficient attention
+        import xformers
+
         hidden_states = xformers.ops.memory_efficient_attention(
             query_proj, key_proj, value_proj, attn_bias=None, op=self._attention_op
         )
