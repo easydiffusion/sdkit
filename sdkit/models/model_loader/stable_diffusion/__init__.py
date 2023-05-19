@@ -171,7 +171,9 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         else:
             default_pipe = default_pipe.to(context.device)
 
-    if context.vram_usage_level != "high":
+    if context.vram_usage_level == "high":
+        default_pipe.enable_attention_slicing(4)
+    else:
         default_pipe.enable_attention_slicing(1)
 
     try:
@@ -186,10 +188,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     # make the compel prompt parser object
     compel = Compel(
-        tokenizer = default_pipe.tokenizer,
-        text_encoder = default_pipe.text_encoder,
-        truncate_long_prompts = False,
-        use_penultimate_clip_layer = context.clip_skip,
+        tokenizer=default_pipe.tokenizer,
+        text_encoder=default_pipe.text_encoder,
+        truncate_long_prompts=False,
+        use_penultimate_clip_layer=context.clip_skip,
     )
 
     # make samplers
