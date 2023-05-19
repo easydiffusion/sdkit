@@ -129,7 +129,7 @@ import torch
 from sdkit import Context
 from sdkit.generate import generate_images
 from sdkit.models import get_model_info_from_db
-from sdkit.utils import hash_file_quick
+from sdkit.utils import hash_file_quick, gc
 
 
 def restrict():
@@ -261,7 +261,7 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
 
     for sampler_name in samplers_to_test:
         # setup
-        img_path = os.path.join(out_dir_path, f"{sampler_name}_0.jpeg")
+        img_path = os.path.join(out_dir_path, f"{sampler_name}_0.png")
         if args.skip_completed and os.path.exists(img_path):
             log.info(f"skipping sampler {sampler_name} since it has already been processed at {img_path}")
             continue
@@ -315,6 +315,8 @@ def run_samplers(context, model_filename, out_dir_path, width, height, vram_usag
             render_success = False
             log.exception(e)
             t = 0
+        except KeyboardInterrupt:
+            exit()
         finally:
             # stop profiling
             prof_thread_stop_event.set()
