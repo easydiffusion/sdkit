@@ -22,8 +22,6 @@ from sdkit.modules.codeformer.archs.codeformer_arch import CodeFormer
 from sdkit.modules.codeformer.facelib.utils.face_restoration_helper import FaceRestoreHelper
 from sdkit.modules.codeformer.facelib.utils.misc import is_gray
 
-from sdkit.models.model_loader.codeformer import initialize_models
-
 
 """
 import traceback
@@ -142,11 +140,10 @@ def inference(image, background_enhance, face_upsample, upscale, codeformer_fide
 
 
 def apply(context: Context, input_img, background_enhance=False, face_upsample=True, rescaling_factor=4, codeformer_fidelity=0, **kwargs):
-    # Extract the model directory path for CodeFormer
-    codeformer_path = context.model_paths['codeformer']
-    model_dir = os.path.dirname(os.path.dirname(codeformer_path))
-    upsampler, device, codeformer_net = initialize_models(context)
-
+    # Get the models from the context object
+    device = torch.device(context.device)
+    upsampler, codeformer_net = context.models["codeformer"]
+    
     # Convert PIL Image to numpy array and ensure it's in BGR format for OpenCV
     input_img = np.array(input_img)
     input_img = cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR)

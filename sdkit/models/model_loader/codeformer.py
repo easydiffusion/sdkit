@@ -42,8 +42,6 @@ def load_model(context: Context, **kwargs):
         if not os.path.exists(os.path.join(model_folder_path, f'{model_type}.pth')):
             load_file_from_url(url=pretrain_model_url[model_type], model_dir=model_folder_path, progress=True, file_name=None)
 
-
-def initialize_models(context: Context, **kwargs):
     def set_realesrgan():
         half = True if gpu_is_available() else False
         model = RRDBNet(
@@ -83,7 +81,7 @@ def initialize_models(context: Context, **kwargs):
     codeformer_net.load_state_dict(checkpoint)
     codeformer_net.eval()
 
-    return upsampler, device, codeformer_net
+    return (upsampler, codeformer_net)
     
 
 def unload_model(context: Context, **kwargs):
