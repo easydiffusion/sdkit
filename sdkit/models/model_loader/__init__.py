@@ -4,6 +4,7 @@ from sdkit.utils import gc, log
 from . import (
     gfpgan,
     hypernetwork,
+    latent_upscaler,
     lora,
     nsfw_checker,
     realesrgan,
@@ -19,6 +20,7 @@ models = {
     "hypernetwork": hypernetwork,
     "nsfw_checker": nsfw_checker,
     "lora": lora,
+    "latent_upscaler": latent_upscaler
 }
 
 
