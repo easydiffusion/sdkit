@@ -289,3 +289,66 @@ def optimized_get_attention_scores(self, query, key, attention_mask=None):
     attention_probs = attention_probs.to(dtype)
 
     return attention_probs
+
+
+# optimized version of diffusers.models.attention.AttentionBlock.forward
+# won't be necessary from diffusers 0.17+ since they've removed AttentionBlock
+def get_optimized_attentionblock_forward(self, hidden_states):
+    residual = hidden_states
+    batch, channel, height, width = hidden_states.shape
+
+    # norm
+    hidden_states = self.group_norm(hidden_states)
+
+    hidden_states = hidden_states.view(batch, channel, height * width).transpose(1, 2)
+
+    # proj to q, k, v
+    query_proj = self.query(hidden_states)
+    key_proj = self.key(hidden_states)
+    value_proj = self.value(hidden_states)
+
+    scale = 1 / math.sqrt(self.channels / self.num_heads)
+
+    query_proj = self.reshape_heads_to_batch_dim(query_proj)
+    key_proj = self.reshape_heads_to_batch_dim(key_proj)
+    value_proj = self.reshape_heads_to_batch_dim(value_proj)
+
+    if self._use_memory_efficient_attention_xformers:
+        # Memory efficient attention
+        import xformers
+
+        hidden_states = xformers.ops.memory_efficient_attention(
+            query_proj, key_proj, value_proj, attn_bias=None, op=self._attention_op
+        )
+        hidden_states = hidden_states.to(query_proj.dtype)
+    else:
+        attention_scores = torch.baddbmm(
+            torch.empty(
+                query_proj.shape[0],
+                query_proj.shape[1],
+                key_proj.shape[1],
+                dtype=query_proj.dtype,
+                device=query_proj.device,
+            ),
+            query_proj,
+            key_proj.transpose(-1, -2),
+            beta=0,
+            alpha=scale,
+        )
+        attention_probs = torch.softmax(attention_scores, dim=-1)
+        del attention_scores
+
+        hidden_states = torch.bmm(attention_probs, value_proj)
+        del attention_probs
+
+    # reshape hidden_states
+    hidden_states = self.reshape_batch_dim_to_heads(hidden_states)
+
+    # compute next hidden_states
+    hidden_states = self.proj_attn(hidden_states)
+
+    hidden_states = hidden_states.transpose(-1, -2).reshape(batch, channel, height, width)
+
+    # res connect and rescale
+    hidden_states = (hidden_states + residual) / self.rescale_output_factor
+    return hidden_states

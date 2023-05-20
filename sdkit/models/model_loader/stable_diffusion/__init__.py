@@ -126,11 +126,13 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
-    from .optimizations import optimized_get_attention_scores
+    from .optimizations import optimized_get_attention_scores, get_optimized_attentionblock_forward
 
     from diffusers.models.attention_processor import Attention
+    from diffusers.models.attention import AttentionBlock
 
     Attention.get_attention_scores = optimized_get_attention_scores
+    AttentionBlock.forward = get_optimized_attentionblock_forward
 
     log.info("loading on diffusers")
 
@@ -169,7 +171,9 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         else:
             default_pipe = default_pipe.to(context.device)
 
-    if context.vram_usage_level != "high":
+    if context.vram_usage_level == "high":
+        default_pipe.enable_attention_slicing(4)
+    else:
         default_pipe.enable_attention_slicing(1)
 
     try:
@@ -187,6 +191,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         tokenizer=default_pipe.tokenizer,
         text_encoder=default_pipe.text_encoder,
         truncate_long_prompts=False,
+        use_penultimate_clip_layer=context.clip_skip,
     )
 
     # make samplers
