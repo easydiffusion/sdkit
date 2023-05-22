@@ -8,7 +8,6 @@ def apply(context: Context, image, latent_upscaler_options=None, **kwargs):
 
     options = {}
     if latent_upscaler_options is not None:
-        latent_upscaler_options = latent_upscaler_options.use_latent_upscaler
         options["prompt"] = latent_upscaler_options["prompt"]
         options["negative_prompt"] = latent_upscaler_options["negative_prompt"]
 
