@@ -263,7 +263,7 @@ def make_with_diffusers(
     #--------------------------------------------------------------------------------------------------
     #-- https://github.com/huggingface/diffusers/issues/2633
     log.info("Applying tiling settings")
-    if tiling == "both":
+    if tiling == "xy":
        modex = "circular"
        modey = "circular"
     elif tiling == "x":
