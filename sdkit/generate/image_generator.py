@@ -3,6 +3,7 @@ from contextlib import nullcontext
 import torch
 from pytorch_lightning import seed_everything
 from tqdm import trange
+from typing import Optional
 
 from sdkit import Context
 from sdkit.utils import (
@@ -39,6 +40,7 @@ def generate_images(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
+    tiling = "none",
     lora_alpha: float = 0,
     sampler_params={},
     callback=None,
@@ -76,6 +78,7 @@ def generate_images(
                 sampler_name,
                 # hypernetwork_strength,
                 lora_alpha,
+                tiling,
                 # sampler_params,
                 callback,
             )
@@ -181,6 +184,7 @@ def make_with_diffusers(
     # hypernetwork_strength: float = 0,
     lora_alpha: float = 0,
     # sampler_params={},
+    tiling = "none",
     callback=None,
 ):
     from diffusers import (
@@ -256,6 +260,41 @@ def make_with_diffusers(
         apply_lora_model(context, lora_alpha)
         context._last_lora_alpha = lora_alpha
 
+    #--------------------------------------------------------------------------------------------------
+    #-- https://github.com/huggingface/diffusers/issues/2633
+    log.info("Applying tiling settings")
+    if tiling == "xy":
+       modex = "circular"
+       modey = "circular"
+    elif tiling == "x":
+       modex = "circular"
+       modey = "constant"
+    elif tiling == "y":
+       modex = "constant"
+       modey = "circular"
+    else:   
+       modex = "constant"
+       modey = "constant"
+
+    def asymmetricConv2DConvForward(self, input: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor]):
+        F = torch.nn.functional
+        self.paddingX = (self._reversed_padding_repeated_twice[0], self._reversed_padding_repeated_twice[1], 0, 0)
+        self.paddingY = (0, 0, self._reversed_padding_repeated_twice[2], self._reversed_padding_repeated_twice[3])
+        working = F.pad(input, self.paddingX, mode=modex)
+        working = F.pad(working, self.paddingY, mode=modey)
+        return F.conv2d(working, weight, bias, self.stride, torch.nn.modules.utils._pair(0), self.dilation, self.groups)
+
+    targets = [operation_to_apply.vae, operation_to_apply.text_encoder, operation_to_apply.unet,]
+    conv_layers = []
+    for target in targets:
+        for module in target.modules():
+            if isinstance(module, torch.nn.Conv2d):
+                conv_layers.append(module)
+
+    for cl in conv_layers:
+        cl._conv_forward = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
+
+    #--------------------------------------------------------------------------------------------------
     log.info("Parsing the prompt..")
 
     # make the prompt embeds
@@ -286,6 +325,7 @@ def make_with_diffusers(
     )
 
     log.info("Done parsing the prompt")
+    #--------------------------------------------------------------------------------------------------
 
     # apply
     log.info(f"applying: {operation_to_apply}")
