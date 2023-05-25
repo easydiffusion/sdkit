@@ -2,6 +2,7 @@ from sdkit import Context
 from sdkit.utils import gc, log
 
 from . import (
+    codeformer,
     gfpgan,
     hypernetwork,
     latent_upscaler,
@@ -14,6 +15,7 @@ from . import (
 
 models = {
     "stable-diffusion": stable_diffusion,
+    "codeformer": codeformer,
     "gfpgan": gfpgan,
     "realesrgan": realesrgan,
     "vae": vae,

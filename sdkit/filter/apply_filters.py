@@ -1,12 +1,13 @@
 from sdkit import Context
 from sdkit.utils import base64_str_to_img, gc, log
 
-from . import gfpgan, nsfw_checker, realesrgan, latent_upscaler
+from . import gfpgan, nsfw_checker, realesrgan, latent_upscaler, codeformer
 
 filter_modules = {
     "gfpgan": gfpgan,
     "realesrgan": realesrgan,
     "nsfw_checker": nsfw_checker,
+    "codeformer": codeformer,
     "latent_upscaler": latent_upscaler
 }
 
