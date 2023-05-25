@@ -155,6 +155,7 @@ If you'd like to set up a developer version on your PC (to contribute code chang
 
 # Credits
 * Stable Diffusion: https://github.com/Stability-AI/stablediffusion
+* CodeFormer: https://github.com/sczhou/CodeFormer (license: https://github.com/sczhou/CodeFormer/blob/master/LICENSE)
 * GFPGAN: https://github.com/TencentARC/GFPGAN
 * RealESRGAN: https://github.com/xinntao/Real-ESRGAN
 * k-diffusion: https://github.com/crowsonkb/k-diffusion
