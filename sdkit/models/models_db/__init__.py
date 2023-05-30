@@ -23,6 +23,8 @@ def get_models_db():
         db["realesrgan"] = json.load(f)
     with open(db_path / "vae.json") as f:
         db["vae"] = json.load(f)
+    with open(db_path / "codeformer.json") as f:
+        db["codeformer"] = json.load(f)
     return db
 
 
