@@ -10,7 +10,7 @@ This is a community project, so please feel free to contribute (and use in your 
 ![t2i](https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/assets/stable-samples/txt2img/768/merged-0006.png)
 
 # Why?
-The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like GFPGAN for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs and hypernetworks, NSFW filter etc).
+The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like GFPGAN and CodeFormer for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs and hypernetworks, NSFW filter etc).
 
 Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
@@ -96,9 +96,9 @@ For models that don't match a known hash (e.g. custom models), or if you want to
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, Mac Support, gfpgan (fix faces), realesrgan (upscale), 19 samplers (including k-samplers and UniPC), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
+**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, Mac Support, GFPGAN and CodeFormer (fix faces), RealESRGAN (upscale), 19 samplers (including k-samplers and UniPC), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
 
-📢 We're looking to add support for *textual inversion embeddings*, *codeformer*, *seamless tiling*, and *outpainting*. We'd love code contributions for these!
+📢 We're looking to add support for *textual inversion embeddings*, *AMD support*, *ControlNet*, *Pix2Pix*, and *outpainting*. We'd love code contributions for these!
 
 ## Is it fast?
 It is pretty fast, and close to the fastest. For the same image, `sdkit` took 5.5 seconds, while `automatic1111` webui took 4.95 seconds. 📢 We're looking for code contributions to make `sdkit` even faster!
@@ -117,7 +117,7 @@ No xformers. No VRAM optimizations for low-memory usage.
 | `automatic1111` webui | 4.95 sec | 6.15 it/s | 5.1 GB |
 
 ## Does it work on lower-end GPUs, or without GPUs?
-Yes. It works on NVIDIA/Mac GPUs with atleast 3GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
+Yes. It works on NVIDIA/Mac GPUs with atleast 2GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
 
 📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
 
@@ -126,7 +126,7 @@ You can certainly use diffusers. `sdkit` is infact using `diffusers` internally 
 
 `sdkit`:
 1. is a simple, lightweight toolkit for Stable Diffusion projects.
-2. natively includes frequently-used projects like GFPGAN and RealESRGAN.
+2. natively includes frequently-used projects like GFPGAN, CodeFormer and RealESRGAN.
 3. works with the popular `.ckpt` and `.safetensors` model format.
 4. includes memory optimizations for low-end GPUs.
 5. built-in support for running on multiple GPUs.
@@ -145,10 +145,10 @@ If your project is using sdkit, you can add it to this list. Please feel free to
 We'd love to accept code contributions. Please feel free to drop by our [Discord community](https://discord.com/invite/u9yhsFmEkB)!
 
 📢 We're looking for code contributions for these features (or anything else you'd like to work on):
-- CodeFormer upscaling (please maintain the required copyright notices).
 - Using custom Textual Inversion embeddings.
-- Seamless tiling.
 - Outpainting.
+- ControlNet.
+- Pix2Pix.
 - AMD support.
 
 If you'd like to set up a developer version on your PC (to contribute code changes), please follow [these instructions](https://github.com/easydiffusion/sdkit/blob/main/CONTRIBUTING.md).
