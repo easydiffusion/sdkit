@@ -1,4 +1,4 @@
-from sdkit.modules.codeformer.archs.codeformer_arch import CodeFormer
+from .codeformer_arch import CodeFormer
 
 from sdkit import Context
 from sdkit.utils import load_tensor_file

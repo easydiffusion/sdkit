@@ -2,7 +2,6 @@ from sdkit import Context
 from sdkit.utils import gc, log
 
 from . import (
-    codeformer,
     gfpgan,
     hypernetwork,
     latent_upscaler,
@@ -11,6 +10,7 @@ from . import (
     realesrgan,
     stable_diffusion,
     vae,
+    codeformer,
 )
 
 models = {
@@ -22,7 +22,7 @@ models = {
     "hypernetwork": hypernetwork,
     "nsfw_checker": nsfw_checker,
     "lora": lora,
-    "latent_upscaler": latent_upscaler
+    "latent_upscaler": latent_upscaler,
 }
 
 
