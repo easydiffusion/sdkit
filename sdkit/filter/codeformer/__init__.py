@@ -61,7 +61,13 @@ def apply(
     codeformer_fidelity=0,
     **kwargs,
 ):
-    # Get the models from the context object
+    if not context.enable_codeformer:
+        raise Exception(
+            "Please set `context.enable_codeformer` to True, to use CodeFormer. By enabling CodeFormer, "
+            + "you agree to comply to the CodeFormer license (including non-commercial use): "
+            + "https://github.com/sczhou/CodeFormer/blob/master/LICENSE"
+        )
+
     device = torch.device(context.device)
     codeformer_net = context.models["codeformer"]
 

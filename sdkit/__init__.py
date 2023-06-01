@@ -38,6 +38,13 @@ class Context(local):
 
         self.test_diffusers = False
         self._clip_skip = False
+        self.enable_codeformer = False
+        """
+        Enable this to use CodeFormer.
+
+        By enabling CodeFormer, you agree to the CodeFormer license (including non-commercial usage):
+        https://github.com/sczhou/CodeFormer/blob/master/LICENSE
+        """
 
     # hacky approach, but we need to enforce full precision for some devices
     # we also need to force full precision for these devices (haven't implemented this yet):
@@ -87,4 +94,3 @@ class Context(local):
     @clip_skip.setter
     def clip_skip(self, value):
         self._clip_skip = bool(value)
-
