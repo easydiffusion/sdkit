@@ -2,6 +2,7 @@ import cv2
 import torch
 
 from sdkit import Context
+from sdkit.models import load_model, unload_model
 
 from torchvision.transforms.functional import normalize
 
@@ -9,16 +10,19 @@ from PIL import Image
 import numpy as np
 
 from basicsr.utils import img2tensor, tensor2img
-from facexlib.utils.face_restoration_helper import FaceRestoreHelper
+from .face_restoration_helper import FaceRestoreHelper
 
 
-def inference(context: Context, image, upscale_factor, codeformer_fidelity, codeformer_net):
+def inference(context: Context, image, upscale_bg, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net):
     device = torch.device(context.device)
     face_helper = FaceRestoreHelper(upscale_factor=upscale_factor, use_parse=True, device=device)
     face_helper.clean_all()
     face_helper.read_image(image)
     face_helper.get_face_landmarks_5(resize=640, eye_dist_threshold=5)
     face_helper.align_warp_face()
+
+    bg_upscaler = context.models["realesrgan"] if upscale_bg else None
+    face_upscaler = context.models["realesrgan"] if upscale_faces else None
 
     # face restoration for each cropped face
     for idx, cropped_face in enumerate(face_helper.cropped_faces):
@@ -41,13 +45,22 @@ def inference(context: Context, image, upscale_factor, codeformer_fidelity, code
 
     # paste_back
     face_helper.get_inverse_affine(None)
-    restored_img = face_helper.paste_faces_to_input_image()
+    bg_img = bg_upscaler.enhance(image, outscale=upscale_factor)[0] if bg_upscaler else None
+    restored_img = face_helper.paste_faces_to_input_image(upsample_img=bg_img, face_upsampler=face_upscaler)
     restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
 
     return restored_img
 
 
-def apply(context: Context, input_img, upscale_factor=1, codeformer_fidelity=0, **kwargs):
+def apply(
+    context: Context,
+    input_img,
+    upscale_background=False,
+    upscale_faces=False,
+    upscale_factor=1,
+    codeformer_fidelity=0,
+    **kwargs,
+):
     # Get the models from the context object
     device = torch.device(context.device)
     codeformer_net = context.models["codeformer"]
@@ -56,8 +69,24 @@ def apply(context: Context, input_img, upscale_factor=1, codeformer_fidelity=0, 
     input_img = np.array(input_img)
     input_img = cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR)
 
+    # load realesrgan (if needed)
+    upscaler_loaded = False
+    if (upscale_background or upscale_faces) and "realesrgan" not in context.models:
+        if "realesrgan" in context.model_paths:
+            load_model(context, "realesrgan")
+            upscaler_loaded = True
+        else:
+            raise Exception("Path to realesrgan not set in context.model_paths! Required for upscaling in CodeFormer.")
+
     # Run inference
-    result = inference(context, input_img, upscale_factor, codeformer_fidelity, codeformer_net)
+    result = inference(
+        context, input_img, upscale_background, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net
+    )
+
+    # unload realesrgan (if loaded)
+    if upscaler_loaded:
+        unload_model(context, "realesrgan")
+
     pil_image = Image.fromarray(result)
 
     # Convert result back to RGB for PIL, then create PIL Image

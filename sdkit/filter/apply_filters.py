@@ -8,7 +8,7 @@ filter_modules = {
     "realesrgan": realesrgan,
     "nsfw_checker": nsfw_checker,
     "codeformer": codeformer,
-    "latent_upscaler": latent_upscaler
+    "latent_upscaler": latent_upscaler,
 }
 
 
