@@ -758,7 +758,9 @@ def convert_ldm_bert_checkpoint(checkpoint, config):
 
 
 def convert_ldm_clip_checkpoint(checkpoint):
-    text_model = CLIPTextModel.from_pretrained("openai/clip-vit-large-patch14")
+    text_model = CLIPTextModel.from_pretrained(
+        "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+    )
 
     keys = list(checkpoint.keys())
 
@@ -801,7 +803,9 @@ textenc_pattern = re.compile("|".join(protected.keys()))
 
 
 def convert_paint_by_example_checkpoint(checkpoint):
-    config = CLIPVisionConfig.from_pretrained("openai/clip-vit-large-patch14")
+    config = CLIPVisionConfig.from_pretrained(
+        "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+    )
     model = PaintByExampleImageEncoder(config)
 
     keys = list(checkpoint.keys())
@@ -868,7 +872,9 @@ def convert_paint_by_example_checkpoint(checkpoint):
 
 
 def convert_open_clip_checkpoint(checkpoint):
-    text_model = CLIPTextModel.from_pretrained("stabilityai/stable-diffusion-2", subfolder="text_encoder")
+    text_model = CLIPTextModel.from_pretrained(
+        "stabilityai/stable-diffusion-2", subfolder="text_encoder", revision="d75b612d366d802b1753960de862a9270c8d55f1"
+    )
 
     keys = list(checkpoint.keys())
 
@@ -928,13 +934,17 @@ def stable_unclip_image_encoder(original_config):
 
         if clip_model_name == "ViT-L/14":
             feature_extractor = CLIPImageProcessor()
-            image_encoder = CLIPVisionModelWithProjection.from_pretrained("openai/clip-vit-large-patch14")
+            image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+                "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+            )
         else:
             raise NotImplementedError(f"Unknown CLIP checkpoint name in stable diffusion checkpoint {clip_model_name}")
 
     elif sd_clip_image_embedder_class == "FrozenOpenCLIPImageEmbedder":
         feature_extractor = CLIPImageProcessor()
-        image_encoder = CLIPVisionModelWithProjection.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
+        image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+            "laion/CLIP-ViT-H-14-laion2B-s32B-b79K", revision="94a64189c3535c1cb44acfcccd7b0908c1c8eb23"
+        )
     else:
         raise NotImplementedError(
             f"Unknown CLIP image embedder class in stable diffusion checkpoint {sd_clip_image_embedder_class}"
@@ -1214,7 +1224,9 @@ def download_from_original_stable_diffusion_ckpt(
 
     if model_type == "FrozenOpenCLIPEmbedder":
         text_model = convert_open_clip_checkpoint(checkpoint)
-        tokenizer = CLIPTokenizer.from_pretrained("stabilityai/stable-diffusion-2", subfolder="tokenizer")
+        tokenizer = CLIPTokenizer.from_pretrained(
+            "stabilityai/stable-diffusion-2", subfolder="tokenizer", revision="d75b612d366d802b1753960de862a9270c8d55f1"
+        )
 
         if stable_unclip is None:
             if controlnet:
@@ -1311,8 +1323,12 @@ def download_from_original_stable_diffusion_ckpt(
                     karlo_model = "kakaobrain/karlo-v1-alpha"
                     prior = PriorTransformer.from_pretrained(karlo_model, subfolder="prior")
 
-                    prior_tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14")
-                    prior_text_model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14")
+                    prior_tokenizer = CLIPTokenizer.from_pretrained(
+                        "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+                    )
+                    prior_text_model = CLIPTextModelWithProjection.from_pretrained(
+                        "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+                    )
 
                     prior_scheduler = UnCLIPScheduler.from_pretrained(karlo_model, subfolder="prior_scheduler")
                     prior_scheduler = DDPMScheduler.from_config(prior_scheduler.config)
@@ -1340,8 +1356,12 @@ def download_from_original_stable_diffusion_ckpt(
                 raise NotImplementedError(f"unknown `stable_unclip` type: {stable_unclip}")
     elif model_type == "PaintByExample":
         vision_model = convert_paint_by_example_checkpoint(checkpoint)
-        tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14")
-        feature_extractor = AutoFeatureExtractor.from_pretrained("CompVis/stable-diffusion-safety-checker")
+        tokenizer = CLIPTokenizer.from_pretrained(
+            "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+        )
+        feature_extractor = AutoFeatureExtractor.from_pretrained(
+            "CompVis/stable-diffusion-safety-checker", revision="cb41f3a270d63d454d385fc2e4f571c487c253c5"
+        )
         pipe = PaintByExamplePipeline(
             vae=vae,
             image_encoder=vision_model,
@@ -1352,9 +1372,15 @@ def download_from_original_stable_diffusion_ckpt(
         )
     elif model_type == "FrozenCLIPEmbedder":
         text_model = convert_ldm_clip_checkpoint(checkpoint)
-        tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14")
-        safety_checker = StableDiffusionSafetyChecker.from_pretrained("CompVis/stable-diffusion-safety-checker")
-        feature_extractor = AutoFeatureExtractor.from_pretrained("CompVis/stable-diffusion-safety-checker")
+        tokenizer = CLIPTokenizer.from_pretrained(
+            "openai/clip-vit-large-patch14", revision="8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+        )
+        safety_checker = StableDiffusionSafetyChecker.from_pretrained(
+            "CompVis/stable-diffusion-safety-checker", revision="cb41f3a270d63d454d385fc2e4f571c487c253c5"
+        )
+        feature_extractor = AutoFeatureExtractor.from_pretrained(
+            "CompVis/stable-diffusion-safety-checker", revision="cb41f3a270d63d454d385fc2e4f571c487c253c5"
+        )
 
         if controlnet:
             pipe = StableDiffusionControlNetPipeline(
