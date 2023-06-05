@@ -10,12 +10,10 @@ def load_model(context: Context, **kwargs):
     upscaler = StableDiffusionLatentUpscalePipeline.from_pretrained(
         "stabilityai/sd-x2-latent-upscaler", torch_dtype=dtype, revision="1f2883b22f62cfb29323770ba9cfdcf601757bd3"
     )
-    if context.vram_usage_level == "low":
-        upscaler.enable_sequential_cpu_offload()
-    else:
+    if context.vram_usage_level == "high":
         upscaler.to(context.device)
-
-    if context.vram_usage_level != "high":
+    else:
+        upscaler.enable_sequential_cpu_offload()
         upscaler.enable_attention_slicing(1)
 
     return upscaler
