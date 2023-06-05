@@ -67,6 +67,8 @@ def apply(
             + "you agree to comply to the CodeFormer license (including non-commercial use): "
             + "https://github.com/sczhou/CodeFormer/blob/master/LICENSE"
         )
+    if (upscale_background or upscale_faces) and "realesrgan" not in context.models:
+        raise Exception("realesrgan not loaded in context.models! Required for upscaling in CodeFormer.")
 
     device = torch.device(context.device)
     codeformer_net = context.models["codeformer"]
@@ -75,23 +77,10 @@ def apply(
     input_img = np.array(input_img)
     input_img = cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR)
 
-    # load realesrgan (if needed)
-    upscaler_loaded = False
-    if (upscale_background or upscale_faces) and "realesrgan" not in context.models:
-        if "realesrgan" in context.model_paths:
-            load_model(context, "realesrgan")
-            upscaler_loaded = True
-        else:
-            raise Exception("Path to realesrgan not set in context.model_paths! Required for upscaling in CodeFormer.")
-
     # Run inference
     result = inference(
         context, input_img, upscale_background, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net
     )
-
-    # unload realesrgan (if loaded)
-    if upscaler_loaded:
-        unload_model(context, "realesrgan")
 
     pil_image = Image.fromarray(result)
 
