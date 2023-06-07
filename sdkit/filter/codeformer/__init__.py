@@ -64,7 +64,7 @@ def apply(
     if not context.enable_codeformer:
         raise Exception(
             "Please set `context.enable_codeformer` to True, to use CodeFormer. By enabling CodeFormer, "
-            + "you agree to comply to the CodeFormer license (including non-commercial use): "
+            + "you agree to comply by the CodeFormer license (including non-commercial use): "
             + "https://github.com/sczhou/CodeFormer/blob/master/LICENSE"
         )
     if (upscale_background or upscale_faces) and "realesrgan" not in context.models:
