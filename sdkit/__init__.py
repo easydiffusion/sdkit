@@ -42,7 +42,7 @@ class Context(local):
         """
         Enable this to use CodeFormer.
 
-        By enabling CodeFormer, you agree to the CodeFormer license (including non-commercial usage):
+        By enabling CodeFormer, you agree to the CodeFormer license (including non-commercial use of CodeFormer):
         https://github.com/sczhou/CodeFormer/blob/master/LICENSE
         """
 
