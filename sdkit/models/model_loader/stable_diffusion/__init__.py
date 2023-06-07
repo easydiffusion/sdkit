@@ -183,7 +183,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     except:
         pass
 
-    if torch.__version__.startswith("2."):
+    if torch.__version__.startswith("2.") and hasattr(default_pipe, "enable_vae_slicing"):
         default_pipe.enable_vae_slicing()
 
     # make the compel prompt parser object
