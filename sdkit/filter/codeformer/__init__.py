@@ -58,7 +58,7 @@ def apply(
     upscale_background=False,
     upscale_faces=False,
     upscale_factor=1,
-    codeformer_fidelity=0,
+    codeformer_fidelity=0.5,
     **kwargs,
 ):
     if not context.enable_codeformer:
