@@ -5,12 +5,14 @@ from sdkit import Context
 from sdkit.models import load_model, unload_model
 
 from torchvision.transforms.functional import normalize
-
+from threading import Lock
 from PIL import Image
 import numpy as np
 
 from basicsr.utils import img2tensor, tensor2img
 from .face_restoration_helper import FaceRestoreHelper
+
+codeformer_temp_device_lock = Lock()  # workaround: codeformer currently can only start on one device at a time.
 
 
 def inference(context: Context, image, upscale_bg, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net):
@@ -78,9 +80,15 @@ def apply(
     input_img = cv2.cvtColor(input_img, cv2.COLOR_RGB2BGR)
 
     # Run inference
-    result = inference(
-        context, input_img, upscale_background, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net
-    )
+    with codeformer_temp_device_lock:  # Wait for any other devices to complete before starting.
+        # hack for a bug in facexlib: https://github.com/xinntao/facexlib/pull/19/files
+        from facexlib.detection import retinaface
+
+        retinaface.device = torch.device(context.device)
+
+        result = inference(
+            context, input_img, upscale_background, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net
+        )
 
     pil_image = Image.fromarray(result)
 
