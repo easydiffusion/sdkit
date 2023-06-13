@@ -153,6 +153,8 @@ We'd love to accept code contributions. Please feel free to drop by our [Discord
 
 If you'd like to set up a developer version on your PC (to contribute code changes), please follow [these instructions](https://github.com/easydiffusion/sdkit/blob/main/CONTRIBUTING.md).
 
+Instructions for running automated tests: [Running Tests](tests/README.md).
+
 # Credits
 * Stable Diffusion: https://github.com/Stability-AI/stablediffusion
 * CodeFormer: https://github.com/sczhou/CodeFormer (license: https://github.com/sczhou/CodeFormer/blob/master/LICENSE)

@@ -40,7 +40,7 @@ def generate_images(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
-    tiling = "none",
+    tiling="none",
     lora_alpha: float = 0,
     sampler_params={},
     callback=None,
@@ -184,7 +184,7 @@ def make_with_diffusers(
     # hypernetwork_strength: float = 0,
     lora_alpha: float = 0,
     # sampler_params={},
-    tiling = "none",
+    tiling="none",
     callback=None,
 ):
     from diffusers import (
@@ -260,21 +260,21 @@ def make_with_diffusers(
         apply_lora_model(context, lora_alpha)
         context._last_lora_alpha = lora_alpha
 
-    #--------------------------------------------------------------------------------------------------
-    #-- https://github.com/huggingface/diffusers/issues/2633
+    # --------------------------------------------------------------------------------------------------
+    # -- https://github.com/huggingface/diffusers/issues/2633
     log.info("Applying tiling settings")
     if tiling == "xy":
-       modex = "circular"
-       modey = "circular"
+        modex = "circular"
+        modey = "circular"
     elif tiling == "x":
-       modex = "circular"
-       modey = "constant"
+        modex = "circular"
+        modey = "constant"
     elif tiling == "y":
-       modex = "constant"
-       modey = "circular"
-    else:   
-       modex = "constant"
-       modey = "constant"
+        modex = "constant"
+        modey = "circular"
+    else:
+        modex = "constant"
+        modey = "constant"
 
     def asymmetricConv2DConvForward(self, input: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor]):
         F = torch.nn.functional
@@ -284,7 +284,11 @@ def make_with_diffusers(
         working = F.pad(working, self.paddingY, mode=modey)
         return F.conv2d(working, weight, bias, self.stride, torch.nn.modules.utils._pair(0), self.dilation, self.groups)
 
-    targets = [operation_to_apply.vae, operation_to_apply.text_encoder, operation_to_apply.unet,]
+    targets = [
+        operation_to_apply.vae,
+        operation_to_apply.text_encoder,
+        operation_to_apply.unet,
+    ]
     conv_layers = []
     for target in targets:
         for module in target.modules():
@@ -294,30 +298,17 @@ def make_with_diffusers(
     for cl in conv_layers:
         cl._conv_forward = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
 
-    #--------------------------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------------
     log.info("Parsing the prompt..")
 
     # make the prompt embeds
     compel = model["compel"]
 
-    # temporary hack until compel 1.1.4 is released
-    if hasattr(operation_to_apply.text_encoder, "_hf_hook"):
-        [m._hf_hook.pre_forward(m) for m in operation_to_apply.text_encoder.modules() if hasattr(m, "_hf_hook")]
-        print(compel.device)
-
     log.info("compel is ready")
     cmd["prompt_embeds"] = compel(prompt)
 
-    if hasattr(operation_to_apply.text_encoder, "_hf_hook"):
-        [m._hf_hook.pre_forward(m) for m in operation_to_apply.text_encoder.modules() if hasattr(m, "_hf_hook")]
-        print(compel.device)
-
     log.info("Made prompt embeds")
     cmd["negative_prompt_embeds"] = compel(negative_prompt)
-
-    if hasattr(operation_to_apply.text_encoder, "_hf_hook"):
-        [m._hf_hook.pre_forward(m) for m in operation_to_apply.text_encoder.modules() if hasattr(m, "_hf_hook")]
-        print(compel.device)
 
     log.info("Made negative prompt embeds")
     cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
@@ -325,7 +316,7 @@ def make_with_diffusers(
     )
 
     log.info("Done parsing the prompt")
-    #--------------------------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------------------------
 
     # apply
     log.info(f"applying: {operation_to_apply}")

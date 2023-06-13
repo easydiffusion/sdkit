@@ -2,14 +2,17 @@ import os
 from PIL import Image, ImageChops
 import numpy as np
 
+import torch
 from concurrent import futures
 from typing import Callable
+import threading
 
 from sdkit import Context
 from sdkit.utils import log
 
 TEST_DATA_REPO = "https://github.com/easydiffusion/sdkit-test-data.git"
 TEST_DATA_FOLDER = "sdkit-test-data"
+OUTPUT_FOLDER = "tmp/tests"
 
 
 def fetch_test_data():
@@ -29,32 +32,53 @@ def get_image_diff(img_a: Image, img_b: Image):
     return diff, np.array(hist)
 
 
-def assert_images_same(actual: Image, expected: Image, failed_image_save_path: str = None):
+def get_image_for_device(file_path: str, device: str) -> Image:
+    if device.startswith("cuda"):
+        file_path += "-cuda.png"
+    elif device == "cpu":
+        file_path += "-cpu.png"
+
+    return Image.open(file_path)
+
+
+def get_tensor_for_device(file_path: str, device: str) -> torch.Tensor:
+    if device.startswith("cuda"):
+        file_path += "-cuda.pt"
+    elif device == "cpu":
+        file_path += "-cpu.pt"
+
+    return torch.load(file_path).to(device)
+
+
+def assert_images_same(actual: Image, expected: Image, test_name: str = None):
     diff, hist = get_image_diff(actual, expected)
     same = not np.any(hist[2:])
 
-    if not same and failed_image_save_path:
-        actual.save(failed_image_save_path + "_actual.png")
-        expected.save(failed_image_save_path + "_expected.png")
-        diff.save(failed_image_save_path + "_diff.png")
-        print(f">> Saved actual/expected/diff images to {failed_image_save_path}")
+    if not same and test_name:
+        image_basepath = OUTPUT_FOLDER + "/" + test_name
+
+        actual.save(image_basepath + "_1_actual.png")
+        expected.save(image_basepath + "_2_expected.png")
+        diff.save(image_basepath + "_3_diff.png")
+        print(f">> Saved actual/expected/diff images to {image_basepath}")
 
     assert same, f"Histogram: {list(hist.data)}"
 
 
 def run_test_on_multiple_devices(task: Callable, devices: list):
     def task_thread(device):
+        threading.current_thread().name = f"sd-{device}"
         log.info(f"starting on device {device}")
         context = Context()
         context.device = device
 
-        task(context)
+        try:
+            task(context)
+        except KeyboardInterrupt:
+            exit()
 
     with futures.ThreadPoolExecutor(max_workers=len(devices)) as executor:
         threads = [executor.submit(task_thread, device) for device in devices]
         for f in futures.as_completed(threads):
             if f.exception():
                 raise f.exception()
-
-
-fetch_test_data()
