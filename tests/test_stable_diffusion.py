@@ -59,7 +59,7 @@ def stable_diffusion_works_on_multiple_devices_in_parallel_test(vram_usage_level
         assert_images_same(image, expected_image, f"stable_diffusion_test1.10_{context.device.replace(':', '')}")
 
     # emulate multiple GPUs by running one thread on the CPU, and one on the GPU
-    run_test_on_multiple_devices(task, ["cuda:0"])
+    run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
 
 
 def test_1_10a__stable_diffusion_works_on_multiple_devices__low_VRAM():
