@@ -161,7 +161,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
 
-    if context.vram_usage_level == "low" and context.device != "mps":
+    if context.vram_usage_level == "low" and context.device not in ("mps", "cpu"):
         if context.half_precision:
             default_pipe = default_pipe.to("cpu", torch.float16, silence_dtype_warnings=True)
         default_pipe.enable_sequential_cpu_offload()
@@ -192,6 +192,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         text_encoder=default_pipe.text_encoder,
         truncate_long_prompts=False,
         use_penultimate_clip_layer=context.clip_skip,
+        device=context.device,
     )
 
     # make samplers
