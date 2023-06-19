@@ -238,6 +238,14 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
 
     log.info("Loaded on diffusers")
 
+    if context.embeddings_path != None:
+        print(Context.embeddings_path)
+        pt_files = list(context.embeddings_path.rglob("*.pt"))
+        bin_files = list(context.embeddings_path.rglob("*.bin"))
+
+        for file in pt_files + bin_files:
+            print(file)
+
     return {
         "config": config,
         "default": default_pipe,

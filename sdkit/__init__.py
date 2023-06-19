@@ -1,4 +1,5 @@
 from threading import local
+from pathlib import Path
 
 
 class Context(local):
@@ -38,6 +39,7 @@ class Context(local):
 
         self.test_diffusers = False
         self._clip_skip = False
+        self._embeddings_path = None
         self.enable_codeformer = False
         """
         Enable this to use CodeFormer.
@@ -94,3 +96,11 @@ class Context(local):
     @clip_skip.setter
     def clip_skip(self, value):
         self._clip_skip = bool(value)
+
+    @property
+    def embeddings_path(self):
+        return self._embeddings_path
+
+    @embeddings_path.setter
+    def embeddings_path(self, value):
+        self._embeddings_path = Path(value)
