@@ -13,9 +13,6 @@ from diffusers import (
 )
 
 
-samplers = {}
-
-
 def _make_plms(ddim_scheduler):
     config = dict(ddim_scheduler.config)
     config["skip_prk_steps"] = True
@@ -71,11 +68,13 @@ _samplers_init["dpm"] = _samplers_init["dpm_solver_stability"]
 # euler_a alias
 _samplers_init["euler-ancestral"] = _samplers_init["euler_a"]
 
-for sampler_name in _samplers_init.keys():
-    samplers[sampler_name] = None
 
 
-def make_samplers(ddim_scheduler):
+def make_samplers(context, ddim_scheduler):
+    context.samplers = {}
+
     for sampler_name, sampler_factory in _samplers_init.items():
         if sampler_factory is not None:
-            samplers[sampler_name] = sampler_factory(ddim_scheduler)
+            context.samplers[sampler_name] = sampler_factory(ddim_scheduler)
+        else:
+            context.samplers[sampler_name] = None

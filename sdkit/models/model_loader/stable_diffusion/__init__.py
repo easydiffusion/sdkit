@@ -196,7 +196,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     )
 
     # make samplers
-    diffusers_samplers.make_samplers(default_pipe.scheduler)
+    diffusers_samplers.make_samplers(context, default_pipe.scheduler)
 
     if isinstance(default_pipe, StableDiffusionInpaintPipeline):
         log.info("Loaded on diffusers")

@@ -193,7 +193,6 @@ def make_with_diffusers(
         StableDiffusionInpaintPipelineLegacy,
     )
 
-    from sdkit.generate.sampler import diffusers_samplers
     from sdkit.models.model_loader.lora import apply_lora_model
     from sdkit.utils import log
 
@@ -235,10 +234,10 @@ def make_with_diffusers(
         )
 
     operation_to_apply = model[operation_to_apply]
-    if diffusers_samplers.samplers.get(sampler_name) is None:
+    if context.samplers.get(sampler_name) is None:
         raise NotImplementedError(f"The sampler '{sampler_name}' is not supported (yet)!")
 
-    operation_to_apply.scheduler = diffusers_samplers.samplers[sampler_name]
+    operation_to_apply.scheduler = context.samplers[sampler_name]
     log.info(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")
 
     if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy) or isinstance(
