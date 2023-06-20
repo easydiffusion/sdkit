@@ -198,14 +198,17 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     # make samplers
     diffusers_samplers.make_samplers(context, default_pipe.scheduler)
 
+    model = {
+        "config": config,
+        "default": default_pipe,
+        "compel": compel,
+    }
+
     if isinstance(default_pipe, StableDiffusionInpaintPipeline):
         log.info("Loaded on diffusers")
-        return {
-            "config": config,
-            "default": default_pipe,
-            "inpainting": default_pipe,
-            "compel": compel,
-        }
+        model["inpainting"] = default_pipe
+
+        return model
 
     pipe_txt2img = default_pipe
 
@@ -234,18 +237,18 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         requires_safety_checker=False,
     )
 
+    model["txt2img"] = pipe_txt2img
+    model["img2img"] = pipe_img2img
+    model["inpainting"] = pipe_inpainting
+
+    # test precision
+    test_and_fix_precision(context, model, config, attn_precision)
+
     gc(context)
 
     log.info("Loaded on diffusers")
 
-    return {
-        "config": config,
-        "default": default_pipe,
-        "txt2img": pipe_txt2img,
-        "img2img": pipe_img2img,
-        "inpainting": pipe_inpainting,
-        "compel": compel,
-    }
+    return model
 
 
 def test_and_fix_precision(context, model, config, attn_precision):
@@ -254,29 +257,46 @@ def test_and_fix_precision(context, model, config, attn_precision):
 
     # test precision
     try:
+        import torch
         from sdkit.generate import generate_images
+        from diffusers.models.attention_processor import Attention
 
         from . import optimizations
 
         images = generate_images(
-            context, prompt="Horse", width=64, height=64, num_inference_steps=1, sampler_name="plms"
+            context, prompt="Horse", width=64, height=64, num_inference_steps=1, sampler_name="euler_a"
         )
         is_black_image = not images[0].getbbox()
         if is_black_image and attn_precision == "fp16":
             attn_precision = "fp32"
             log.info(f"trying attn_precision: {attn_precision}")
-            ldm.modules.attention.CrossAttention.forward = optimizations.make_attn_forward(
-                context, attn_precision=attn_precision
+            if context.test_diffusers:
+                pipe = model["default"]
+                for m in pipe.unet.modules():
+                    if not isinstance(m, Attention):
+                        continue
+                    m.upcast_attention = True
+            else:
+                ldm.modules.attention.CrossAttention.forward = optimizations.make_attn_forward(
+                    context, attn_precision=attn_precision
+                )
+            images = generate_images(
+                context, prompt="Horse", width=64, height=64, num_inference_steps=1, sampler_name="euler_a"
             )
-            images = generate_images(context, prompt="Horse", width=64, height=64, num_inference_steps=1)
             is_black_image = not images[0].getbbox()
 
         if is_black_image and attn_precision == "fp32" and context.half_precision:
             log.info("trying full precision")
             context.orig_half_precision = context.half_precision
             context.half_precision = False
-            config.model.params.unet_config.params.use_fp16 = False
-            model = model.float()
+
+            if context.test_diffusers:
+                pipe = model["default"]
+                pipe = pipe.to(torch_dtype=torch.float32)
+            else:
+                config.model.params.unet_config.params.use_fp16 = False
+                model = model.float()
+
     except:
         log.error(traceback.format_exc())
 
