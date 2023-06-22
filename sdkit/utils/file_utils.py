@@ -10,6 +10,8 @@ from PIL.PngImagePlugin import PngInfo
 
 
 def load_tensor_file(path):
+    if not isinstance(path,str):
+        path = str(path)
     if path.lower().endswith(".safetensors"):
         return safetensors.torch.load_file(path, device="cpu")
     else:
