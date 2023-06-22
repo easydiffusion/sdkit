@@ -281,9 +281,6 @@ def load_embeddings(path, default_pipe):
         else:
             log.info(f"Embedding {filename} has an unknown internal structure. Trying to load it anyways.")
         
-        if "name" in embedding.keys():
-            embeds_name = embedding["name"]
-
         if skip_embedding:
             log.info(f"Skipping embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa.")
         else:
