@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdkit"
-version = "1.0.109"
+version = "1.0.110"
 authors = [
   {name="cmdr2", email="secondary.cmdr2@gmail.com"},
 ]
