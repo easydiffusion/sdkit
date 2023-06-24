@@ -119,7 +119,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         StableDiffusionInpaintPipeline,
         StableDiffusionInpaintPipelineLegacy,
     )
-    from compel import Compel
+    from compel import Compel, DiffusersTextualInversionManager
 
     from sdkit.generate.sampler import diffusers_samplers
     from sdkit.utils import gc
@@ -187,12 +187,14 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         default_pipe.enable_vae_slicing()
 
     # make the compel prompt parser object
+    textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
     compel = Compel(
         tokenizer=default_pipe.tokenizer,
         text_encoder=default_pipe.text_encoder,
         truncate_long_prompts=False,
         use_penultimate_clip_layer=context.clip_skip,
         device=context.device,
+        textual_inversion_manager=textual_inversion_manager,
     )
 
     # make samplers
