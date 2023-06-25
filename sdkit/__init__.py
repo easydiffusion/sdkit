@@ -40,6 +40,7 @@ class Context(local):
         self.test_diffusers = False
         self._clip_skip = False
         self._embeddings_path = None
+        self._loaded_embeddings: set = {}
         self.enable_codeformer = False
         """
         Enable this to use CodeFormer.
