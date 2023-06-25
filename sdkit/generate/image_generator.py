@@ -197,6 +197,9 @@ def make_with_diffusers(
 
     from sdkit.models.model_loader.lora import apply_lora_model
 
+    prompt = prompt.lower()
+    negative_prompt = negative_prompt.lower()
+
     model = context.models["stable-diffusion"]
     if context.device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         generator = torch.Generator().manual_seed(seed)
@@ -333,8 +336,6 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
     bin_files = list(context.embeddings_path.rglob("*.bin"))
     st_files = list(context.embeddings_path.rglob("*.safetensors"))
 
-    prompt = prompt.lower()
-    negative_prompt = negative_prompt.lower()
     log.info("Applying Embeddings...")
 
     for filename in pt_files + bin_files + st_files:
