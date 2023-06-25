@@ -13,7 +13,9 @@ def load_model(context: Context, **kwargs):
     if context.vram_usage_level == "high":
         upscaler.to(context.device)
     else:
-        upscaler.enable_sequential_cpu_offload()
+        if "cuda" in context.device:
+            upscaler.enable_sequential_cpu_offload()
+
         upscaler.enable_attention_slicing(1)
 
     return upscaler
