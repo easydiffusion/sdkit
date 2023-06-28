@@ -242,8 +242,8 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     model["inpainting"] = pipe_inpainting
 
     # test precision
-    # if context.half_precision:
-    test_and_fix_precision(context, model, config, attn_precision)
+    if context.half_precision:
+        test_and_fix_precision(context, model, config, attn_precision)
 
     gc(context)
 
