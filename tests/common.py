@@ -33,20 +33,12 @@ def get_image_diff(img_a: Image, img_b: Image):
 
 
 def get_image_for_device(file_path: str, device: str) -> Image:
-    if device.startswith("cuda"):
-        file_path += "-cuda.png"
-    elif device == "cpu":
-        file_path += "-cpu.png"
-
+    file_path += f"-{torch.device(device).type}.png"
     return Image.open(file_path)
 
 
 def get_tensor_for_device(file_path: str, device: str) -> torch.Tensor:
-    if device.startswith("cuda"):
-        file_path += "-cuda.pt"
-    elif device == "cpu":
-        file_path += "-cpu.pt"
-
+    file_path += f"-{torch.device(device).type}.pt"
     return torch.load(file_path).to(device)
 
 
