@@ -1,15 +1,11 @@
 import json
 import os
 
-import piexif
-import piexif.helper
-import safetensors.torch
-import torch
-from PIL import Image
-from PIL.PngImagePlugin import PngInfo
-
 
 def load_tensor_file(path):
+    import torch
+    import safetensors.torch
+
     if path.lower().endswith(".safetensors"):
         return safetensors.torch.load_file(path, device="cpu")
     else:
@@ -17,6 +13,9 @@ def load_tensor_file(path):
 
 
 def save_tensor_file(data, path):
+    import torch
+    import safetensors.torch
+
     if path.lower().endswith(".safetensors"):
         return safetensors.torch.save_file(data, path, metadata={"format": "pt"})
     else:
@@ -64,6 +63,11 @@ def save_dicts(entries: list, dir_path: str, file_name="data", output_format="tx
     * output_format: 'txt', 'json', or 'embed'
         if 'embed', the metadata will be embedded in PNG files in tEXt chunks, and as EXIF UserComment for JPEG and WEBP files
     """
+    from PIL import Image
+    import piexif
+    import piexif.helper
+    from PIL.PngImagePlugin import PngInfo
+
     if dir_path is None:
         return
     os.makedirs(dir_path, exist_ok=True)
