@@ -2,11 +2,6 @@ import base64
 import re
 from io import BytesIO
 
-import cv2
-import numpy as np
-from PIL import Image
-from skimage import exposure
-
 
 # https://stackoverflow.com/a/61114178
 def img_to_base64_str(img, output_format="PNG", output_quality=75, output_lossless=False):
@@ -42,12 +37,16 @@ def base64_str_to_buffer(img_str):
 
 
 def base64_str_to_img(img_str):
+    from PIL import Image
+
     buffered = base64_str_to_buffer(img_str)
     img = Image.open(buffered)
     return img
 
 
-def resize_img(img: Image, desired_width, desired_height, clamp_to_64=False):
+def resize_img(img, desired_width, desired_height, clamp_to_64=False):
+    from PIL import Image
+
     w, h = img.size
 
     if desired_width is not None and desired_height is not None:
@@ -59,7 +58,12 @@ def resize_img(img: Image, desired_width, desired_height, clamp_to_64=False):
     return img.resize((w, h), resample=Image.Resampling.LANCZOS)
 
 
-def apply_color_profile(orig_image: Image, image_to_modify: Image):
+def apply_color_profile(orig_image, image_to_modify):
+    from PIL import Image
+    import cv2
+    import numpy as np
+    from skimage import exposure
+
     reference = cv2.cvtColor(np.asarray(orig_image), cv2.COLOR_RGB2LAB)
     image_to_modify = cv2.cvtColor(np.asarray(image_to_modify), cv2.COLOR_RGB2LAB)
     matched = exposure.match_histograms(image_to_modify, reference, channel_axis=2)

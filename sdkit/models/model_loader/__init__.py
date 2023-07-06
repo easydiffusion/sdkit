@@ -1,29 +1,24 @@
 from sdkit import Context
 from sdkit.utils import gc, log
 
-from . import (
-    gfpgan,
-    hypernetwork,
-    latent_upscaler,
-    lora,
-    nsfw_checker,
-    realesrgan,
-    stable_diffusion,
-    vae,
-    codeformer,
-)
+import importlib
 
-models = {
-    "stable-diffusion": stable_diffusion,
-    "codeformer": codeformer,
-    "gfpgan": gfpgan,
-    "realesrgan": realesrgan,
-    "vae": vae,
-    "hypernetwork": hypernetwork,
-    "nsfw_checker": nsfw_checker,
-    "lora": lora,
-    "latent_upscaler": latent_upscaler,
-}
+
+def _get_module(model_type):
+    models = {  # model_type -> local_module_name
+        "stable-diffusion": "stable_diffusion",
+        "codeformer": "codeformer",
+        "gfpgan": "gfpgan",
+        "realesrgan": "realesrgan",
+        "vae": "vae",
+        "hypernetwork": "hypernetwork",
+        "nsfw_checker": "nsfw_checker",
+        "lora": "lora",
+        "latent_upscaler": "latent_upscaler",
+    }
+    module_name = models[model_type]
+
+    return importlib.import_module("." + module_name, __name__)
 
 
 def load_model(context: Context, model_type: str, **kwargs):
@@ -35,7 +30,7 @@ def load_model(context: Context, model_type: str, **kwargs):
 
     log.info(f"loading {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
 
-    context.models[model_type] = models[model_type].load_model(context, **kwargs)
+    context.models[model_type] = _get_module(model_type).load_model(context, **kwargs)
 
     log.info(f"loaded {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
 
@@ -53,11 +48,11 @@ def unload_model(context: Context, model_type: str, **kwargs):
         return
 
     if context.test_diffusers:
-        models[model_type].unload_model(context)
+        _get_module(model_type).unload_model(context)
         del context.models[model_type]
     else:
         del context.models[model_type]
-        models[model_type].unload_model(context)
+        _get_module(model_type).unload_model(context)
 
     gc(context)
 

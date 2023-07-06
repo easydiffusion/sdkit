@@ -3,7 +3,6 @@ from functools import reduce
 from gc import collect, get_objects, get_referrers
 
 import psutil
-import torch
 
 from sdkit import Context
 
@@ -12,6 +11,8 @@ recorded_tensor_names = {}
 
 
 def gc(context: Context):
+    import torch
+
     collect()
     if "cuda" in context.device:
         torch.cuda.empty_cache()
@@ -19,6 +20,8 @@ def gc(context: Context):
 
 
 def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix=""):
+    import torch
+
     cpu_used = psutil.cpu_percent()
     ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
     vram_free_device, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
@@ -93,6 +96,7 @@ def get_tensors_in_memory(device):
     **Warning: Do not keep a reference to the returned list longer than necessary, since that will
     prevent garbage-collection of all the tensors in memory.**
     """
+    import torch
 
     device = torch.device(device) if isinstance(device, str) else device
     tensors = []

@@ -1,10 +1,9 @@
 import hashlib
 import os
 
-import requests
-
 
 def hash_url_quick(url):
+    import requests
     from sdkit.utils import log
 
     log.debug(f"hashing url: {url}")

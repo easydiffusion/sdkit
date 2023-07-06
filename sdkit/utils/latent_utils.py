@@ -1,14 +1,16 @@
-import numpy as np
-import torch
-from diffusers import StableDiffusionImg2ImgPipeline
 from einops import rearrange, repeat
-from PIL import Image, ImageOps
 
 from sdkit import Context
 from sdkit.utils import log
 
 
-def to_tensor(x, device, dtype=torch.float32):
+def to_tensor(x, device, dtype=None):
+    import torch
+    import numpy as np
+
+    if dtype is None:
+        dtype = torch.float32
+
     if torch.is_tensor(x):
         return x.to(device=device, dtype=dtype)
     elif isinstance(x, np.ndarray):
@@ -25,7 +27,11 @@ def to_tensor(x, device, dtype=torch.float32):
         return torch.tensor(x).to(device=device, dtype=dtype)
 
 
-def img_to_tensor(img: Image, batch_size, device, half_precision: bool, shift_range=False, unsqueeze=False):
+def img_to_tensor(img, batch_size, device, half_precision: bool, shift_range=False, unsqueeze=False):
+    from PIL import Image, ImageOps
+    import torch
+    import numpy as np
+
     if img is None:
         return None
 
@@ -46,11 +52,12 @@ def img_to_tensor(img: Image, batch_size, device, half_precision: bool, shift_ra
     return img
 
 
-def get_image_latent_and_mask(context: Context, image: Image, mask: Image, desired_width, desired_height, batch_size):
+def get_image_latent_and_mask(context: Context, image, mask, desired_width, desired_height, batch_size):
     """
     Assumes model is on the correct device
     """
     from .image_utils import resize_img
+    from PIL import Image, ImageOps
 
     if image is None or "stable-diffusion" not in context.models:
         return None, None
@@ -74,6 +81,10 @@ def get_image_latent_and_mask(context: Context, image: Image, mask: Image, desir
 
 
 def latent_samples_to_images(context: Context, samples):
+    import torch
+    import numpy as np
+    from PIL import Image, ImageOps
+
     model = context.models["stable-diffusion"]
 
     if context.half_precision and samples.dtype != torch.float16:
@@ -91,19 +102,28 @@ def latent_samples_to_images(context: Context, samples):
     return images
 
 
-@torch.no_grad()
 def diffusers_latent_samples_to_images(context: Context, samples):
-    samples, model = samples
-    samples = model.decode_latents(samples)
+    import torch
+    from diffusers import StableDiffusionImg2ImgPipeline
 
-    if isinstance(model, StableDiffusionImg2ImgPipeline):
-        return model.image_processor.postprocess(samples, output_type="pil")
+    @torch.no_grad()
+    def apply():
+        samples, model = samples
+        samples = model.decode_latents(samples)
 
-    return model.numpy_to_pil(samples)
+        if isinstance(model, StableDiffusionImg2ImgPipeline):
+            return model.image_processor.postprocess(samples, output_type="pil")
+
+        return model.numpy_to_pil(samples)
+
+    return apply()
 
 
 def tensor_to_bitmap(tensor):
     "Generates a grayscale bitmap from the given tensor"
+    import torch
+    import numpy as np
+    from PIL import Image, ImageOps
 
     assert np.ndim(tensor) < 5
     if np.ndim(tensor) == 4:
