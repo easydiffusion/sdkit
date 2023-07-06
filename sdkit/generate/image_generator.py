@@ -317,6 +317,11 @@ def make_with_diffusers(
     log.info("Done parsing the prompt")
     # --------------------------------------------------------------------------------------------------
 
+    # create TensorRT buffers, if necessary
+    if hasattr(operation_to_apply.unet, "_allocate_trt_buffers"):
+        dtype = torch.float16 if context.half_precision else torch.float32
+        operation_to_apply.unet._allocate_trt_buffers(operation_to_apply, context.device, dtype, width, height)
+
     # apply
     log.info(f"applying: {operation_to_apply}")
     log.info(f"Running on diffusers: {cmd}")

@@ -35,3 +35,8 @@ from .memory_utils import (
     record_tensor_name,
     take_memory_snapshot,
 )
+from .convert_model_utils import (
+    convert_pipeline_unet_to_onnx,
+    convert_pipeline_unet_to_tensorrt,
+)
+from .device_utils import has_amd_gpu
