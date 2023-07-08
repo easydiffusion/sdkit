@@ -1,7 +1,5 @@
 import os
 from shutil import copyfileobj
-
-import requests
 from tqdm import tqdm
 
 
@@ -14,6 +12,7 @@ def download_file(url: str, out_path: str):
 
     The remote server needs to support the `Range` header, for resume to work.
     """
+    import requests
     from sdkit.utils import log
 
     start_offset = 0 if not os.path.exists(out_path) else os.path.getsize(out_path)

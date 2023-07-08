@@ -23,7 +23,9 @@ from sdkit.utils import (
 tr_logging.set_verbosity_error()  # suppress unnecessary logging
 
 
-def load_model(context: Context, scan_model=True, check_for_config_with_same_name=True, **kwargs):
+def load_model(
+    context: Context, scan_model=True, check_for_config_with_same_name=True, convert_to_tensorrt=False, **kwargs
+):
     from sdkit.models import scan_model as scan_model_fn
 
     from . import optimizations
@@ -48,7 +50,7 @@ def load_model(context: Context, scan_model=True, check_for_config_with_same_nam
             sd_v1_4_info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.4")
             config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
 
-        return load_diffusers_model(context, model_path, config_file_path)
+        return load_diffusers_model(context, model_path, config_file_path, convert_to_tensorrt)
 
     # load the model file
     sd = load_tensor_file(model_path)
@@ -112,7 +114,7 @@ def unload_model(context: Context, **kwargs):
     context.module_in_gpu = None  # don't keep a dangling reference, prevents gc
 
 
-def load_diffusers_model(context: Context, model_path, config_file_path):
+def load_diffusers_model(context: Context, model_path, config_file_path, convert_to_tensorrt):
     import torch
     from diffusers import (
         StableDiffusionImg2ImgPipeline,
@@ -120,9 +122,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         StableDiffusionInpaintPipelineLegacy,
     )
     from compel import Compel, DiffusersTextualInversionManager
+    import platform
 
     from sdkit.generate.sampler import diffusers_samplers
-    from sdkit.utils import gc
+    from sdkit.utils import gc, has_amd_gpu
 
     from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
     from . import diffusers_bugfixes  # required for applying the temp patches until diffusers 0.18 releases
@@ -159,6 +162,40 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
 
+    # optimize for TRT or DirectML (AMD on Windows)
+    model_component, _ = os.path.splitext(model_path)
+    unet_trt_path = model_component + ".unet.trt"
+    unet_onnx_path = model_component + ".unet.onnx"
+
+    use_directml = platform.system() == "Windows" and has_amd_gpu()
+    try:
+        from importlib.metadata import version
+
+        version("onnxruntime-directml")  # check if this is installed
+    except:
+        use_directml = False
+
+    if "cuda" not in context.device:
+        convert_to_tensorrt = False
+
+    if use_directml and (not os.path.exists(unet_onnx_path) or os.stat(unet_onnx_path).st_size == 0):
+        from sdkit.utils import gc, convert_pipeline_unet_to_onnx
+
+        log.info("Converting UNet to ONNX to run on AMD on Windows..")
+        convert_pipeline_unet_to_onnx(default_pipe, unet_onnx_path, fp16=False)  # on cpu, so fp32
+        log.info("Converted UNet to ONNX to run on AMD on Windows!")
+    elif convert_to_tensorrt and (not os.path.exists(unet_trt_path) or os.stat(unet_trt_path).st_size == 0):
+        from sdkit.utils import gc, convert_pipeline_unet_to_tensorrt
+
+        default_pipe = default_pipe.to(context.device, torch.float16 if context.half_precision else torch.float32)
+
+        log.info("Converting UNet to TensorRT for acceleration..")
+        convert_pipeline_unet_to_tensorrt(default_pipe, unet_trt_path, fp16=context.half_precision)
+        log.info("Converted UNet to TensorRT for acceleration!")
+
+        default_pipe = default_pipe.to("cpu", torch.float32)
+
+    # keep the VAE for future use (maybe use copy.deepcopy() instead of a file)
     save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
 
     if context.vram_usage_level == "low" and "cuda" in context.device:
@@ -196,6 +233,18 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
         device=context.device,
         textual_inversion_manager=textual_inversion_manager,
     )
+
+    # load the TensorRT or DirectML unet, if present
+    if use_directml and os.path.exists(unet_onnx_path) and os.stat(unet_onnx_path).st_size > 0:
+        from .accelerators import apply_directml_unet
+
+        apply_directml_unet(default_pipe, unet_onnx_path)
+        log.info("Using DirectML accelerated UNet")
+    elif os.path.exists(unet_trt_path) and os.stat(unet_trt_path).st_size > 0:
+        from .accelerators import apply_tensorrt_unet
+
+        apply_tensorrt_unet(default_pipe, unet_trt_path)
+        log.info("Using TensorRT accelerated UNet")
 
     # make samplers
     diffusers_samplers.make_samplers(context, default_pipe.scheduler)
@@ -244,7 +293,8 @@ def load_diffusers_model(context: Context, model_path, config_file_path):
     model["inpainting"] = pipe_inpainting
 
     # test precision
-    test_and_fix_precision(context, model, config, attn_precision)
+    if context.half_precision:
+        test_and_fix_precision(context, model, config, attn_precision)
 
     gc(context)
 
