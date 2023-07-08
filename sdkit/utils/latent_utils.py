@@ -102,13 +102,13 @@ def latent_samples_to_images(context: Context, samples):
     return images
 
 
-def diffusers_latent_samples_to_images(context: Context, samples):
+def diffusers_latent_samples_to_images(context: Context, latent_samples):
     import torch
     from diffusers import StableDiffusionImg2ImgPipeline
 
     @torch.no_grad()
     def apply():
-        samples, model = samples
+        samples, model = latent_samples
         samples = model.decode_latents(samples)
 
         if isinstance(model, StableDiffusionImg2ImgPipeline):
