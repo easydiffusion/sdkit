@@ -127,15 +127,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     from sdkit.generate.sampler import diffusers_samplers
     from sdkit.utils import gc, has_amd_gpu
 
-    from .convert_from_ckpt import download_from_original_stable_diffusion_ckpt
-    from . import diffusers_bugfixes  # required for applying the temp patches until diffusers 0.18 releases
-    from .optimizations import optimized_get_attention_scores, get_optimized_attentionblock_forward
-
-    from diffusers.models.attention_processor import Attention
-    from diffusers.models.attention import AttentionBlock
-
-    Attention.get_attention_scores = optimized_get_attention_scores
-    AttentionBlock.forward = get_optimized_attentionblock_forward
+    from diffusers.pipelines.stable_diffusion.convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
     log.info("loading on diffusers")
 
@@ -155,7 +147,6 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         scheduler_type="ddim",
         from_safetensors=model_path.endswith(".safetensors"),
         upcast_attention=(attn_precision == "fp32"),
-        is_img2img=False,
         device="cpu",
     )
 
@@ -255,38 +246,20 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         "compel": compel,
     }
 
-    if isinstance(default_pipe, StableDiffusionInpaintPipeline):
+    if hasattr(config, "model") and hasattr(config.model, "target") and "LatentInpaintDiffusion" in config.model.target:
         log.info("Loaded on diffusers")
-        model["inpainting"] = default_pipe
+        model["inpainting"] = StableDiffusionInpaintPipeline(**default_pipe.components)
 
         return model
 
     pipe_txt2img = default_pipe
 
     # img2img
-    pipe_img2img = StableDiffusionImg2ImgPipeline(
-        vae=pipe_txt2img.vae,
-        text_encoder=pipe_txt2img.text_encoder,
-        tokenizer=pipe_txt2img.tokenizer,
-        unet=pipe_txt2img.unet,
-        scheduler=pipe_txt2img.scheduler,
-        safety_checker=None,
-        feature_extractor=None,
-        requires_safety_checker=False,
-    )
+    pipe_img2img = StableDiffusionImg2ImgPipeline(**default_pipe.components)
 
     # inpainting
     # TODO - use legacy only if not an Inpainting Model. confirm this.
-    pipe_inpainting = StableDiffusionInpaintPipelineLegacy(
-        vae=pipe_txt2img.vae,
-        text_encoder=pipe_txt2img.text_encoder,
-        tokenizer=pipe_txt2img.tokenizer,
-        unet=pipe_txt2img.unet,
-        scheduler=pipe_txt2img.scheduler,
-        safety_checker=None,
-        feature_extractor=None,
-        requires_safety_checker=False,
-    )
+    pipe_inpainting = StableDiffusionInpaintPipelineLegacy(**default_pipe.components)
 
     model["txt2img"] = pipe_txt2img
     model["img2img"] = pipe_img2img

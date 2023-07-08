@@ -84,6 +84,8 @@ def stable_diffusion_works_on_multiple_devices_in_parallel_test(model, vram_usag
             expected_image = "txt"
 
         expected_image = f"{EXPECTED_DIR}/{model_ver}-{expected_image}-{args['sampler_name']}-{args['seed']}-{args['width']}x{args['height']}"
+        if vram_usage_level == "high":
+            expected_image += "-high"
         expected_image = get_image_for_device(expected_image, context.device)
         assert_images_same(image, expected_image, f"stable_diffusion_{test_name}_{context.device.replace(':', '')}")
 
@@ -121,11 +123,11 @@ def test_1_11a__stable_diffusion_img2img_works_on_multiple_devices__low_VRAM():
     sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "low", "test1.11a")
 
 
-def test_1_11a__stable_diffusion_img2img_works_on_multiple_devices__balanced_VRAM():
+def test_1_11b__stable_diffusion_img2img_works_on_multiple_devices__balanced_VRAM():
     sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "balanced", "test1.11b")
 
 
-def test_1_11a__stable_diffusion_img2img_works_on_multiple_devices__high_VRAM():
+def test_1_11c__stable_diffusion_img2img_works_on_multiple_devices__high_VRAM():
     sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "high", "test1.11c")
 
 
@@ -133,11 +135,11 @@ def test_1_12a__stable_diffusion_legacy_inpaint_works_on_multiple_devices__low_V
     sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "low", "test1.12a", inpaint=True)
 
 
-def test_1_12a__stable_diffusion_legacy_inpaint_works_on_multiple_devices__balanced_VRAM():
+def test_1_12b__stable_diffusion_legacy_inpaint_works_on_multiple_devices__balanced_VRAM():
     sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "balanced", "test1.12b", inpaint=True)
 
 
-def test_1_12a__stable_diffusion_legacy_inpaint_works_on_multiple_devices__high_VRAM():
+def test_1_12c__stable_diffusion_legacy_inpaint_works_on_multiple_devices__high_VRAM():
     sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "high", "test1.12c", inpaint=True)
 
 
