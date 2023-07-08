@@ -30,12 +30,12 @@ def setup_module():
     load_model(context, "stable-diffusion")
 
 
-# section 1 - SD 1.4 at different resolutions and samplers
+# section 1 - SD at different resolutions and samplers
 def test_1_0__stable_diffusion_1_4_txt2img_works__64x64():
     image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=64, height=64)[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/1.4-txt-euler_a-42-64x64-cuda.png")
-    assert_images_same(image, expected_image, "stable_diffusion_test1.0")
+    assert_images_same(image, expected_image, "test1.0")
 
 
 def test_1_1__stable_diffusion_1_4_txt2img_works__512x512():
@@ -79,12 +79,12 @@ def stable_diffusion_works_on_multiple_devices_in_parallel_test(model, vram_usag
         image = generate_images(context, **args)[0]
 
         if args.get("init_image"):
-            expected_image = "inpaint" if args.get("init_image_mask") else "img"
+            test_type = "inpaint" if args.get("init_image_mask") else "img"
         else:
-            expected_image = "txt"
+            test_type = "txt"
 
-        expected_image = f"{EXPECTED_DIR}/{model_ver}-{expected_image}-{args['sampler_name']}-{args['seed']}-{args['width']}x{args['height']}"
-        if vram_usage_level == "high":
+        expected_image = f"{EXPECTED_DIR}/{model_ver}-{test_type}-{args['sampler_name']}-{args['seed']}-{args['width']}x{args['height']}"
+        if vram_usage_level == "high" and test_type == "img":
             expected_image += "-high"
         expected_image = get_image_for_device(expected_image, context.device)
         assert_images_same(image, expected_image, f"stable_diffusion_{test_name}_{context.device.replace(':', '')}")
@@ -153,6 +153,28 @@ def test_1_13b__stable_diffusion_inpaint_model_works_on_multiple_devices__balanc
 
 def test_1_13c__stable_diffusion_inpaint_model_works_on_multiple_devices__high_VRAM():
     sd_1_4_image_test(("512-inpainting-ema.ckpt", "2.0"), "high", "test1.13c", inpaint=True)
+
+
+def test_1_14a__stable_diffusion_2_0_txt2img_works__64x64():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/2.0/512-base-ema.ckpt"
+
+    load_model(context, "stable-diffusion")
+
+    image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=64, height=64)[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/2.0-txt-euler_a-42-64x64-cuda.png")
+    assert_images_same(image, expected_image, "test1.14a")
+
+
+def test_1_14b__stable_diffusion_2_1_txt2img_works__64x64():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/2.1/v2-1_512-ema-pruned.safetensors"
+
+    load_model(context, "stable-diffusion")
+
+    image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=64, height=64)[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/2.1-txt-euler_a-42-64x64-cuda.png")
+    assert_images_same(image, expected_image, "test1.14b")
 
 
 def test_2_0__misc__compel_parses_prompts():
