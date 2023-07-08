@@ -121,7 +121,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         StableDiffusionInpaintPipeline,
         StableDiffusionInpaintPipelineLegacy,
     )
-    from compel import Compel
+    from compel import Compel, DiffusersTextualInversionManager
     import platform
 
     from sdkit.generate.sampler import diffusers_samplers
@@ -224,12 +224,14 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         default_pipe.enable_vae_slicing()
 
     # make the compel prompt parser object
+    textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
     compel = Compel(
         tokenizer=default_pipe.tokenizer,
         text_encoder=default_pipe.text_encoder,
         truncate_long_prompts=False,
         use_penultimate_clip_layer=context.clip_skip,
         device=context.device,
+        textual_inversion_manager=textual_inversion_manager,
     )
 
     # load the TensorRT or DirectML unet, if present
@@ -297,6 +299,8 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     gc(context)
 
     log.info("Loaded on diffusers")
+
+    context._loaded_embeddings = set(())
 
     return model
 

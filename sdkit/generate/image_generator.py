@@ -13,6 +13,8 @@ from sdkit.utils import (
     get_image_latent_and_mask,
     latent_samples_to_images,
     resize_img,
+    log,
+    load_tensor_file,
 )
 
 from .prompt_parser import get_cond_and_uncond
@@ -194,7 +196,9 @@ def make_with_diffusers(
     )
 
     from sdkit.models.model_loader.lora import apply_lora_model
-    from sdkit.utils import log
+
+    prompt = prompt.lower()
+    negative_prompt = negative_prompt.lower()
 
     model = context.models["stable-diffusion"]
     if context.device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
@@ -252,12 +256,15 @@ def make_with_diffusers(
 
     # apply the LoRA (if necessary)
     if context.models.get("lora"):
-        log.info("Applying LoRA..")
+        log.info("Applying LoRA...")
         if hasattr(context, "_last_lora_alpha"):
             apply_lora_model(context, -context._last_lora_alpha)  # undo the last LoRA apply
 
         apply_lora_model(context, lora_alpha)
         context._last_lora_alpha = lora_alpha
+
+    if context.embeddings_path != None:
+        load_embeddings(context, prompt, negative_prompt, operation_to_apply)
 
     # --------------------------------------------------------------------------------------------------
     # -- https://github.com/huggingface/diffusers/issues/2633
@@ -298,7 +305,7 @@ def make_with_diffusers(
         cl._conv_forward = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
 
     # --------------------------------------------------------------------------------------------------
-    log.info("Parsing the prompt..")
+    log.info("Parsing the prompt...")
 
     # make the prompt embeds
     compel = model["compel"]
@@ -327,6 +334,66 @@ def make_with_diffusers(
     log.info(f"Running on diffusers: {cmd}")
 
     return operation_to_apply(**cmd).images
+
+def load_embeddings(context, prompt, negative_prompt, default_pipe):
+  
+    pt_files = list(context.embeddings_path.rglob("*.pt"))
+    bin_files = list(context.embeddings_path.rglob("*.bin"))
+    st_files = list(context.embeddings_path.rglob("*.safetensors"))
+
+    log.info("Applying Embeddings...")
+
+    for filename in pt_files + bin_files + st_files:
+        skip_embedding = False
+        embeds_name =  filename.name.split(".")[0].lower()
+        if (embeds_name not in prompt and embeds_name not in negative_prompt) or embeds_name in context._loaded_embeddings:
+            continue
+        log.info(f"### Load: embedding {filename} ###")
+
+        embedding = load_tensor_file(filename)
+        dump_embedding_info(embedding)
+
+        model_dim = default_pipe.text_encoder.get_input_embeddings().weight.data[0].shape[0]
+
+        if "emb_params" in embedding.keys():
+            if model_dim != embedding["emb_params"].size(dim=-1):
+                skip_embedding = True
+        elif "<concept>" in embedding.keys():
+            if model_dim != embedding["<concept>"].size(dim=-1):
+                skip_embedding = True
+        elif "string_to_param" in embedding.keys():
+            for trained_token in embedding["string_to_param"]:
+                embeds = embedding["string_to_param"][trained_token]
+                if model_dim != embeds.size(dim=-1):
+                    skip_embedding = True
+                    continue
+        else:
+            log.info(f"Embedding {filename} has an unknown internal structure. Trying to load it anyways.")
+
+        if skip_embedding:
+            log.info(f"Skipping embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa.")
+        else:
+            try:
+                default_pipe.load_textual_inversion(filename, embeds_name)
+            except:
+                log.error(f"Embedding {filename} can't be loaded. Proceeding without it!")
+                log.error(traceback.format_exc())
+            else:
+                context._loaded_embeddings.add(embeds_name)
+
+
+def dump_embedding_info(embedding):
+    for key in dict(embedding).keys():
+        if key == "string_to_token":
+            for s in dict(embedding[key]).keys():
+                log.info(f"  - {key}: {s}")
+        elif key == "string_to_param":
+            for s in dict(embedding[key]).keys():
+                log.info(f"  - {key}: {s}")
+        elif key == "name" or key == "sd_checkpoint" or key == "sd_checkpoint_name" or key == "step":
+            log.info(f"  - {key}: '{embedding[key]}'")
+        else:
+            log.info(f"  # {key}")
 
 
 def get_image(img):

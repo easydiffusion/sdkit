@@ -6,6 +6,9 @@ def load_tensor_file(path):
     import torch
     import safetensors.torch
 
+    if not isinstance(path, str):
+        path = str(path)
+
     if path.lower().endswith(".safetensors"):
         return safetensors.torch.load_file(path, device="cpu")
     else:
