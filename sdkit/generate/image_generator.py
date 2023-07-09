@@ -336,6 +336,7 @@ def make_with_diffusers(
     return operation_to_apply(**cmd).images
 
 def load_embeddings(context, prompt, negative_prompt, default_pipe):
+    import traceback
   
     pt_files = list(context.embeddings_path.rglob("*.pt"))
     bin_files = list(context.embeddings_path.rglob("*.bin"))
