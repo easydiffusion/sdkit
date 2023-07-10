@@ -178,12 +178,18 @@ def test_1_14b__stable_diffusion_2_1_txt2img_works__64x64():
     assert_images_same(image, expected_image, "test1.14b")
 
 
-def on_live_preview_step(samples, i, *args):
-    images = diffusers_latent_samples_to_images(context, (samples, args[0]))
-    assert images is not None
-    for img in images:
-        buf = img_to_buffer(img, output_format="JPEG")
-        assert buf is not None
+def make_live_preview_callback(width, height):
+    def on_step(samples, i, *args):
+        images = diffusers_latent_samples_to_images(context, (samples, args[0]))
+        assert images is not None
+        for img in images:
+            w, h = img.size
+            assert w == width
+            assert h == height
+            buf = img_to_buffer(img, output_format="JPEG")
+            assert buf is not None
+
+    return on_step
 
 
 def test_1_15a__live_preview__stable_diffusion_1_4_txt2img_works__64x64():
@@ -193,7 +199,7 @@ def test_1_15a__live_preview__stable_diffusion_1_4_txt2img_works__64x64():
         seed=42,
         width=64,
         height=64,
-        callback=on_live_preview_step,
+        callback=make_live_preview_callback(64, 64),
     )[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/1.4-txt-euler_a-42-64x64-cuda.png")
@@ -207,8 +213,8 @@ def test_1_15b__live_preview__stable_diffusion_1_4_img2img_works__64x64():
         seed=42,
         width=64,
         height=64,
+        callback=make_live_preview_callback(64, 64),
         init_image=Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png"),
-        callback=on_live_preview_step,
     )[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/1.4-img-euler_a-42-64x64-cuda.png")
@@ -222,9 +228,9 @@ def test_1_15c__live_preview__stable_diffusion_1_4_inpaint_works__64x64():
         seed=42,
         width=64,
         height=64,
+        callback=make_live_preview_callback(64, 64),
         init_image=Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png"),
         init_image_mask=Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png"),
-        callback=on_live_preview_step,
     )[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/1.4-inpaint-euler_a-42-64x64-cuda.png")

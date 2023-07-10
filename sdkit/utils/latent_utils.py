@@ -108,6 +108,7 @@ def diffusers_latent_samples_to_images(context: Context, latent_samples):
     @torch.no_grad()
     def apply():
         samples, model = latent_samples
+        samples = model.vae.decode(samples / model.vae.config.scaling_factor, return_dict=False)[0]
         do_denormalize = [True] * samples.shape[0]
         images = model.image_processor.postprocess(samples, output_type="pil", do_denormalize=do_denormalize)
         images = [img.convert("RGB") for img in images]
