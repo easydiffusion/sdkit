@@ -109,7 +109,9 @@ def diffusers_latent_samples_to_images(context: Context, latent_samples):
     def apply():
         samples, model = latent_samples
         do_denormalize = [True] * samples.shape[0]
-        return model.image_processor.postprocess(samples, output_type="pil", do_denormalize=do_denormalize)
+        images = model.image_processor.postprocess(samples, output_type="pil", do_denormalize=do_denormalize)
+        images = [img.convert("RGB") for img in images]
+        return images
 
     return apply()
 
