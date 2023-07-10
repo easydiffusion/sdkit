@@ -104,17 +104,12 @@ def latent_samples_to_images(context: Context, samples):
 
 def diffusers_latent_samples_to_images(context: Context, latent_samples):
     import torch
-    from diffusers import StableDiffusionImg2ImgPipeline
 
     @torch.no_grad()
     def apply():
         samples, model = latent_samples
-        samples = model.decode_latents(samples)
-
-        if isinstance(model, StableDiffusionImg2ImgPipeline):
-            return model.image_processor.postprocess(samples, output_type="pil")
-
-        return model.numpy_to_pil(samples)
+        do_denormalize = [True] * samples.shape[0]
+        return model.image_processor.postprocess(samples, output_type="pil", do_denormalize=do_denormalize)
 
     return apply()
 
