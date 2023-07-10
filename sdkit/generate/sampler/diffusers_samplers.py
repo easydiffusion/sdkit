@@ -10,7 +10,7 @@ from diffusers import (
     UniPCMultistepScheduler,
     DEISMultistepScheduler,
     DDPMScheduler,
-
+    DPMSolverSDEScheduler,
 )
 
 
@@ -50,9 +50,10 @@ _samplers_init = {
     "dpm2_a": lambda ddim_scheduler: KDPM2AncestralDiscreteScheduler.from_config(ddim_scheduler.config),
     "dpmpp_2s_a": None,  # Not implemented in diffusers yet
     "dpmpp_2m": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(ddim_scheduler.config, use_karras_sigmas=True),
-    "dpmpp_sde": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
+    "dpmpp_2m_sde": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
         ddim_scheduler.config, algorithm_type="sde-dpmsolver++", use_karras_sigmas=True
-    ),
+        ),
+    "dpmpp_sde": lambda ddim_scheduler: DPMSolverSDEScheduler.from_config(ddim_scheduler.config, use_karras_sigmas=True),
     "dpm_fast": None,  # Not implemented in diffusers yet
     "dpm_adaptive": None,  # Not implemented in diffusers yet
     "ddpm": lambda ddim_scheduler: DDPMScheduler.from_config(ddim_scheduler.config),
