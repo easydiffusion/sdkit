@@ -2,6 +2,8 @@ import torch
 from dataclasses import dataclass
 import numpy as np
 
+from sdkit.utils import log
+
 """
 Current issues:
 1. TRT is working only with fp32
@@ -51,9 +53,25 @@ class UnetDirectML:
         # sess_options.add_free_dimension_override_by_name("encoder_hidden_states_batch", batch_size * 2)
         # sess_options.add_free_dimension_override_by_name("encoder_hidden_states_sequence", 77)
 
-        self.unet_dml = OnnxRuntimeModel(
-            model=OnnxRuntimeModel.load_model(onnx_path, "DmlExecutionProvider", sess_options=sess_options)
+        import wmi
+
+        w = wmi.WMI()
+        device_id = 0
+        for i, controller in enumerate(w.Win32_VideoController()):
+            device_name = controller.wmi_property("Name").value
+            if "AMD" in device_name and "Radeon" in device_name:
+                device_id = i
+                break
+
+        log.info(f"Using DirectML device_id: {device_id}")
+        sess = ort.InferenceSession(
+            onnx_path,
+            providers=["DmlExecutionProvider"],
+            sess_options=sess_options,
+            provider_options=[{"device_id": device_id}],
         )
+
+        self.unet_dml = OnnxRuntimeModel(model=sess)
 
     def forward(self, sample, timestep, encoder_hidden_states, **kwargs):
         from diffusers.pipelines.onnx_utils import ORT_TO_NP_TYPE
