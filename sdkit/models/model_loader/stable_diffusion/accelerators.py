@@ -33,11 +33,6 @@ def apply_tensorrt_unet(pipeline, trt_path):
     setattr(pipeline.unet, "_allocate_trt_buffers", unet_trt.allocate_buffers)
 
 
-@dataclass
-class UnetResult:
-    sample: torch.FloatTensor = None
-
-
 class UnetDirectML:
     def __init__(self, onnx_path):
         from diffusers.pipelines.onnx_utils import OnnxRuntimeModel
@@ -78,7 +73,7 @@ class UnetDirectML:
 
         sample = self.unet_dml(**input)[0]
         sample = torch.from_numpy(sample).to(device)
-        return UnetResult(sample)
+        return [sample]
 
 
 class UnetTRT:
@@ -141,4 +136,5 @@ class UnetTRT:
         if not self.trt_context.execute_async_v3(stream_handle=stream.ptr):
             raise RuntimeError("Inference failed!")
 
-        return UnetResult(sample=self.tensors["out_sample"])
+        sample = self.tensors["out_sample"]
+        return [sample]
