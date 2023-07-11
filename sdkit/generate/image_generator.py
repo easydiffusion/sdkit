@@ -347,7 +347,7 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
 
     for filename in pt_files + bin_files + st_files:
         skip_embedding = False
-        embeds_name =  get_embedding_token(filename.name)
+        embeds_name =  get_embedding_token(filename.name).lower()
         if (embeds_name not in prompt and embeds_name not in negative_prompt) or embeds_name in context._loaded_embeddings:
             continue
         log.info(f"### Load: embedding {filename} ###")
