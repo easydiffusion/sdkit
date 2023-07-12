@@ -2,7 +2,7 @@ import torch
 from dataclasses import dataclass
 import numpy as np
 
-from sdkit.utils import log
+from sdkit.utils import log, get_directml_device_id
 
 """
 Current issues:
@@ -53,15 +53,7 @@ class UnetDirectML:
         # sess_options.add_free_dimension_override_by_name("encoder_hidden_states_batch", batch_size * 2)
         # sess_options.add_free_dimension_override_by_name("encoder_hidden_states_sequence", 77)
 
-        import wmi
-
-        w = wmi.WMI()
-        device_id = 0
-        for i, controller in enumerate(w.Win32_VideoController()):
-            device_name = controller.wmi_property("Name").value
-            if "AMD" in device_name and "Radeon" in device_name:
-                device_id = i
-                break
+        device_id = get_directml_device_id()
 
         log.info(f"Using DirectML device_id: {device_id}")
         sess = ort.InferenceSession(
