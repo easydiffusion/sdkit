@@ -340,6 +340,7 @@ def make_with_diffusers(
 
     return operation_to_apply(**cmd).images
 
+
 def load_embeddings(context, prompt, negative_prompt, default_pipe):
     import traceback
 
@@ -351,8 +352,10 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
 
     for filename in pt_files + bin_files + st_files:
         skip_embedding = False
-        embeds_name =  filename.name.split(".")[0].lower()
-        if (embeds_name not in prompt and embeds_name not in negative_prompt) or embeds_name in context._loaded_embeddings:
+        embeds_name = filename.name.split(".")[0].lower()
+        if (
+            embeds_name not in prompt and embeds_name not in negative_prompt
+        ) or embeds_name in context._loaded_embeddings:
             continue
         log.info(f"### Load: embedding {filename} ###")
 
@@ -377,7 +380,9 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
             log.info(f"Embedding {filename} has an unknown internal structure. Trying to load it anyways.")
 
         if skip_embedding:
-            log.info(f"Skipping embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa.")
+            log.info(
+                f"Skipping embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa."
+            )
         else:
             try:
                 default_pipe.load_textual_inversion(filename, embeds_name)
