@@ -255,7 +255,7 @@ def make_with_diffusers(
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
 
     # apply the LoRA (if necessary)
-    is_lora_loaded = model.get("_lora_loaded", False)
+    is_lora_loaded = hasattr(operation_to_apply, "_lora_scale")
     if is_lora_loaded:
         cmd["cross_attention_kwargs"] = {"scale": lora_alpha}
         operation_to_apply._lora_scale = lora_alpha

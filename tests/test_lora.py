@@ -29,8 +29,16 @@ def test_load_sd_1_4():
     load_model(context, "stable-diffusion")
 
 
-# section 1 - SD at different resolutions and samplers
-def check_lora_image(lora_alpha, expected_image, test_name):
+# section 0 - no lora
+def test_0_0__image_without_lora__sd_1_4():
+    check_lora_image(
+        expected_image="lora-not-loaded.png",
+        test_name="test0.0",
+    )
+
+
+# section 1 - single lora
+def check_lora_image(expected_image, test_name, lora_alpha=0):
     image = generate_images(
         context,
         "1boy, muscular, full armor, armor, shoulder plates, angry, looking at viewer, spiked hair, white hair,",
@@ -41,15 +49,7 @@ def check_lora_image(lora_alpha, expected_image, test_name):
     )[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/{expected_image}")
-    assert_images_same(image, expected_image, test_name)
-
-
-def test_1_0__image_without_lora__sd_1_4():
-    check_lora_image(
-        lora_alpha=0,
-        expected_image="lora-not-loaded.png",
-        test_name="test1.0",
-    )
+    assert_images_same(image, expected_image, "lora_" + test_name)
 
 
 def test_load_single_lora():
@@ -66,44 +66,42 @@ def test_load_single_lora():
     lora = load_tensor_file(lora_path)
     pipe.load_lora_weights(lora)
 
-    model["_lora_loaded"] = True
-
 
 def test_1_1__single_a1111_lora__sd_1_4__alpha_0():
     check_lora_image(
-        lora_alpha=0,
         expected_image="lora-single-alpha0.png",
         test_name="test1.1",
+        lora_alpha=0,
     )
 
 
 def test_1_2__single_a1111_lora__sd_1_4__alpha_0_5():
     check_lora_image(
-        lora_alpha=0.5,
         expected_image="lora-single-alpha0.5.png",
         test_name="test1.2",
+        lora_alpha=0.5,
     )
 
 
 def test_1_3__single_a1111_lora__sd_1_4__alpha_1():
     check_lora_image(
-        lora_alpha=1,
         expected_image="lora-single-alpha1.png",
         test_name="test1.3",
+        lora_alpha=1,
     )
 
 
 def test_1_4__single_a1111_lora__sd_1_4__alpha_0_5():
     check_lora_image(
-        lora_alpha=0.5,
         expected_image="lora-single-alpha0.5.png",
         test_name="test1.4",
+        lora_alpha=0.5,
     )
 
 
 def test_1_5__single_a1111_lora__sd_1_4__alpha_0():
     check_lora_image(
-        lora_alpha=0,
         expected_image="lora-single-alpha0.png",
         test_name="test1.5",
+        lora_alpha=0,
     )
