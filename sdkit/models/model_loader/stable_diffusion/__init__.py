@@ -125,7 +125,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     import platform
 
     from sdkit.generate.sampler import diffusers_samplers
-    from sdkit.utils import gc, has_amd_gpu
+    from sdkit.utils import gc, get_directml_device_id
 
     from diffusers.pipelines.stable_diffusion.convert_from_ckpt import download_from_original_stable_diffusion_ckpt
     from . import diffusers_bugfixes
@@ -159,7 +159,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     unet_trt_path = model_component + ".unet.trt"
     unet_onnx_path = model_component + ".unet.onnx"
 
-    use_directml = platform.system() == "Windows" and has_amd_gpu()
+    use_directml = (get_directml_device_id() != None)
     try:
         from importlib.metadata import version
 

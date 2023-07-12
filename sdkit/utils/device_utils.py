@@ -1,5 +1,6 @@
 import platform
 import subprocess
+import wmi
 
 
 def has_amd_gpu():
@@ -18,3 +19,20 @@ def has_amd_gpu():
         return False
 
     return False
+
+def get_directml_device_id():
+    os_name = platform.system()
+
+    if os_name != "Windows":
+        return None
+    
+    w = wmi.WMI()
+    device_id = None
+    for i, controller in enumerate(w.Win32_VideoController()):
+        device_name = controller.wmi_property("Name").value
+        if ("AMD" in device_name and "Radeon" in device_name) or ("Intel" in device_name and "Arc" in device_name):
+            device_id = i
+            break
+
+    return device_id
+
