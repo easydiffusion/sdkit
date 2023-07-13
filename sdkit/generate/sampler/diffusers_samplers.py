@@ -11,6 +11,7 @@ from diffusers import (
     DEISMultistepScheduler,
     DDPMScheduler,
     DPMSolverSDEScheduler,
+    DPMSolverSinglestepScheduler,
 )
 
 
@@ -48,7 +49,7 @@ _samplers_init = {
     "heun": lambda ddim_scheduler: HeunDiscreteScheduler.from_config(ddim_scheduler.config),
     "dpm2": lambda ddim_scheduler: KDPM2DiscreteScheduler.from_config(ddim_scheduler.config),
     "dpm2_a": lambda ddim_scheduler: KDPM2AncestralDiscreteScheduler.from_config(ddim_scheduler.config),
-    "dpmpp_2s_a": None,  # Not implemented in diffusers yet
+    "dpmpp_2s_a": lambda ddim_scheduler: DPMSolverSinglestepScheduler.from_config(ddim_scheduler.config, use_karras_sigmas=True),
     "dpmpp_2m": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(ddim_scheduler.config, use_karras_sigmas=True),
     "dpmpp_2m_sde": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
         ddim_scheduler.config, algorithm_type="sde-dpmsolver++", use_karras_sigmas=True
