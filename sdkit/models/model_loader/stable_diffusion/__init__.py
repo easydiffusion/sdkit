@@ -280,9 +280,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
 
 def test_and_fix_precision(context, model, config, attn_precision):
     prev_model = context.models.get("stable-diffusion")
-    prev_lora_alpha = getattr(context, "_last_lora_alpha", 0)
+    prev_lora_alpha = getattr(context, "_last_lora_alpha", [0])
     context.models["stable-diffusion"] = model
-    context._last_lora_alpha = 0
+    if hasattr(context, "_last_lora_alpha"):
+        context._last_lora_alpha = [0]
 
     # test precision
     try:
@@ -330,7 +331,8 @@ def test_and_fix_precision(context, model, config, attn_precision):
         log.error(traceback.format_exc())
 
     context.models["stable-diffusion"] = prev_model
-    context._last_lora_alpha = prev_lora_alpha
+    if hasattr(context, "_last_lora_alpha"):
+        context._last_lora_alpha = prev_lora_alpha
 
 
 def get_model_config_file(context: Context, check_for_config_with_same_name):

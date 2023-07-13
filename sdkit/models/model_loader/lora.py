@@ -7,8 +7,16 @@ from sdkit.utils import load_tensor_file, log
 
 
 def load_model(context: Context, **kwargs):
+    model = context.models["stable-diffusion"]
+    default_pipe = model["default"]
+
     lora_model_path = context.model_paths.get("lora")
-    return load_tensor_file(lora_model_path)
+    lora_model_paths = lora_model_path if isinstance(lora_model_path, list) else [lora_model_path]
+
+    loras = [load_tensor_file(path) for path in lora_model_paths]
+    loras = [default_pipe._convert_kohya_lora_to_diffusers(lora) for lora in loras]
+
+    return loras
 
 
 def move_model_to_cpu(context: Context):
@@ -36,62 +44,66 @@ def apply_lora_model(context, alpha):
         log.error("Could not apply LoRA!")
 
 
-# Temporarily dumped from https://github.com/huggingface/diffusers/blob/main/scripts/convert_lora_safetensor_to_diffusers.py
-# Need to move this function into the `convert_from_ckpt.py` module (in diffusers), and use that instead.
-def _apply_lora(
-    context,
-    pipeline,
-    alpha,
-    lora_prefix_text_encoder="lora_te",
-    lora_prefix_unet="lora_unet",
-):
-    state_dict = context.models["lora"]
+# Inspired from https://github.com/huggingface/diffusers/blob/main/scripts/convert_lora_safetensor_to_diffusers.py
+def _apply_lora(context, pipeline, alphas):
+    log.info(f"Applying lora, alphas: {alphas}")
 
-    print("Applying lora", alpha)
+    loras = context.models["lora"]
+    assert len(loras) == len(alphas)
 
+    precision = torch.float16 if context.half_precision else torch.float32
+
+    for lora, alpha in zip(loras, alphas):
+        _apply_single_lora(pipeline, lora, alpha, precision)
+
+
+def _apply_single_lora(pipeline, lora, alpha, precision):
+    state_dict, network_alpha = lora
     visited = []
 
     # directly update weight in diffusers model
     for key in state_dict:
-        # it is suggested to print out the key, it usually will be something like below
-        # "lora_te_text_model_encoder_layers_0_self_attn_k_proj.lora_down.weight"
-
         # as we have set the alpha beforehand, so just skip
         if ".alpha" in key or key in visited:
             continue
 
-        if "text" in key:
-            layer_infos = key.split(".")[0].split(lora_prefix_text_encoder + "_")[-1].split("_")
-            curr_layer = pipeline.text_encoder
-        else:
-            # "lora_unet_down_blocks_0_attentions_0_transformer_blocks_0_attn2_to_v.lora_down.weight"
-            # layer_infos = "down_blocks_0_attentions_0_transformer_blocks_0_attn2_to_v".split("_")
+        module_chain = key.replace("attn1.processor", "attn1").replace("attn2.processor", "attn2")
+        module_chain = module_chain.replace("_lora.down.weight", "").replace("_lora.up.weight", "")
 
-            layer_infos = key.split(".")[0].split(lora_prefix_unet + "_")[-1].split("_")
-            curr_layer = pipeline.unet
+        if module_chain.startswith("unet"):
+            module_chain = module_chain.replace("to_out", "to_out.0")
+        elif module_chain.startswith("text_encoder"):
+            module_chain = module_chain.replace("to_k", "k_proj")
+            module_chain = module_chain.replace("to_q", "q_proj")
+            module_chain = module_chain.replace("to_v", "v_proj")
+            module_chain = module_chain.replace("to_out", "out_proj")
+
+        module_chain = module_chain.split(".")
+
+        curr_layer = getattr(pipeline, module_chain.pop(0))
 
         # find the target layer
-        temp_name = layer_infos.pop(0)
-        while len(layer_infos) > -1:
+        temp_name = module_chain.pop(0)
+        while len(module_chain) > -1:
             try:
                 curr_layer = curr_layer.__getattr__(temp_name)
-                if len(layer_infos) > 0:
-                    temp_name = layer_infos.pop(0)
-                elif len(layer_infos) == 0:
+                if len(module_chain) > 0:
+                    temp_name = module_chain.pop(0)
+                elif len(module_chain) == 0:
                     break
             except Exception:
                 if len(temp_name) > 0:
-                    temp_name += "_" + layer_infos.pop(0)
+                    temp_name += "." + module_chain.pop(0)
                 else:
-                    temp_name = layer_infos.pop(0)
+                    temp_name = module_chain.pop(0)
 
         pair_keys = []
-        if "lora_down" in key:
-            pair_keys.append(key.replace("lora_down", "lora_up"))
+        if "lora.down" in key:
+            pair_keys.append(key.replace("lora.down", "lora.up"))
             pair_keys.append(key)
         else:
             pair_keys.append(key)
-            pair_keys.append(key.replace("lora_up", "lora_down"))
+            pair_keys.append(key.replace("lora.up", "lora.down"))
 
         if hasattr(curr_layer, "_hf_hook"):
             weight = curr_layer._hf_hook.weights_map["weight"]
@@ -99,14 +111,22 @@ def _apply_lora(
             weight = curr_layer.weight
 
         # update weight
+        rank = state_dict[pair_keys[0]].shape[-1]
+        net_alpha = network_alpha / rank
+
+        weight.data = weight.data.to(torch.float32)
+
         if len(state_dict[pair_keys[0]].shape) == 4:
             weight_up = state_dict[pair_keys[0]].squeeze(3).squeeze(2).to(torch.float32).to(weight.device)
             weight_down = state_dict[pair_keys[1]].squeeze(3).squeeze(2).to(torch.float32).to(weight.device)
-            weight.data += alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
+            y = alpha * net_alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
         else:
             weight_up = state_dict[pair_keys[0]].to(torch.float32).to(weight.device)
             weight_down = state_dict[pair_keys[1]].to(torch.float32).to(weight.device)
-            weight.data += alpha * torch.mm(weight_up, weight_down)
+            y = alpha * net_alpha * torch.mm(weight_up, weight_down)
+
+        weight.data += y
+        weight.data = weight.data.to(precision)
 
         # update visited list
         for item in pair_keys:

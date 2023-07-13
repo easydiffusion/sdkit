@@ -43,7 +43,7 @@ def generate_images(
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
     tiling="none",
-    lora_alpha: float = 0,
+    lora_alpha: list = [],
     sampler_params={},
     callback=None,
 ):
@@ -184,7 +184,7 @@ def make_with_diffusers(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     # hypernetwork_strength: float = 0,
-    lora_alpha: float = 0,
+    lora_alpha: list = [],
     # sampler_params={},
     tiling="none",
     callback=None,
@@ -196,6 +196,7 @@ def make_with_diffusers(
     )
 
     from sdkit.models.model_loader.lora import apply_lora_model
+    import numpy as np
 
     prompt = prompt.lower()
     negative_prompt = negative_prompt.lower()
@@ -255,13 +256,10 @@ def make_with_diffusers(
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
 
     # apply the LoRA (if necessary)
-    is_lora_loaded = hasattr(operation_to_apply, "_lora_scale")
-    if is_lora_loaded:
-        cmd["cross_attention_kwargs"] = {"scale": lora_alpha}
-        operation_to_apply._lora_scale = lora_alpha
-
     if context.models.get("lora"):
         log.info("Applying LoRA...")
+        lora_alpha = lora_alpha if isinstance(lora_alpha, list) else [lora_alpha]
+        lora_alpha = np.array(lora_alpha)
         if hasattr(context, "_last_lora_alpha"):
             apply_lora_model(context, -context._last_lora_alpha)  # undo the last LoRA apply
 
