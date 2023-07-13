@@ -63,3 +63,62 @@ def merge_two_models(model0, model1, alpha, use_fp16=True):
     del model1
 
     return model0
+
+
+def merge_multiple_models(models: list, alphas: list, key_name_pattern: str = None, normalize: bool = True) -> dict:
+    """
+    Merges multiple models, by combining the state dicts.
+
+    TODO - This can be made more memory-efficient (by pair-wise loading of models), and faster (by using matrices as lookup tables).
+
+    :models - a list of model dicts
+
+    :alphas - a list of floats between 0 and 1, which represent the amount of the corresponding model to merge.
+    Needs to be equal in length to the list of models.
+
+    :key_name_pattern - optional - a string to look for in each key
+    """
+    import numpy as np
+
+    if len(models) == 0:
+        return
+
+    if len(models) != len(alphas):
+        raise RuntimeError(
+            "Incorrect number of alphas provided while merging models! It needs to be equal to the number of models."
+        )
+
+    overall_alphas = np.array(alphas)
+
+    # build the "vocabulary" of all the keys
+    all_keys = set()
+    for m in models:
+        all_keys |= set(m.keys())
+    all_keys = list(all_keys)
+
+    # merge
+    merged_model = {}
+    for key in all_keys:
+        if key_name_pattern and key_name_pattern not in key:
+            continue
+
+        # will use the alphas only for the models that contain this key, and then normalize amongst them
+        key_alphas_mask = [key in model.keys() for model in models]
+        key_alphas = overall_alphas * key_alphas_mask
+        if normalize:
+            key_alphas /= np.sum(key_alphas)
+
+        for model, alpha in zip(models, key_alphas):
+            if key not in model:
+                continue
+
+            data = model[key] * alpha
+            try:
+                if key in merged_model:
+                    merged_model[key] += data
+                else:
+                    merged_model[key] = data
+            except Exception as e:
+                log.warning(f"Couldn't merge key {key}: {e}")
+
+    return merged_model
