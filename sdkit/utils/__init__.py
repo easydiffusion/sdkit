@@ -40,3 +40,6 @@ from .convert_model_utils import (
     convert_pipeline_unet_to_tensorrt,
 )
 from .device_utils import has_amd_gpu
+
+def get_embedding_token(filename):
+    return filename.split(".")[0].replace(" ", "_")
