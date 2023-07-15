@@ -5,8 +5,6 @@ import torch
 from sdkit import Context
 from sdkit.utils import load_tensor_file, log
 
-ALPHA_MULTIPLIER = 2  # make the loras more sensitive
-
 
 def load_model(context: Context, **kwargs):
     model = context.models["stable-diffusion"]
@@ -64,7 +62,6 @@ def _apply_single_lora(pipeline, lora, alpha, precision):
     visited = []
 
     network_alpha = network_alpha if network_alpha is not None else 1.0
-    alpha *= ALPHA_MULTIPLIER
 
     # directly update weight in diffusers model
     for key in state_dict:
