@@ -5,7 +5,7 @@ import torch
 from sdkit import Context
 from sdkit.utils import load_tensor_file, log
 
-LORA_MULTIPLER = 1.5
+LORA_MULTIPLIER = 1.5
 
 
 def load_model(context: Context, **kwargs):
@@ -64,7 +64,6 @@ def _apply_single_lora(pipeline, lora, alpha, precision):
     visited = []
 
     network_alpha = network_alpha if network_alpha is not None else 1.0
-    alpha *= LORA_MULTIPLER
 
     # directly update weight in diffusers model
     for key in state_dict:
@@ -125,11 +124,11 @@ def _apply_single_lora(pipeline, lora, alpha, precision):
         if len(state_dict[pair_keys[0]].shape) == 4:
             weight_up = state_dict[pair_keys[0]].squeeze(3).squeeze(2).to(torch.float32).to(weight.device)
             weight_down = state_dict[pair_keys[1]].squeeze(3).squeeze(2).to(torch.float32).to(weight.device)
-            y = alpha * net_alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
+            y = alpha * LORA_MULTIPLIER * net_alpha * torch.mm(weight_up, weight_down).unsqueeze(2).unsqueeze(3)
         else:
             weight_up = state_dict[pair_keys[0]].to(torch.float32).to(weight.device)
             weight_down = state_dict[pair_keys[1]].to(torch.float32).to(weight.device)
-            y = alpha * net_alpha * torch.mm(weight_up, weight_down)
+            y = alpha * LORA_MULTIPLIER * net_alpha * torch.mm(weight_up, weight_down)
 
         weight.data += y
         weight.data = weight.data.to(precision)
