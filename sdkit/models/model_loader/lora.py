@@ -5,7 +5,7 @@ import torch
 from sdkit import Context
 from sdkit.utils import load_tensor_file, log
 
-LORA_MULTIPLIER = 1.3
+LORA_MULTIPLIER = 1.6
 TEXT_ENCODER_NAME = "text_encoder"
 UNET_NAME = "unet"
 
