@@ -3,7 +3,7 @@ from contextlib import nullcontext
 import torch
 from pytorch_lightning import seed_everything
 from tqdm import trange
-from typing import Optional
+from typing import Optional, List, Union
 
 from sdkit import Context
 from sdkit.utils import (
@@ -44,7 +44,7 @@ def generate_images(
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
     tiling="none",
-    lora_alpha: list = [],
+    lora_alpha: Union[float, List[float]] = [],
     sampler_params={},
     callback=None,
 ):
@@ -185,7 +185,7 @@ def make_with_diffusers(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     # hypernetwork_strength: float = 0,
-    lora_alpha: list = [],
+    lora_alpha: Union[float, List[float]] = [],
     # sampler_params={},
     tiling="none",
     callback=None,
