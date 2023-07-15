@@ -61,6 +61,8 @@ def _apply_single_lora(pipeline, lora, alpha, precision):
     state_dict, network_alpha = lora
     visited = []
 
+    network_alpha = network_alpha if network_alpha is not None else 1.0
+
     # directly update weight in diffusers model
     for key in state_dict:
         # as we have set the alpha beforehand, so just skip
@@ -112,6 +114,7 @@ def _apply_single_lora(pipeline, lora, alpha, precision):
 
         # update weight
         rank = state_dict[pair_keys[0]].shape[-1]
+        rank = rank if rank is not None else 1.0
         net_alpha = network_alpha / rank
 
         weight.data = weight.data.to(torch.float32)
