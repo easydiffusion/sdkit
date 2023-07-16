@@ -166,29 +166,29 @@ def test_load_multiple_lora():
     load_model(context, "lora")
 
 
-def test_2_1__multiple_a1111_lora__sd_1_4__alpha_1_0():
+def test_2_1__multiple_a1111_lora__sd_1_4__alpha_half_0():
     check_lora_image(
-        expected_image="lora-two-alpha1_0.png",
+        expected_image="lora-two-alpha0.5_0.png",
         test_name="test2.1",
-        lora_alpha=[1, 0],
+        lora_alpha=[0.5, 0],
         prefix="inkSketch ",
     )
 
 
-def test_2_2__multiple_a1111_lora__sd_1_4__alpha_1_1():
+def test_2_2__multiple_a1111_lora__sd_1_4__alpha_half_half():
     check_lora_image(
-        expected_image="lora-two-alpha1_1.png",
+        expected_image="lora-two-alpha0.5_0.5.png",
         test_name="test2.2",
-        lora_alpha=[1, 1],
+        lora_alpha=[0.5, 0.5],
         prefix="inkSketch ",
     )
 
 
 def test_2_3__multiple_a1111_lora__sd_1_4__alpha_0_1():
     check_lora_image(
-        expected_image="lora-two-alpha0_1.png",
+        expected_image="lora-two-alpha0_0.5.png",
         test_name="test2.3",
-        lora_alpha=[0, 1],
+        lora_alpha=[0, 0.5],
         prefix="inkSketch ",
     )
 
