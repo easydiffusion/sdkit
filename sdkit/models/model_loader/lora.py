@@ -125,6 +125,8 @@ def _name(key):
         diffusers_name = diffusers_name.replace("to.out.0", "to_out.0")
         diffusers_name = diffusers_name.replace("proj.in", "proj_in")
         diffusers_name = diffusers_name.replace("proj.out", "proj_out")
+        diffusers_name = diffusers_name.replace("conv.shortcut", "conv_shortcut")
+        diffusers_name = diffusers_name.replace("time.emb.proj", "time_emb_proj")
     elif diffusers_name.startswith("text_encoder."):
         diffusers_name = diffusers_name.replace("text.model", "text_model")
         diffusers_name = diffusers_name.replace("self.attn", "self_attn")

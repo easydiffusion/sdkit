@@ -26,6 +26,9 @@ def get_nested_attr(o, key):
             elif len(keys) == 0:
                 break
         except Exception:
+            if len(keys) == 0:
+                raise Exception(f"Could not find {key} in the given object!")
+
             if len(temp_name) > 0:
                 temp_name += "." + keys.pop(0)
             else:
