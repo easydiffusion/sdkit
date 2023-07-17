@@ -67,15 +67,34 @@ def load_model(context: Context, **kwargs):
 def load_lora(pipe, lora):
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
+
+    is_lycoris = any("lora.mid" in key for key in lora.keys())
+
     for key, val in lora.items():
         block_name = ".".join(key.split(".")[:-1])
         if block_name in lora_blocks:
             block = lora_blocks[block_name]
         else:
-            lora_blocks[block_name] = block = LoraBlock()
-            block.module = get_nested_attr(pipe, block_name)
+            block = LoraBlock()
+
+            try:
+                block.module = get_nested_attr(pipe, block_name)
+            except Exception as e:
+                if is_lycoris:
+                    log.warn(f"Skipping layer {key}, since we don't fully support LyCORIS models yet!")
+                    continue
+                raise e  # otherwise die
+
+            lora_blocks[block_name] = block
+
         attr = key.split(".")[-1]
         setattr(block, attr, val)
+
+    if is_lycoris:
+        log.warn(
+            "LyCORIS (LoCon/LoHA) models are not fully supported yet! They will work partially, but the images may not be perfect."
+        )
+
     return lora_blocks
 
 
