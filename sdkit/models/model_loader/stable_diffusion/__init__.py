@@ -139,16 +139,20 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     attn_precision = extra_config.get("attn_precision", "fp16" if context.half_precision else "fp32")
     log.info(f"using attn_precision: {attn_precision}")
 
+    model_load_params = {
+        "original_config_file": config_file_path,
+        "extract_ema": False,
+        "scheduler_type": "ddim",
+        "from_safetensors": model_path.endswith(".safetensors"),
+        "upcast_attention": (attn_precision == "fp32"),
+        "device": "cpu",
+    }
+
+    if "LatentInpaintDiffusion" in config.model.target:
+        model_load_params["pipeline_class"] = StableDiffusionInpaintPipeline
+
     # txt2img
-    default_pipe = download_from_original_stable_diffusion_ckpt(
-        checkpoint_path=model_path,
-        original_config_file=config_file_path,
-        extract_ema=False,
-        scheduler_type="ddim",
-        from_safetensors=model_path.endswith(".safetensors"),
-        upcast_attention=(attn_precision == "fp32"),
-        device="cpu",
-    )
+    default_pipe = download_from_original_stable_diffusion_ckpt(model_path, **model_load_params)
 
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
