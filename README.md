@@ -137,6 +137,7 @@ You can certainly use diffusers. `sdkit` is infact using `diffusers` internally 
 
 # Who is using sdkit?
 * [Easy Diffusion (cmdr2 UI)](https://github.com/cmdr2/stable-diffusion-ui) for Stable Diffusion.
+* [Arthemy AI](https://arthemy.ai/)
 
 If your project is using sdkit, you can add it to this list. Please feel free to open a pull request (or let us know at our [Discord community](https://discord.com/invite/u9yhsFmEkB)).
 
