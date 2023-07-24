@@ -39,7 +39,7 @@ def make_sampler_test(sampler_name):
             width=512,
             height=512,
             sampler_name=sampler_name,
-            num_inference_steps=25,
+            num_inference_steps=50,
         )[0]
 
         expected_image = Image.open(f"{EXPECTED_DIR}/1.4-txt-{sampler_name}-42-512x512-50-cuda.png")
