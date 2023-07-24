@@ -10,6 +10,7 @@ from diffusers import (
     UniPCMultistepScheduler,
     DEISMultistepScheduler,
     DDPMScheduler,
+    DDIMScheduler,
     DPMSolverSDEScheduler,
     DPMSolverSinglestepScheduler,
 )
@@ -39,7 +40,7 @@ def _make_unipc(solver_type: str, solver_order: int, time_skip: str):
 
 _samplers_init = {
     "plms": _make_plms,
-    "ddim": lambda ddim_scheduler: ddim_scheduler,
+    "ddim": lambda ddim_scheduler: DDIMScheduler.from_config(ddim_scheduler.config),
     "dpm_solver_stability": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
         ddim_scheduler.config, algorithm_type="dpmsolver"
     ),
@@ -61,7 +62,7 @@ _samplers_init = {
     "dpmpp_sde": lambda ddim_scheduler: DPMSolverSDEScheduler.from_config(
         ddim_scheduler.config, use_karras_sigmas=True
     ),
-    "dpm_fast": None,  # Not implemented in diffusers yet
+    # "dpm_fast": None,  # Not implemented in diffusers yet
     "dpm_adaptive": None,  # Not implemented in diffusers yet
     "ddpm": lambda ddim_scheduler: DDPMScheduler.from_config(ddim_scheduler.config),
     "deis": lambda ddim_scheduler: DEISMultistepScheduler.from_config(ddim_scheduler.config),
@@ -69,7 +70,7 @@ _samplers_init = {
     "unipc_tu": _make_unipc("bh2", 2, "time_uniform"),
     "unipc_tq": _make_unipc("bh1", 3, "time_quadratic"),  # time_quadratic is not supported in diffusers yet
     "unipc_snr_2": _make_unipc("vary_coeff", 1, "logSNR"),  # logSNR is not supported in diffusers yet
-    "unipc_tu_2": _make_unipc("bh1", 3, "time_uniform"),
+    "unipc_tu_2": _make_unipc("bh1", 2, "time_uniform"),
 }
 
 # plms alias
@@ -80,11 +81,12 @@ _samplers_init["dpm"] = _samplers_init["dpm_solver_stability"]
 _samplers_init["euler-ancestral"] = _samplers_init["euler_a"]
 
 
-def make_samplers(context, ddim_scheduler):
-    context.samplers = {}
+def make_sampler(sampler_name, ddim_scheduler):
+    if sampler_name not in _samplers_init:
+        return
 
-    for sampler_name, sampler_factory in _samplers_init.items():
-        if sampler_factory is not None:
-            context.samplers[sampler_name] = sampler_factory(ddim_scheduler)
-        else:
-            context.samplers[sampler_name] = None
+    sampler_factory = _samplers_init[sampler_name]
+
+    sampler = sampler_factory(ddim_scheduler) if sampler_factory else None
+
+    return sampler

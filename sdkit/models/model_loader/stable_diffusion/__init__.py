@@ -241,13 +241,11 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         apply_tensorrt_unet(default_pipe, unet_trt_path)
         log.info("Using TensorRT accelerated UNet")
 
-    # make samplers
-    diffusers_samplers.make_samplers(context, default_pipe.scheduler)
-
     model = {
         "config": config,
         "default": default_pipe,
         "compel": compel,
+        "default_scheduler": default_pipe.scheduler,
     }
 
     if hasattr(config, "model") and hasattr(config.model, "target") and "LatentInpaintDiffusion" in config.model.target:
@@ -268,6 +266,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     model["txt2img"] = pipe_txt2img
     model["img2img"] = pipe_img2img
     model["inpainting"] = pipe_inpainting
+    model["default_scheduler"] = default_pipe.scheduler
 
     # test precision
     if context.half_precision:
