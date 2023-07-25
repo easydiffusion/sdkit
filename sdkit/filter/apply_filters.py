@@ -1,15 +1,20 @@
 from sdkit import Context
 from sdkit.utils import base64_str_to_img, gc, log
 
-from . import gfpgan, nsfw_checker, realesrgan, latent_upscaler, codeformer
+import importlib
 
-filter_modules = {
-    "gfpgan": gfpgan,
-    "realesrgan": realesrgan,
-    "nsfw_checker": nsfw_checker,
-    "codeformer": codeformer,
-    "latent_upscaler": latent_upscaler,
-}
+
+def _get_module(model_type):
+    modules = {  # filter_name -> local_module_name
+        "gfpgan": "gfpgan",
+        "realesrgan": "realesrgan",
+        "nsfw_checker": "nsfw_checker",
+        "codeformer": "codeformer",
+        "latent_upscaler": "latent_upscaler",
+    }
+    module_name = modules[model_type]
+
+    return importlib.import_module("." + module_name, __name__)
 
 
 def apply_filters(context: Context, filters, images, **kwargs):
@@ -33,6 +38,6 @@ def apply_filter_single_image(context, filters, image, **kwargs):
         log.info(f"Applying {filter_type}...")
         gc(context)
 
-        image = filter_modules[filter_type].apply(context, image, **kwargs)
+        image = _get_module(filter_type).apply(context, image, **kwargs)
 
     return image
