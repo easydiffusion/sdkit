@@ -85,7 +85,7 @@ def stable_diffusion_works_on_multiple_devices_in_parallel_test(model, vram_usag
             test_type = "txt"
 
         expected_image = f"{EXPECTED_DIR}/{model_ver}-{test_type}-{args['sampler_name']}-{args['seed']}-{args['width']}x{args['height']}"
-        if vram_usage_level == "high" and test_type == "img":
+        if vram_usage_level == "high" and test_type == "txt":
             expected_image += "-high"
         expected_image = get_image_for_device(expected_image, context.device)
         assert_images_same(image, expected_image, f"stable_diffusion_{test_name}_{context.device.replace(':', '')}")
