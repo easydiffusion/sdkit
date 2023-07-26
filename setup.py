@@ -13,5 +13,6 @@ setuptools.setup(
         "diffusers==0.18.2",
         "compel==1.2.1",
         "accelerate==0.18.0",
+        "controlnet-aux==0.0.6",
     ],
 )

@@ -128,7 +128,6 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     from sdkit.utils import gc, has_amd_gpu
 
     from diffusers.pipelines.stable_diffusion.convert_from_ckpt import download_from_original_stable_diffusion_ckpt
-    from . import diffusers_bugfixes
 
     log.info("loading on diffusers")
 

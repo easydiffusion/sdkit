@@ -4,6 +4,10 @@ from sdkit.utils import gc, log
 import importlib
 
 
+class Loader:
+    pass
+
+
 def _get_module(model_type):
     models = {  # model_type -> local_module_name
         "stable-diffusion": "stable_diffusion",
@@ -15,13 +19,20 @@ def _get_module(model_type):
         "nsfw_checker": "nsfw_checker",
         "lora": "lora",
         "latent_upscaler": "latent_upscaler",
+        "controlnet": "controlnet",
     }
+    if model_type not in models:
+        return
+
     module_name = models[model_type]
 
     return importlib.import_module("." + module_name, __name__)
 
 
 def load_model(context: Context, model_type: str, **kwargs):
+    if context.test_diffusers:
+        from . import diffusers_bugfixes
+
     if context.model_paths.get(model_type) is None and model_type != "nsfw_checker":
         return
 
@@ -30,7 +41,7 @@ def load_model(context: Context, model_type: str, **kwargs):
 
     log.info(f"loading {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
 
-    context.models[model_type] = _get_module(model_type).load_model(context, **kwargs)
+    context.models[model_type] = get_loader_module(model_type).load_model(context, **kwargs)
 
     log.info(f"loaded {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
 
@@ -48,12 +59,25 @@ def unload_model(context: Context, model_type: str, **kwargs):
         return
 
     if context.test_diffusers:
-        _get_module(model_type).unload_model(context)
+        get_loader_module(model_type).unload_model(context)
         del context.models[model_type]
     else:
         del context.models[model_type]
-        _get_module(model_type).unload_model(context)
+        get_loader_module(model_type).unload_model(context)
 
     gc(context)
 
     log.info(f"unloaded {model_type} model from device: {context.device}")
+
+
+def get_loader_module(model_type):
+    module = _get_module(model_type)
+    if module is None:
+        from . import controlnet_filters
+
+        if model_type in controlnet_filters.filters:
+            module = Loader()
+            module.load_model = controlnet_filters.make_load_model(model_type)
+            module.unload_model = controlnet_filters.make_unload_model(model_type)
+
+    return module

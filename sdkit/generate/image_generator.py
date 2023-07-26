@@ -37,6 +37,8 @@ def generate_images(
     guidance_scale: float = 7.5,
     init_image=None,
     init_image_mask=None,
+    control_image=None,
+    control_alpha=None,
     prompt_strength: float = 0.8,
     preserve_init_image_color_profile=False,
     sampler_name: str = "euler_a",  # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
@@ -76,6 +78,8 @@ def generate_images(
                 guidance_scale,
                 init_image,
                 init_image_mask,
+                control_image,
+                control_alpha,
                 prompt_strength,
                 # preserve_init_image_color_profile,
                 sampler_name,
@@ -179,6 +183,8 @@ def make_with_diffusers(
     guidance_scale: float = 7.5,
     init_image=None,
     init_image_mask=None,
+    control_image=None,
+    control_alpha=None,
     prompt_strength: float = 0.8,
     # preserve_init_image_color_profile=False,
     sampler_name: str = "euler_a",  # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
@@ -194,6 +200,9 @@ def make_with_diffusers(
         StableDiffusionImg2ImgPipeline,
         StableDiffusionInpaintPipeline,
         StableDiffusionInpaintPipelineLegacy,
+        StableDiffusionControlNetPipeline,
+        StableDiffusionControlNetInpaintPipeline,
+        StableDiffusionControlNetImg2ImgPipeline,
     )
 
     from sdkit.models.model_loader.lora import apply_lora_model
@@ -240,7 +249,33 @@ def make_with_diffusers(
             f"This model does not support {operation_to_apply}! Supported operations: {model.keys()}"
         )
 
-    operation_to_apply = model[operation_to_apply]
+    if control_image is None or "controlnet" not in context.models:
+        operation_to_apply = model[operation_to_apply]
+    else:
+        controlnet = context.models["controlnet"]
+
+        if isinstance(control_image, list):
+            assert isinstance(controlnet, list)
+            assert len(control_image) == len(controlnet)
+
+            control_alpha = control_alpha if isinstance(control_alpha, list) else [1.0] * len(control_image)
+            assert len(control_alpha) == len(control_image)
+
+            cmd["controlnet_conditioning_scale"] = control_alpha
+
+        if operation_to_apply == "txt2img":
+            cmd["image"] = control_image
+        else:
+            cmd["control_image"] = control_image
+
+        controlnet_op = {
+            "txt2img": StableDiffusionControlNetPipeline,
+            "img2img": StableDiffusionControlNetImg2ImgPipeline,
+            "inpainting": StableDiffusionControlNetInpaintPipeline,
+        }
+        default_pipe = model["default"]
+        operation_to_apply_cls = controlnet_op[operation_to_apply]
+        operation_to_apply = operation_to_apply_cls(controlnet=controlnet, **default_pipe.components)
 
     if sampler_name.startswith("unipc_tu"):
         sampler_name = "unipc_tu_2" if num_inference_steps < 10 else "unipc_tu"
@@ -250,9 +285,7 @@ def make_with_diffusers(
         raise NotImplementedError(f"The sampler '{sampler_name}' is not supported (yet)!")
     log.info(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")
 
-    if isinstance(operation_to_apply, StableDiffusionInpaintPipelineLegacy) or isinstance(
-        operation_to_apply, StableDiffusionImg2ImgPipeline
-    ):
+    if isinstance(operation_to_apply, (StableDiffusionInpaintPipelineLegacy, StableDiffusionImg2ImgPipeline)):
         del cmd["width"]
         del cmd["height"]
     elif isinstance(operation_to_apply, StableDiffusionInpaintPipeline):
