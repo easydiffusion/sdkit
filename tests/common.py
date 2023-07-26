@@ -68,6 +68,9 @@ def run_test_on_multiple_devices(task: Callable, devices: list):
             task(context)
         except KeyboardInterrupt:
             exit()
+        except Exception as e:
+            log.error(f"Error running the task!")
+            raise e
 
     with futures.ThreadPoolExecutor(max_workers=len(devices)) as executor:
         threads = [executor.submit(task_thread, device) for device in devices]
