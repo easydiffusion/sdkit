@@ -308,6 +308,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     model["inpainting"] = pipe_inpainting
     model["default_scheduler"] = default_pipe.scheduler
 
+    if isinstance(default_pipe, StableDiffusionXLImg2ImgPipeline):
+        del model["txt2img"]
+        del model["inpainting"]
+
     # test precision
     if context.half_precision:
         test_and_fix_precision(context, model, config, attn_precision)

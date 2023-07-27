@@ -255,6 +255,11 @@ def make_with_diffusers(
                 f"This model does not support {operation_to_apply}! This model requires an initial image and mask."
             )
 
+        if isinstance(model["default"], StableDiffusionXLImg2ImgPipeline):
+            raise RuntimeError(
+                "ControlNet only supports text-to-image with SD-XL right now. Please remove the initial image and try again!"
+            )
+
         raise NotImplementedError(
             f"This model does not support {operation_to_apply}! Supported operations: {model.keys()}"
         )
