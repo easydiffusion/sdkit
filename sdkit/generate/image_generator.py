@@ -206,6 +206,7 @@ def make_with_diffusers(
         StableDiffusionXLPipeline,
         StableDiffusionXLImg2ImgPipeline,
         StableDiffusionXLInpaintPipeline,
+        StableDiffusionXLControlNetPipeline,
     )
 
     from sdkit.models.model_loader.lora import apply_lora_model
@@ -216,10 +217,16 @@ def make_with_diffusers(
     negative_prompt = negative_prompt.lower()
 
     model = context.models["stable-diffusion"]
+    default_pipe = model["default"]
     if context.device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         generator = torch.Generator().manual_seed(seed)
     else:
         generator = torch.Generator(context.device).manual_seed(seed)
+
+    is_sd_xl = isinstance(
+        default_pipe,
+        (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline),
+    )
 
     cmd = {
         "guidance_scale": guidance_scale,
@@ -271,19 +278,22 @@ def make_with_diffusers(
         else:
             cmd["control_image"] = control_image
 
-        controlnet_op = {
-            "txt2img": StableDiffusionControlNetPipeline,
-            "img2img": StableDiffusionControlNetImg2ImgPipeline,
-            "inpainting": StableDiffusionControlNetInpaintPipeline,
-        }
-        default_pipe = model["default"]
-        operation_to_apply_cls = controlnet_op[operation_to_apply]
-        operation_to_apply = operation_to_apply_cls(controlnet=controlnet, **default_pipe.components)
+        if is_sd_xl:
+            if operation_to_apply != "txt2img":
+                raise Exception(
+                    "ControlNet only supports text-to-image with SD-XL right now. Please remove the initial image and try again!"
+                )
 
-    is_sd_xl = isinstance(
-        operation_to_apply,
-        (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline),
-    )
+            operation_to_apply_cls = StableDiffusionXLControlNetPipeline
+        else:
+            controlnet_op = {
+                "txt2img": StableDiffusionControlNetPipeline,
+                "img2img": StableDiffusionControlNetImg2ImgPipeline,
+                "inpainting": StableDiffusionControlNetInpaintPipeline,
+            }
+            operation_to_apply_cls = controlnet_op[operation_to_apply]
+
+        operation_to_apply = operation_to_apply_cls(controlnet=controlnet, **default_pipe.components)
 
     if sampler_name.startswith("unipc_tu"):
         sampler_name = "unipc_tu_2" if num_inference_steps < 10 else "unipc_tu"

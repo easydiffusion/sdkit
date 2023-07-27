@@ -330,3 +330,33 @@ def test_5_1b__generates_image_from_single_control_image__balanced():
 
 def test_5_1c__generates_image_from_single_control_image__high():
     run_on_devices(vram_usage_level="high")
+
+
+# section 6 - SD-XL
+def test_load_sdxl_model():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    load_model(context, "stable-diffusion")
+
+
+def test_6_1__load_controlnet():
+    context.model_paths["controlnet"] = "models/controlnet/control_v11p_sd15_openpose.pth"
+    load_model(context, "controlnet")
+
+    assert context.models["controlnet"] is not None
+
+
+def test_6_2__generates_image_from_single_control_image__txt2img():
+    raise Exception("This won't run until https://github.com/huggingface/diffusers/pull/4309 is merged")
+    raise Exception("This won't run until an SDXL compatible controlnet is used. This one is for SD 1.x only!")
+
+    image = generate_images(
+        context,
+        "1boy, muscular, full armor, armor, shoulder plates, angry, looking at viewer, spiked hair, white hair",
+        seed=42,
+        width=512,
+        height=768,
+        control_image=Image.open(f"{EXPECTED_DIR}/filters/openpose.png"),
+    )[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/controlnet/txt-pose_controlnet.png")
+    assert_images_same(image, expected_image, "test4.1a")
