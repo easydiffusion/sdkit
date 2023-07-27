@@ -20,8 +20,9 @@ def _get_module(model_type):
         return
 
     module_name = modules[model_type]
+    base_package = ".".join(__name__.split(".")[:-1])
 
-    return importlib.import_module("." + module_name, __name__)
+    return importlib.import_module("." + module_name, base_package)
 
 
 def apply_filters(context: Context, filters, images, **kwargs):
