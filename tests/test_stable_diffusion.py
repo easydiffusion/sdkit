@@ -26,19 +26,62 @@ def setup_module():
 
     context = Context()
     context.test_diffusers = True
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
 
+
+def test_sd_1_4_loads():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
-# section 1 - SD at different resolutions and samplers
-def test_1_0__stable_diffusion_1_4_txt2img_works__64x64():
-    image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=64, height=64)[0]
+# section 1
+## quick tests
+def test_1_0a__stable_diffusion_1_4_txt2img_works__64x64():
+    image = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)[0]
 
-    expected_image = Image.open(f"{EXPECTED_DIR}/1.4-txt-euler_a-42-64x64-cuda.png")
-    assert_images_same(image, expected_image, "test1.0")
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
 
 
+def test_1_0b__stable_diffusion_1_4_img2img_works__64x64():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    image = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img)
+    image = image[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
+
+
+def test_1_0c__stable_diffusion_1_4_inpainting_works__64x64():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    image = generate_images(
+        context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img, init_image_mask=mask
+    )[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
+
+
+def test_1_0d__stable_diffusion_1_4_works_on_multiple_devices_and_vram_levels():
+    for vram_usage_level in ("low", "balanced", "high"):
+
+        def task(context: Context):
+            context.test_diffusers = True
+            context.vram_usage_level = vram_usage_level
+            context.model_paths["stable-diffusion"] = f"models/stable-diffusion/sd-v1-4.ckpt"
+
+            load_model(context, "stable-diffusion")
+
+            image = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)[0]
+
+            assert image is not None, f"{vram_usage_level} {context.device} - Image is None"
+            assert image.getbbox(), f"{vram_usage_level} {context.device} - Image is black!"
+
+        # emulate multiple GPUs by running one thread on the CPU, and one on the GPU
+        run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
+
+
+## full tests (512x512)
 def test_1_1__stable_diffusion_1_4_txt2img_works__512x512():
     image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=512, height=512)[0]
 
@@ -286,3 +329,119 @@ def init_args(args: dict):
     args["width"] = args.get("width", 512)
     args["height"] = args.get("height", 512)
     args["sampler_name"] = args.get("sampler_name", "euler_a")
+
+
+# SD XL
+def test_2_0__sdxl__loads_base_model():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    load_model(context, "stable-diffusion")
+
+
+# quick tests (64x64)
+def test_2_1a__sdxl__txt2img_works():
+    images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)
+
+    assert images[0] is not None
+    assert images[0].getbbox(), f"Image is black!"
+
+
+def test_2_1b__sdxl_img2img_works():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img)
+
+    assert images[0] is not None
+    assert images[0].getbbox(), f"Image is black!"
+
+
+def test_2_1c__sdxl_inpainting_works():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    images = generate_images(
+        context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img, init_image_mask=mask
+    )
+
+    assert images[0] is not None
+    assert images[0].getbbox(), f"Image is black!"
+
+
+## full tests (768x768)
+def test_2_2a__sdxl_txt2img_works__768x768():
+    image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=768, height=768)[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/xl-txt-euler_a-42-768x768-cuda.png")
+    assert_images_same(image, expected_image, "test2.2a")
+
+
+def test_2_2b__sdxl_img2img_works__768x768():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    image = generate_images(context, "Lion sitting on a bench", seed=42, width=768, height=768, init_image=init_img)[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/xl-img-euler_a-42-768x768-cuda.png")
+    assert_images_same(image, expected_image, "test2.2b")
+
+
+def test_2_3c__sdxl_inpainting_works__768x768():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    image = generate_images(
+        context, "Lion sitting on a bench", seed=43, width=768, height=768, init_image=init_img, init_image_mask=mask
+    )[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/xl-inpaint-euler_a-43-768x768-cuda.png")
+    assert_images_same(image, expected_image, "test2.2c")
+
+
+## refiner model
+def test_2_4__sdxl__loads_base_model():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_refiner_1.0.safetensors"
+    load_model(context, "stable-diffusion")
+
+
+### quick tests (only supports img2img)
+def test_2_4a__sdxl_img2img_works():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img)
+
+    assert images[0] is not None
+    assert images[0].getbbox(), f"Image is black!"
+
+
+## misc tests
+def test_2_5a__sdxl__base_txt2img_works_on_low():
+    context.vram_usage_level = "low"
+
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    load_model(context, "stable-diffusion")
+
+    images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)
+
+    assert images[0] is not None
+    assert images[0].getbbox(), f"Image is black!"
+
+
+def test_2_5b__sdxl__refiner_img2img_works_on_low():
+    context.vram_usage_level = "low"
+
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_refiner_1.0.safetensors"
+    load_model(context, "stable-diffusion")
+
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img)
+
+    assert images[0] is not None
+    assert images[0].getbbox(), f"Image is black!"
+
+
+def test_2_6__sdxl__runs_on_multiple_devices_in_parallel():
+    def task(context: Context):
+        context.test_diffusers = True
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+
+        load_model(context, "stable-diffusion")
+
+        images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)
+
+        assert images[0] is not None
+        assert images[0].getbbox(), f"Image is black!"
+
+    run_test_on_multiple_devices(task, ["cuda:0", "cpu"])

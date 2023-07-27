@@ -1,4 +1,22 @@
 {
+    "sd-xl-base-1.0": {
+        "name": "SD XL 1.0 Base",
+        "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors",
+        "config_url": "configs/sd-xl-base-1.0.yaml",
+        "quick_hash": "194c7288d9f2e382a0a63e4913d37cbc1ccaa614e46b81d58c07ad3b5a6c7a06",
+        "metadata": {
+            "min_size": 512
+        }
+    },
+    "sd-xl-refiner-1.0": {
+        "name": "SD XL 1.0 Refiner",
+        "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors",
+        "config_url": "configs/sd-xl-refiner-1.0.yaml",
+        "quick_hash": "ba3128174dda7d3b302b2692d263afa2625b2b5d562091260f5c2cf642e5457f",
+        "metadata": {
+            "min_size": 512
+        }
+    },
     "2.1-512-ema-pruned": {
         "name": "SD 2.1 Base 512x512 EMA",
         "url": "https://huggingface.co/stabilityai/stable-diffusion-2-1-base/resolve/main/v2-1_512-ema-pruned.ckpt",

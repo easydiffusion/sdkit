@@ -10,9 +10,10 @@ setuptools.setup(
         "picklescan",
         "safetensors",
         "k-diffusion",
-        "diffusers==0.18.2",
-        "compel==1.2.1",
+        "diffusers==0.19.0",
+        "compel==2.0.0",
         "accelerate==0.18.0",
         "controlnet-aux==0.0.6",
+        "invisible-watermark==0.2.0",  # required for SD XL
     ],
 )

@@ -120,8 +120,11 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         StableDiffusionImg2ImgPipeline,
         StableDiffusionInpaintPipeline,
         StableDiffusionInpaintPipelineLegacy,
+        StableDiffusionXLPipeline,
+        StableDiffusionXLImg2ImgPipeline,
+        StableDiffusionXLInpaintPipeline,
     )
-    from compel import Compel, DiffusersTextualInversionManager
+    from compel import Compel, DiffusersTextualInversionManager, ReturnedEmbeddingsType as SkipType
     import platform
 
     from sdkit.generate.sampler import diffusers_samplers
@@ -133,7 +136,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
 
     log.info(f"using config: {config_file_path}")
     config = OmegaConf.load(config_file_path)
-    config.model.params.unet_config.params.use_fp16 = context.half_precision
+    if hasattr(config.model.params, "unet_config"):  # TODO is this config change really necessary?
+        config.model.params.unet_config.params.use_fp16 = context.half_precision
+
+    is_sd_xl = hasattr(config.model.params, "network_config")
 
     extra_config = config.get("extra", {})
     attn_precision = extra_config.get("attn_precision", "fp16" if context.half_precision else "fp32")
@@ -150,6 +156,11 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
 
     if "LatentInpaintDiffusion" in config.model.target:
         model_load_params["pipeline_class"] = StableDiffusionInpaintPipeline
+    elif is_sd_xl:
+        if config.model.params.network_config.params.context_dim == 2048:
+            model_load_params["pipeline_class"] = StableDiffusionXLPipeline
+        else:
+            model_load_params["pipeline_class"] = StableDiffusionXLImg2ImgPipeline
 
     # txt2img
     default_pipe = download_from_original_stable_diffusion_ckpt(model_path, **model_load_params)
@@ -220,14 +231,35 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
 
     # make the compel prompt parser object
     textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
-    compel = Compel(
-        tokenizer=default_pipe.tokenizer,
-        text_encoder=default_pipe.text_encoder,
-        truncate_long_prompts=False,
-        use_penultimate_clip_layer=context.clip_skip,
-        device=context.device,
-        textual_inversion_manager=textual_inversion_manager,
-    )
+    if is_sd_xl:
+        clip_skip = (
+            SkipType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED
+            if context.clip_skip
+            else SkipType.LAST_HIDDEN_STATES_NORMALIZED
+        )
+        compel = Compel(
+            tokenizer=[default_pipe.tokenizer, default_pipe.tokenizer_2],
+            text_encoder=[default_pipe.text_encoder, default_pipe.text_encoder_2],
+            truncate_long_prompts=False,
+            returned_embeddings_type=clip_skip,
+            device=context.device,
+            # textual_inversion_manager=textual_inversion_manager, # SD XL doesn't support embeddings (yet)
+            requires_pooled=[False, True],
+        )
+    else:
+        clip_skip = (
+            SkipType.PENULTIMATE_HIDDEN_STATES_NORMALIZED
+            if context.clip_skip
+            else SkipType.LAST_HIDDEN_STATES_NORMALIZED
+        )
+        compel = Compel(
+            tokenizer=default_pipe.tokenizer,
+            text_encoder=default_pipe.text_encoder,
+            truncate_long_prompts=False,
+            returned_embeddings_type=clip_skip,
+            device=context.device,
+            textual_inversion_manager=textual_inversion_manager,
+        )
 
     # load the TensorRT or DirectML unet, if present
     if use_directml and os.path.exists(unet_onnx_path) and os.stat(unet_onnx_path).st_size > 0:
@@ -257,11 +289,19 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     pipe_txt2img = default_pipe
 
     # img2img
-    pipe_img2img = StableDiffusionImg2ImgPipeline(**default_pipe.components)
+    if isinstance(default_pipe, StableDiffusionXLPipeline):
+        pipe_img2img = StableDiffusionXLImg2ImgPipeline(**default_pipe.components)
+    elif isinstance(default_pipe, StableDiffusionXLImg2ImgPipeline):
+        pipe_img2img = default_pipe
+        pipe_txt2img = StableDiffusionXLPipeline(**default_pipe.components)
+    else:
+        pipe_img2img = StableDiffusionImg2ImgPipeline(**default_pipe.components)
 
     # inpainting
-    # TODO - use legacy only if not an Inpainting Model. confirm this.
-    pipe_inpainting = StableDiffusionInpaintPipelineLegacy(**default_pipe.components)
+    if isinstance(default_pipe, (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline)):
+        pipe_inpainting = StableDiffusionXLInpaintPipeline(**default_pipe.components)
+    else:  # TODO - the legacy inpainting model may no longer be needed
+        pipe_inpainting = StableDiffusionInpaintPipelineLegacy(**default_pipe.components)
 
     model["txt2img"] = pipe_txt2img
     model["img2img"] = pipe_img2img

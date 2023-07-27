@@ -203,6 +203,9 @@ def make_with_diffusers(
         StableDiffusionControlNetPipeline,
         StableDiffusionControlNetInpaintPipeline,
         StableDiffusionControlNetImg2ImgPipeline,
+        StableDiffusionXLPipeline,
+        StableDiffusionXLImg2ImgPipeline,
+        StableDiffusionXLInpaintPipeline,
     )
 
     from sdkit.models.model_loader.lora import apply_lora_model
@@ -277,6 +280,11 @@ def make_with_diffusers(
         operation_to_apply_cls = controlnet_op[operation_to_apply]
         operation_to_apply = operation_to_apply_cls(controlnet=controlnet, **default_pipe.components)
 
+    is_sd_xl = isinstance(
+        operation_to_apply,
+        (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline),
+    )
+
     if sampler_name.startswith("unipc_tu"):
         sampler_name = "unipc_tu_2" if num_inference_steps < 10 else "unipc_tu"
 
@@ -285,7 +293,10 @@ def make_with_diffusers(
         raise NotImplementedError(f"The sampler '{sampler_name}' is not supported (yet)!")
     log.info(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")
 
-    if isinstance(operation_to_apply, (StableDiffusionInpaintPipelineLegacy, StableDiffusionImg2ImgPipeline)):
+    if isinstance(
+        operation_to_apply,
+        (StableDiffusionInpaintPipelineLegacy, StableDiffusionImg2ImgPipeline, StableDiffusionXLImg2ImgPipeline),
+    ):
         del cmd["width"]
         del cmd["height"]
     elif isinstance(operation_to_apply, StableDiffusionInpaintPipeline):
@@ -336,7 +347,11 @@ def make_with_diffusers(
         operation_to_apply.text_encoder,
         operation_to_apply.unet,
     ]
+    if is_sd_xl:
+        targets.append(operation_to_apply.text_encoder_2)
+
     conv_layers = []
+    targets = [t for t in targets if t]
     for target in targets:
         for module in target.modules():
             if isinstance(module, torch.nn.Conv2d):
@@ -350,17 +365,35 @@ def make_with_diffusers(
 
     # make the prompt embeds
     compel = model["compel"]
-
     log.info("compel is ready")
-    cmd["prompt_embeds"] = compel(prompt)
 
-    log.info("Made prompt embeds")
-    cmd["negative_prompt_embeds"] = compel(negative_prompt)
+    if is_sd_xl:
+        if operation_to_apply.text_encoder:
+            cmd["prompt_embeds"], cmd["pooled_prompt_embeds"] = compel(prompt)
+            log.info("Made prompt embeds")
 
-    log.info("Made negative prompt embeds")
-    cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
-        [cmd["prompt_embeds"], cmd["negative_prompt_embeds"]]
-    )
+            cmd["negative_prompt_embeds"], cmd["negative_pooled_prompt_embeds"] = compel(negative_prompt)
+            log.info("Made negative prompt embeds")
+
+            cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
+                [cmd["prompt_embeds"], cmd["negative_prompt_embeds"]]
+            )
+        elif init_image is None or init_image_mask is not None:
+            raise Exception(
+                "The SD-XL Refiner model only supports img2img! Please set an initial image, or remove the inpainting mask!"
+            )
+        else:  # SDXL refiner is purely img2img
+            cmd["prompt"] = ""
+    else:
+        cmd["prompt_embeds"] = compel(prompt)
+        log.info("Made prompt embeds")
+
+        cmd["negative_prompt_embeds"] = compel(negative_prompt)
+        log.info("Made negative prompt embeds")
+
+        cmd["prompt_embeds"], cmd["negative_prompt_embeds"] = compel.pad_conditioning_tensors_to_same_length(
+            [cmd["prompt_embeds"], cmd["negative_prompt_embeds"]]
+        )
 
     log.info("Done parsing the prompt")
     # --------------------------------------------------------------------------------------------------
@@ -374,7 +407,12 @@ def make_with_diffusers(
     log.info(f"applying: {operation_to_apply}")
     log.info(f"Running on diffusers: {cmd}")
 
-    return operation_to_apply(**cmd).images
+    images = operation_to_apply(**cmd).images
+
+    if is_sd_xl and context.half_precision:  # cleanup - workaround since SDXL upcasts the vae
+        operation_to_apply.vae = operation_to_apply.vae.to(dtype=torch.float16)
+
+    return images
 
 
 def load_embeddings(context, prompt, negative_prompt, default_pipe):
