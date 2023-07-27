@@ -229,6 +229,9 @@ def make_live_preview_callback(width, height):
             w, h = img.size
             assert w == width
             assert h == height
+
+            assert img.getbbox(), "Live preview image is black!"
+
             buf = img_to_buffer(img, output_format="JPEG")
             assert buf is not None
 
@@ -362,6 +365,20 @@ def test_2_1c__sdxl_inpainting_works():
 
     assert images[0] is not None
     assert images[0].getbbox(), f"Image is black!"
+
+
+def test_2_1d__live_preview__sdxl_txt2img_works__64x64():
+    image = generate_images(
+        context,
+        "Photograph of an astronaut riding a horse",
+        seed=42,
+        width=64,
+        height=64,
+        callback=make_live_preview_callback(64, 64),
+    )[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
 
 
 ## full tests (768x768)

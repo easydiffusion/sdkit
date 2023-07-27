@@ -108,9 +108,22 @@ def diffusers_latent_samples_to_images(context: Context, latent_samples):
     @torch.no_grad()
     def apply():
         samples, model = latent_samples
-        samples = model.vae.decode(samples / model.vae.config.scaling_factor, return_dict=False)[0]
-        do_denormalize = [True] * samples.shape[0]
-        images = model.image_processor.postprocess(samples, output_type="pil", do_denormalize=do_denormalize)
+
+        upcast_vae = "StableDiffusionXL" in str(type(model))  # need a better way than this
+        if upcast_vae:
+            # make sure the VAE is in float32 mode, as it overflows in float16
+            if model.vae.dtype == torch.float16 and model.vae.config.force_upcast:
+                model.upcast_vae()
+                samples = samples.to(next(iter(model.vae.post_quant_conv.parameters())).dtype)
+
+        try:
+            samples = model.vae.decode(samples / model.vae.config.scaling_factor, return_dict=False)[0]
+            do_denormalize = [True] * samples.shape[0]
+            images = model.image_processor.postprocess(samples, output_type="pil", do_denormalize=do_denormalize)
+        finally:
+            if upcast_vae and context.half_precision:
+                model.vae = model.vae.to(dtype=torch.float16)
+
         images = [img.convert("RGB") for img in images]
         return images
 
