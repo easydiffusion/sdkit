@@ -53,9 +53,10 @@ def load_model(context: Context, **kwargs):
 
         del vae_dict
         return {}  # we don't need to access this again
-    except:
+    except Exception as e:
         log.error(traceback.format_exc())
         log.error(f"Could not load VAE: {vae_model_path}")
+        raise e
 
 
 def move_model_to_cpu(context: Context):
