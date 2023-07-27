@@ -18,7 +18,7 @@ def load_model(context: Context, **kwargs):
 
     try:
         vae = load_tensor_file(vae_model_path)
-        vae = vae["state_dict"]
+        vae = vae["state_dict"] if "state_dict" in vae else vae
 
         if context.test_diffusers:
             from diffusers.pipelines.stable_diffusion.convert_from_ckpt import (
