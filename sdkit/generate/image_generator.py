@@ -175,8 +175,8 @@ def img2img(
     # dramatic for larger images like 1024x1024. Now, this pixel space compositing approach isn't a panacea, as you can
     # often see a faint discontinuity around the masked area unless you use the feathered brush when drawing the
     # mask (regardless of whether color profile preservation is checked), but it at least guarantees that unchanged
-    # pixels remain unchanged so that you can reliably perform inpainting a dozen times to various parts. I posit there
-    # remains data loss somewhere deeper along the pipeline (maybe the VAE encode and decode is lossy, maybe denoising
+    # pixels remain unchanged so that you can reliably perform inpainting a dozen times to various parts. There remains
+    # data loss somewhere deeper along the pipeline (maybe the VAE decode and reencode is lossy, maybe the denoising
     # is not properly paying attention to the mask, maybe slight noise is being added where it shouldn't be...), but
     # this mitigates the issue until the root problem is identified.
     if init_image_mask != None:
