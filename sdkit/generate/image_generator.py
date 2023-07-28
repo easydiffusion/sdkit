@@ -4,6 +4,7 @@ import torch
 from pytorch_lightning import seed_everything
 from tqdm import trange
 from typing import Optional, List, Union
+from PIL import Image
 
 from sdkit import Context
 from sdkit.utils import (
@@ -167,6 +168,23 @@ def img2img(
     if preserve_init_image_color_profile:
         for i, img in enumerate(images):
             images[i] = apply_color_profile(init_image, img)
+
+    # Blend initial and final images using mask.
+    # Otherwise inpainting suffers from gradual degradation each execution, progressively losing detail and becoming
+    # blurrier even for fully preserved parts of the image which should remain unchanged. This loss is especially
+    # dramatic for larger images like 1024x1024. Now, this pixel space compositing approach isn't a panacea, as you can
+    # often see a faint discontinuity around the masked area unless you use the feathered brush when drawing the
+    # mask (regardless of whether color profile preservation is checked), but it at least guarantees that unchanged
+    # pixels remain unchanged so that you can reliably perform inpainting a dozen times to various parts. I posit there
+    # remains data loss somewhere deeper along the pipeline (maybe the VAE encode and decode is lossy, maybe denoising
+    # is not properly paying attention to the mask, maybe slight noise is being added where it shouldn't be...), but
+    # this mitigates the issue until the root problem is identified.
+    if init_image_mask != None:
+        # Extract the mask from the alpha channel.
+        composite_mask = init_image_mask.getchannel(3)
+        composite_mask = resize_img(composite_mask, width, height)
+        for i, img in enumerate(images):
+            images[i] = Image.composite(img, init_image, composite_mask)
 
     return images
 
