@@ -24,7 +24,12 @@ tr_logging.set_verbosity_error()  # suppress unnecessary logging
 
 
 def load_model(
-    context: Context, scan_model=True, check_for_config_with_same_name=True, convert_to_tensorrt=False, **kwargs
+    context: Context,
+    scan_model=True,
+    check_for_config_with_same_name=True,
+    clip_skip=False,
+    convert_to_tensorrt=False,
+    **kwargs,
 ):
     from sdkit.models import scan_model as scan_model_fn
 
@@ -50,7 +55,7 @@ def load_model(
             sd_v1_4_info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.4")
             config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
 
-        return load_diffusers_model(context, model_path, config_file_path, convert_to_tensorrt)
+        return load_diffusers_model(context, model_path, config_file_path, clip_skip, convert_to_tensorrt)
 
     # load the model file
     sd = load_tensor_file(model_path)
@@ -114,7 +119,7 @@ def unload_model(context: Context, **kwargs):
     context.module_in_gpu = None  # don't keep a dangling reference, prevents gc
 
 
-def load_diffusers_model(context: Context, model_path, config_file_path, convert_to_tensorrt):
+def load_diffusers_model(context: Context, model_path, config_file_path, clip_skip, convert_to_tensorrt):
     import torch
     from diffusers import (
         StableDiffusionImg2ImgPipeline,
@@ -124,7 +129,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         StableDiffusionXLImg2ImgPipeline,
         StableDiffusionXLInpaintPipeline,
     )
-    from compel import Compel, DiffusersTextualInversionManager, ReturnedEmbeddingsType as SkipType
+    from compel import Compel, DiffusersTextualInversionManager, ReturnedEmbeddingsType as Skip
     import platform
 
     from sdkit.generate.sampler import diffusers_samplers
@@ -232,31 +237,23 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
     # make the compel prompt parser object
     textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
     if is_sd_xl:
-        clip_skip = (
-            SkipType.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED
-            if context.clip_skip
-            else SkipType.LAST_HIDDEN_STATES_NORMALIZED
-        )
+        skip = Skip.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED if clip_skip else Skip.LAST_HIDDEN_STATES_NORMALIZED
         compel = Compel(
             tokenizer=[default_pipe.tokenizer, default_pipe.tokenizer_2],
             text_encoder=[default_pipe.text_encoder, default_pipe.text_encoder_2],
             truncate_long_prompts=False,
-            returned_embeddings_type=clip_skip,
+            returned_embeddings_type=skip,
             device=context.device,
             # textual_inversion_manager=textual_inversion_manager, # SD XL doesn't support embeddings (yet)
             requires_pooled=[False, True],
         )
     else:
-        clip_skip = (
-            SkipType.PENULTIMATE_HIDDEN_STATES_NORMALIZED
-            if context.clip_skip
-            else SkipType.LAST_HIDDEN_STATES_NORMALIZED
-        )
+        skip = Skip.PENULTIMATE_HIDDEN_STATES_NORMALIZED if clip_skip else Skip.LAST_HIDDEN_STATES_NORMALIZED
         compel = Compel(
             tokenizer=default_pipe.tokenizer,
             text_encoder=default_pipe.text_encoder,
             truncate_long_prompts=False,
-            returned_embeddings_type=clip_skip,
+            returned_embeddings_type=skip,
             device=context.device,
             textual_inversion_manager=textual_inversion_manager,
         )
@@ -278,6 +275,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, convert
         "default": default_pipe,
         "compel": compel,
         "default_scheduler": default_pipe.scheduler,
+        "clip_skip": clip_skip,
     }
 
     if hasattr(config, "model") and hasattr(config.model, "target") and "LatentInpaintDiffusion" in config.model.target:
@@ -330,7 +328,10 @@ def test_and_fix_precision(context, model, config, attn_precision):
     prev_lora_alpha = getattr(context, "_last_lora_alpha", [0])
     context.models["stable-diffusion"] = model
     if hasattr(context, "_last_lora_alpha"):
-        context._last_lora_alpha = [0]
+        import numpy as np
+
+        lora_models = context.models.get("lora", [0])
+        context._last_lora_alpha = np.array([0] * len(lora_models))
 
     # test precision
     try:

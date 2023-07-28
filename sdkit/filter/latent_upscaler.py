@@ -3,22 +3,17 @@ import torch
 from sdkit import Context
 
 
-def apply(context: Context, image, latent_upscaler_options=None, **kwargs):
+def apply(
+    context: Context, image, prompt="", negative_prompt="", seed=172, num_inference_steps=50, guidance_scale=0, **kwargs
+):
     upscaler = context.models["latent_upscaler"]
 
-    options = {}
-    if latent_upscaler_options is not None:
-        options["prompt"] = latent_upscaler_options["prompt"]
-        options["negative_prompt"] = latent_upscaler_options["negative_prompt"]
-
-        options["generator"] = torch.manual_seed(int(latent_upscaler_options["seed"]))
-
-        options["num_inference_steps"] = int(latent_upscaler_options["num_inference_steps"])
-        options["guidance_scale"] = float(latent_upscaler_options["guidance_scale"])
-    else:
-        options["prompt"] = ""
-        options["generator"] = torch.manual_seed(172)
-        options["num_inference_steps"] = 50
-        options["guidance_scale"] = 0
+    options = {
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "generator": torch.manual_seed(seed),
+        "num_inference_steps": num_inference_steps,
+        "guidance_scale": guidance_scale,
+    }
 
     return upscaler(image=image, **options).images[0]

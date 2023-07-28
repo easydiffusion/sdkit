@@ -117,7 +117,9 @@ def apply_lora_model(context, alphas):
 
     try:
         loras = context.models["lora"]
-        assert len(loras) == len(alphas)
+        if len(loras) != len(alphas):
+            traceback.print_stack()
+            raise RuntimeError(f"{len(loras)} != {len(alphas)}")
 
         for lora, alpha in zip(loras, alphas):
             for block in lora.values():

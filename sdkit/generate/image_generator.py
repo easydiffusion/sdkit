@@ -46,7 +46,7 @@ def generate_images(
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
     tiling="none",
-    lora_alpha: Union[float, List[float]] = [],
+    lora_alpha: Union[float, List[float]] = 0,
     sampler_params={},
     callback=None,
 ):
@@ -191,7 +191,7 @@ def make_with_diffusers(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     # hypernetwork_strength: float = 0,
-    lora_alpha: Union[float, List[float]] = [],
+    lora_alpha: Union[float, List[float]] = 0,
     # sampler_params={},
     tiling="none",
     callback=None,
@@ -322,7 +322,8 @@ def make_with_diffusers(
     # apply the LoRA (if necessary)
     if context.models.get("lora"):
         log.info("Applying LoRA...")
-        lora_alpha = lora_alpha if isinstance(lora_alpha, list) else [lora_alpha]
+        lora_count = len(context.models["lora"])
+        lora_alpha = lora_alpha if isinstance(lora_alpha, list) else [lora_alpha] * lora_count
         lora_alpha = np.array(lora_alpha)
         if hasattr(context, "_last_lora_alpha"):
             apply_lora_model(context, -context._last_lora_alpha)  # undo the last LoRA apply
