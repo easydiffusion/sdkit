@@ -173,6 +173,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
 
+    if is_sd_xl:
+        # until the image artifacts go away: https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9/discussions/31
+        default_pipe.watermark = None
+
     # optimize for TRT or DirectML (AMD on Windows)
     model_component, _ = os.path.splitext(model_path)
     unet_trt_path = model_component + ".unet.trt"
