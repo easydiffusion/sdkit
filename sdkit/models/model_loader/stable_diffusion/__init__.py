@@ -343,6 +343,9 @@ def test_and_fix_precision(context, model, config, attn_precision):
 
         from . import optimizations
 
+        if context.test_diffusers and "txt2img" not in model:
+            raise Exception("Skipping precision test for a non-txt2img model. This is not a problem.")
+
         images = generate_images(
             context, prompt="Horse", width=64, height=64, num_inference_steps=1, sampler_name="euler_a"
         )
