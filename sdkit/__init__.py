@@ -38,7 +38,6 @@ class Context(local):
         self.vram_usage_level = "balanced"
 
         self.test_diffusers = False
-        self._clip_skip = False
         self._embeddings_path = None
         self._loaded_embeddings: set = {}
         self.enable_codeformer = False
@@ -89,14 +88,6 @@ class Context(local):
             self.vram_optimizations = {"KEEP_FS_AND_CS_IN_CPU", "SET_ATTENTION_STEP_TO_16"}
         elif level == "high":
             self.vram_optimizations = {"SET_ATTENTION_STEP_TO_2"}
-
-    @property
-    def clip_skip(self):
-        return self._clip_skip
-
-    @clip_skip.setter
-    def clip_skip(self, value):
-        self._clip_skip = bool(value)
 
     @property
     def embeddings_path(self):

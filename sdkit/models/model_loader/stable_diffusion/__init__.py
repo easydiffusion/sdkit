@@ -277,7 +277,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
         "default": default_pipe,
         "compel": compel,
         "default_scheduler": default_pipe.scheduler,
-        "clip_skip": clip_skip,
+        "params": {
+            "clip_skip": clip_skip,
+            "convert_to_tensorrt": convert_to_tensorrt,
+        },
     }
 
     if hasattr(config, "model") and hasattr(config.model, "target") and "LatentInpaintDiffusion" in config.model.target:
