@@ -255,7 +255,7 @@ def make_with_diffusers(
                 f"This model does not support {operation_to_apply}! This model requires an initial image and mask."
             )
 
-        if isinstance(model["default"], StableDiffusionXLImg2ImgPipeline):
+        if control_image and isinstance(model["default"], StableDiffusionXLImg2ImgPipeline):
             raise RuntimeError(
                 "ControlNet only supports text-to-image with SD-XL right now. Please remove the initial image and try again!"
             )
@@ -398,8 +398,9 @@ def make_with_diffusers(
             raise Exception(
                 "The SD-XL Refiner model only supports img2img! Please set an initial image, or remove the inpainting mask!"
             )
-        else:  # SDXL refiner is purely img2img
-            cmd["prompt"] = ""
+        else:  # SDXL refiner doesn't work with prompt embeds yet
+            cmd["prompt"] = prompt
+            cmd["negative_prompt"] = negative_prompt
     else:
         cmd["prompt_embeds"] = compel(prompt)
         log.info("Made prompt embeds")
