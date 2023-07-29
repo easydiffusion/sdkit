@@ -409,13 +409,13 @@ def test_2_3c__sdxl_inpainting_works__768x768():
 
 
 ## refiner model
-def test_2_4__sdxl__loads_base_model():
+def test_2_4__sdxl__loads_refiner_model():
     context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_refiner_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
 ### quick tests (only supports img2img)
-def test_2_4a__sdxl_img2img_works():
+def test_2_4a__sdxl_refiner_img2img_works():
     init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
     images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img)
 
