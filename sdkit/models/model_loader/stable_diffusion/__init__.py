@@ -231,8 +231,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
     except:
         pass
 
-    if torch.__version__.startswith("2.") and hasattr(default_pipe, "enable_vae_slicing"):
+    if hasattr(default_pipe, "enable_vae_slicing"):
         default_pipe.enable_vae_slicing()
+    if hasattr(default_pipe, "enable_vae_tiling"):
+        default_pipe.enable_vae_tiling()
 
     # make the compel prompt parser object
     textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
