@@ -17,6 +17,7 @@ from sdkit.utils import (
     resize_img,
     log,
     load_tensor_file,
+    black_to_transparent,
 )
 
 from .prompt_parser import get_cond_and_uncond
@@ -42,6 +43,7 @@ def generate_images(
     control_alpha=None,
     prompt_strength: float = 0.8,
     preserve_init_image_color_profile=False,
+    strict_mask_border=False,
     sampler_name: str = "euler_a",  # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
@@ -87,6 +89,7 @@ def generate_images(
                 # hypernetwork_strength,
                 lora_alpha,
                 tiling,
+                strict_mask_border,
                 # sampler_params,
                 callback,
             )
@@ -143,6 +146,7 @@ def img2img(
     init_image_mask,
     prompt_strength,
     preserve_init_image_color_profile,
+    strict_mask_border=False,
     **kwargs,
 ):
     init_image = get_image(init_image)
@@ -169,22 +173,8 @@ def img2img(
         for i, img in enumerate(images):
             images[i] = apply_color_profile(init_image, img)
 
-    # Blend initial and final images using mask.
-    # Otherwise inpainting suffers from gradual degradation each execution, progressively losing detail and becoming
-    # blurrier even for fully preserved parts of the image which should remain unchanged. This loss is especially
-    # dramatic for larger images like 1024x1024. Now, this pixel space compositing approach isn't a panacea, as you can
-    # often see a faint discontinuity around the masked area unless you use the feathered brush when drawing the
-    # mask (regardless of whether color profile preservation is checked), but it at least guarantees that unchanged
-    # pixels remain unchanged so that you can reliably perform inpainting a dozen times to various parts. There remains
-    # data loss somewhere deeper along the pipeline (maybe the VAE decode and reencode is lossy, maybe the denoising
-    # is not properly paying attention to the mask, maybe slight noise is being added where it shouldn't be...), but
-    # this mitigates the issue until the root problem is identified.
-    if init_image_mask != None:
-        # Extract the mask from the alpha channel.
-        composite_mask = init_image_mask.getchannel(3)
-        composite_mask = resize_img(composite_mask, width, height)
-        for i, img in enumerate(images):
-            images[i] = Image.composite(img, init_image, composite_mask)
+    if init_image_mask and strict_mask_border:
+        images = blend_mask(images, init_image, init_image_mask, width, height)
 
     return images
 
@@ -212,6 +202,7 @@ def make_with_diffusers(
     lora_alpha: Union[float, List[float]] = 0,
     # sampler_params={},
     tiling="none",
+    strict_mask_border=False,
     callback=None,
 ):
     from diffusers import (
@@ -255,12 +246,12 @@ def make_with_diffusers(
         "num_images_per_prompt": num_outputs,
     }
     if init_image:
-        cmd["image"] = get_image(init_image).convert("RGB")
-        cmd["image"] = resize_img(cmd["image"], width, height, clamp_to_64=True)
+        init_image = get_image(init_image)
+        cmd["image"] = resize_img(init_image.convert("RGB"), width, height, clamp_to_64=True)
         cmd["strength"] = prompt_strength
     if init_image_mask:
-        cmd["mask_image"] = get_image(init_image_mask).convert("RGB")
-        cmd["mask_image"] = resize_img(cmd["mask_image"], width, height, clamp_to_64=True)
+        init_image_mask = get_image(init_image_mask)
+        cmd["mask_image"] = resize_img(init_image_mask.convert("RGB"), width, height, clamp_to_64=True)
 
     if init_image:
         operation_to_apply = "inpainting" if init_image_mask else "img2img"
@@ -446,6 +437,40 @@ def make_with_diffusers(
 
     if is_sd_xl and context.half_precision:  # cleanup - workaround since SDXL upcasts the vae
         operation_to_apply.vae = operation_to_apply.vae.to(dtype=torch.float16)
+
+    if init_image_mask and strict_mask_border:
+        images = blend_mask(images, init_image, init_image_mask, width, height)
+
+    return images
+
+
+def blend_mask(images, init_image, init_image_mask, width, height):
+    """
+    Blend initial and final images using mask.
+    Otherwise inpainting suffers from gradual degradation each execution, progressively losing detail and becoming
+    blurrier even for fully preserved parts of the image which should remain unchanged. This loss is especially
+    dramatic for larger images like 1024x1024. Now, this pixel space compositing approach isn't a panacea, as you can
+    often see a faint discontinuity around the masked area unless you use the feathered brush when drawing the
+    mask (regardless of whether color profile preservation is checked), but it at least guarantees that unchanged
+    pixels remain unchanged so that you can reliably perform inpainting a dozen times to various parts. There remains
+    data loss somewhere deeper along the pipeline (maybe the VAE decode and reencode is lossy, maybe the denoising
+    is not properly paying attention to the mask, maybe slight noise is being added where it shouldn't be...), but
+    this mitigates the issue until the root problem is identified.
+    """
+
+    import numpy as np
+
+    if init_image_mask != None:
+        # Check if it has alpha channel, else make black transparent
+        channel_count = np.array(init_image_mask).shape[2]
+        if channel_count < 4:
+            init_image_mask = black_to_transparent(init_image_mask)
+
+        # Extract the mask from the alpha channel.
+        composite_mask = init_image_mask.getchannel(3)
+        composite_mask = resize_img(composite_mask, width, height)
+        for i, img in enumerate(images):
+            images[i] = Image.composite(img, init_image, composite_mask)
 
     return images
 

@@ -16,6 +16,7 @@ from .image_utils import (
     img_to_base64_str,
     img_to_buffer,
     resize_img,
+    black_to_transparent,
 )
 from .latent_utils import (
     get_image_latent_and_mask,

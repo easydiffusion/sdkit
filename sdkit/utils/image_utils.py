@@ -69,3 +69,14 @@ def apply_color_profile(orig_image, image_to_modify):
     matched = exposure.match_histograms(image_to_modify, reference, channel_axis=2)
 
     return Image.fromarray(cv2.cvtColor(matched, cv2.COLOR_LAB2RGB).astype("uint8"))
+
+
+def black_to_transparent(img):
+    import numpy as np
+    from PIL import Image
+
+    x = np.asarray(img.convert("RGBA")).copy()
+
+    x[:, :, 3] = (255 * (x[:, :, :3] != 0).any(axis=2)).astype(np.uint8)
+
+    return Image.fromarray(x)
