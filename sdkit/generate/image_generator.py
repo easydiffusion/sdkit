@@ -471,6 +471,7 @@ def blend_mask(images, init_image, init_image_mask, width, height):
         composite_mask = resize_img(composite_mask, width, height)
         for i, img in enumerate(images):
             images[i] = Image.composite(img, init_image, composite_mask)
+            images[i] = images[i].convert("RGB")
 
     return images
 
