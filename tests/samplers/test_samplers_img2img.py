@@ -32,17 +32,19 @@ def setup_module():
 
 def make_sampler_test(sampler_name):
     def sampler_test():
+        init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
         image = generate_images(
             context,
-            "Photograph of an astronaut riding a horse",
+            "Lion sitting on a bench",
             seed=42,
             width=512,
             height=512,
             sampler_name=sampler_name,
             num_inference_steps=50,
+            init_image=init_img,
         )[0]
 
-        expected_image = Image.open(f"{EXPECTED_DIR}/txt2img/1.4-txt-{sampler_name}-42-512x512-50-cuda.png")
+        expected_image = Image.open(f"{EXPECTED_DIR}/img2img/1.4-img-{sampler_name}-42-512x512-50-cuda.png")
         assert_images_same(image, expected_image, "test" + sampler_name)
 
     return sampler_test
