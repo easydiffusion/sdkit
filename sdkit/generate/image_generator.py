@@ -286,6 +286,9 @@ def make_with_diffusers(
             assert len(control_alpha) == len(control_image)
 
             cmd["controlnet_conditioning_scale"] = control_alpha
+            control_image = [get_image(img) for img in control_image]
+        else:
+            control_image = get_image(control_image)
 
         if operation_to_apply == "txt2img":
             cmd["image"] = control_image
