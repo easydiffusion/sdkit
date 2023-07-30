@@ -458,19 +458,12 @@ def blend_mask(images, init_image, init_image_mask, width, height):
     this mitigates the issue until the root problem is identified.
     """
 
-    import numpy as np
-
     if init_image_mask != None:
-        # Check if it has alpha channel, else make black transparent
-        channel_count = np.array(init_image_mask).shape[2]
-        if channel_count < 4:
-            init_image_mask = black_to_transparent(init_image_mask)
+        init_image_mask = init_image_mask.convert("RGB")
+        init_image_mask = black_to_transparent(init_image_mask)
 
-        # Extract the mask from the alpha channel.
-        composite_mask = init_image_mask.getchannel(3)
-        composite_mask = resize_img(composite_mask, width, height)
         for i, img in enumerate(images):
-            images[i] = Image.composite(img, init_image, composite_mask)
+            images[i] = Image.composite(img, init_image, init_image_mask)
             images[i] = images[i].convert("RGB")
 
     return images
