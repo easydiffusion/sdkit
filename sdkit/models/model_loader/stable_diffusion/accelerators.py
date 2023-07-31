@@ -159,7 +159,7 @@ class TRTModel:
 
             with open(engine_path, "rb") as f, trt.Runtime(self.TRT_LOGGER) as runtime:
                 engine = runtime.deserialize_cuda_engine(f.read())
-                trt_context = engine.create_execution_context()
+                trt_context = engine.create_execution_context_without_device_memory()
                 if engine_type not in self.engines:
                     self.engines[engine_type] = {}
                 self.engines[engine_type][engine_span] = engine, trt_context
