@@ -270,7 +270,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
 
         apply_directml_unet(default_pipe, unet_onnx_path)
         log.info("Using DirectML accelerated UNet")
-    elif os.path.exists(unet_trt_path) and os.stat(unet_trt_path).st_size > 0:
+    elif convert_to_tensorrt and os.path.exists(unet_trt_path) and os.stat(unet_trt_path).st_size > 0:
         from .accelerators import apply_tensorrt_unet
 
         apply_tensorrt_unet(default_pipe, unet_trt_path)
