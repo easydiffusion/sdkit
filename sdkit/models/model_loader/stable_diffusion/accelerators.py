@@ -145,11 +145,14 @@ class TRTModel:
             for engine_span in self.ENGINE_SPANS:
                 self.load_engine(engine_type, engine_span)
 
+        print(self.engines)
+
     def load_engine(self, engine_type, engine_span: tuple):
         import tensorrt as trt
 
         try:
             engine_path = self.engine_paths[engine_type][engine_span]
+            log.info(f"Loading {engine_type} TensorRT engine from {engine_path}")
 
             if not os.path.exists(engine_path) or os.stat(engine_path).st_size == 0:
                 return
@@ -159,7 +162,7 @@ class TRTModel:
                 trt_context = engine.create_execution_context()
                 if engine_type not in self.engines:
                     self.engines[engine_type] = {}
-                self.engines[engine_span] = engine, trt_context
+                self.engines[engine_type][engine_span] = engine, trt_context
         except:
             traceback.print_exc()
 
@@ -234,9 +237,12 @@ class TRTModel:
         # check if we have an engine for this sample, else use the non-trt forward
         factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
         sample = feed_dict["sample"]
-        size = max(sample.shape[2], sample.shape[3]) * factor
+        size = max(sample.shape[2], sample.shape[3]) * factor // 256
         size = (256 * size, 256 * (size + 1))
         if size not in self.engines[engine_type]:
+            log.warn(
+                f"Did not find a {engine_type} TensorRT engine for {size} {sample.shape}. Using non-TRT rendering.."
+            )
             if engine_type == "unet":
                 return [
                     self.old_forward["unet"](
@@ -244,7 +250,7 @@ class TRTModel:
                     )
                 ]
             elif engine_type == "vae":
-                return [self.old_forward["vae"](feed_dict["sample"])]
+                return self.old_forward["vae"](feed_dict["sample"])
 
         orig_dtype = sample.dtype
         target_dtype = torch.float32
@@ -261,6 +267,7 @@ class TRTModel:
             trt_context.set_tensor_address(name, tensor.data_ptr())
 
         if not trt_context.execute_async_v3(stream_handle=stream.ptr):
+            log.warn(f"Error processing the {engine_type} TensorRT engine for {size}. Using non-TRT rendering..")
             if engine_type == "unet":
                 sample = self.old_forward["unet"](
                     feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"]
@@ -269,8 +276,8 @@ class TRTModel:
                 sample = self.old_forward["vae"](feed_dict["sample"])
 
             sample = sample.to(orig_dtype)
-            return [sample]
+            return [sample] if engine_type == "unet" else sample
 
         sample = tensors["out_sample"]
         sample = sample.to(orig_dtype)
-        return [sample]
+        return [sample] if engine_type == "unet" else sample
