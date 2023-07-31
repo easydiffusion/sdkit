@@ -3,7 +3,6 @@ import shutil
 from packaging import version
 import warnings
 
-
 from sdkit.utils import log
 
 
@@ -115,6 +114,7 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, save_path):
     import tensorrt as trt
 
     TRT_LOGGER = trt.Logger(trt.Logger.INFO)
+    TIMING_CACHE = "trt_timing.cache"
 
     batch_size = 1
     unet_in_channels = pipeline.unet.config.in_channels
@@ -134,6 +134,13 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, save_path):
 
     config = TRT_BUILDER.create_builder_config()
     profile = TRT_BUILDER.create_optimization_profile()
+
+    if os.path.exists(TIMING_CACHE):
+        with open(TIMING_CACHE, "rb") as f:
+            timing_cache = config.create_timing_cache(f.read())
+    else:
+        timing_cache = config.create_timing_cache(b"")
+    config.set_timing_cache(timing_cache, ignore_mismatch=True)
 
     min_shape = {
         "sample": (batch_size, unet_in_channels, unet_sample_size, unet_sample_size),
@@ -158,6 +165,16 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, save_path):
     ## save TRT engine
     with open(save_path, "wb") as f:
         f.write(serialized_engine)
+
+    # save the timing cache
+    timing_cache = config.get_timing_cache()
+    with timing_cache.serialize() as buffer:
+        with open(TIMING_CACHE, "wb") as f:
+            f.write(buffer)
+            f.flush()
+            os.fsync(f)
+            log.info(f"Wrote TRT timing cache to {TIMING_CACHE}")
+
     log.info(f"TRT Engine saved to {save_path}")
 
 
