@@ -4,7 +4,10 @@ from packaging import version
 import warnings
 
 
-def convert_pipeline_unet_to_onnx(pipeline, save_path, opset=17, fp16: bool = False):
+from sdkit.utils import log
+
+
+def convert_pipeline_unet_to_onnx(pipeline, save_path, opset=17, device=None, fp16: bool = False):
     import torch
     import onnx
     from torch.jit import TracerWarning
@@ -29,7 +32,7 @@ def convert_pipeline_unet_to_onnx(pipeline, save_path, opset=17, fp16: bool = Fa
     orig_dtype = pipeline.unet.dtype
 
     _dtype = torch.float16 if fp16 else torch.float32
-    _device = pipeline.device if fp16 else "cpu"
+    _device = device if device else pipe.device
     pipeline = pipeline.to(_device, torch_dtype=_dtype)
 
     tmp_dir = save_path + "_"  # collect the individual weights here
@@ -125,7 +128,7 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, save_path):
     parse_success = onnx_parser.parse_from_file(onnx_path)
 
     for idx in range(onnx_parser.num_errors):
-        print(onnx_parser.get_error(idx))
+        log.error(onnx_parser.get_error(idx))
     if not parse_success:
         raise RuntimeError("ONNX model parsing failed")
 
@@ -155,17 +158,17 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, save_path):
     ## save TRT engine
     with open(save_path, "wb") as f:
         f.write(serialized_engine)
-    print(f"TRT Engine saved to {save_path}")
+    log.info(f"TRT Engine saved to {save_path}")
 
 
 def convert_pipeline_unet_to_tensorrt(pipeline, save_path, opset=17, fp16: bool = False):
     onnx_path = save_path + ".onnx"
 
-    if not os.path.exists(onnx_path) or os.stat(onnx_path).st_size == 0:
-        print("Making intermediate ONNX..")
-        convert_pipeline_unet_to_onnx(pipeline, onnx_path, opset, fp16=False)
-
     if not os.path.exists(save_path) or os.stat(save_path).st_size == 0:
-        print("Converting intermediate ONNX to TensorRT..")
+        if not os.path.exists(onnx_path) or os.stat(onnx_path).st_size == 0:
+            log.info("Making intermediate ONNX..")
+            convert_pipeline_unet_to_onnx(pipeline, onnx_path, opset, device="cpu", fp16=False)
+
+        log.info("Converting intermediate ONNX to TensorRT..")
         convert_onnx_unet_to_tensorrt(pipeline, onnx_path, save_path)
-        # os.remove(onnx_path)
+        os.remove(onnx_path)

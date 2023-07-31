@@ -197,7 +197,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
         from sdkit.utils import gc, convert_pipeline_unet_to_onnx
 
         log.info("Converting UNet to ONNX to run on AMD on Windows..")
-        convert_pipeline_unet_to_onnx(default_pipe, unet_onnx_path, fp16=False)  # on cpu, so fp32
+        convert_pipeline_unet_to_onnx(default_pipe, unet_onnx_path, device="cpu", fp16=False)  # on cpu, so fp32
         log.info("Converted UNet to ONNX to run on AMD on Windows!")
     elif convert_to_tensorrt and (not os.path.exists(unet_trt_path) or os.stat(unet_trt_path).st_size == 0):
         from sdkit.utils import gc, convert_pipeline_unet_to_tensorrt

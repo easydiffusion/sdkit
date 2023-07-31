@@ -42,7 +42,7 @@ class UnetDirectML:
 
         # batch_size = 1
 
-        # these are supposed to make things faster, but don't seem to make a difference for me
+        # these are supposed to make things faster, experiment with them
         sess_options = ort.SessionOptions()
         sess_options.enable_mem_pattern = False
         # sess_options.add_free_dimension_override_by_name("sample_batch", batch_size * 2)
@@ -110,6 +110,8 @@ class UnetTRT:
     def allocate_buffers(self, pipeline, device, dtype, width=512, height=512):
         "Call this once before an image is generated, not per sample"
 
+        dtype = torch.float32
+
         unet_in_channels = pipeline.unet.config.in_channels
         num_tokens = pipeline.text_encoder.config.max_position_embeddings
         text_hidden_size = pipeline.text_encoder.config.hidden_size
@@ -138,10 +140,13 @@ class UnetTRT:
     def forward(self, sample, timestep, encoder_hidden_states, **kwargs):
         from polygraphy import cuda
 
+        orig_dtype = sample.dtype
+        target_dtype = torch.float32
+
         feed_dict = {
-            "sample": sample,
-            "timestep": timestep,
-            "encoder_hidden_states": encoder_hidden_states,
+            "sample": sample.to(target_dtype),
+            "timestep": timestep.to(target_dtype),
+            "encoder_hidden_states": encoder_hidden_states.to(target_dtype),
         }
         stream = cuda.Stream()
 
@@ -155,4 +160,5 @@ class UnetTRT:
             raise RuntimeError("Inference failed!")
 
         sample = self.tensors["out_sample"]
+        sample = sample.to(orig_dtype)
         return [sample]
