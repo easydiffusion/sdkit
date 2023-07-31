@@ -1,6 +1,9 @@
+import os
+
 import torch
 from dataclasses import dataclass
 import numpy as np
+import traceback
 
 from sdkit.utils import log
 
@@ -27,12 +30,27 @@ def apply_directml_unet(pipeline, onnx_path):
     pipeline.unet.forward = unet_dml.forward
 
 
-def apply_tensorrt_unet(pipeline, trt_path):
-    unet_trt = UnetTRT(trt_path)
+def apply_tensorrt(pipeline, trt_dir):
+    old_unet_forward = pipeline.unet.forward
+    old_vae_forward = pipeline.vae.decoder.forward
 
-    pipeline.unet.forward = unet_trt.forward
+    try:
+        trt = TRTModel(pipeline, trt_dir)
 
-    setattr(pipeline.unet, "_allocate_trt_buffers", unet_trt.allocate_buffers)
+        pipeline.unet.forward = trt.forward_unet
+        pipeline.vae.decoder.forward = trt.forward_vae
+
+        setattr(pipeline.unet, "_allocate_trt_buffers", trt.allocate_buffers)
+        setattr(pipeline.unet, "_non_trt_forward", old_unet_forward)
+        setattr(pipeline.unet, "_trt_forward", trt.forward_unet)
+        setattr(pipeline.vae.decoder, "_non_trt_forward", old_vae_forward)
+        setattr(pipeline.vae.decoder, "_trt_forward", trt.forward_vae)
+
+        log.info("Using TensorRT accelerated UNet and VAE")
+    except:
+        traceback.print_exc()
+        pipeline.unet.forward = old_unet_forward
+        pipeline.vae.decoder.forward = old_vae_forward
 
 
 class UnetDirectML:
@@ -94,71 +112,165 @@ class UnetDirectML:
         return [sample]
 
 
-class UnetTRT:
-    def __init__(self, engine_path):
+class TRTModel:
+    ENGINE_TYPES = ("unet", "vae")
+    ENGINE_SPANS = [(512, 768), (768, 1024), (1024, 1280)]  # pixels
+
+    def __init__(self, pipeline, trt_dir):
         import tensorrt as trt
 
-        TRT_LOGGER = trt.Logger(trt.Logger.INFO)
+        self.base_dir = trt_dir
 
+        self.pipeline = pipeline
+        self.old_forward = {
+            "unet": pipeline.unet.forward,
+            "vae": pipeline.vae.decoder.forward,
+        }
+
+        self.engine_paths = {}
+        self.engines = {}
+        self.tensors = {engine_type: {} for engine_type in self.ENGINE_TYPES}
+
+        self.TRT_LOGGER = trt.Logger(trt.Logger.INFO)
         trt.init_libnvinfer_plugins(None, "")
-        with open(engine_path, "rb") as f, trt.Runtime(TRT_LOGGER) as runtime:
-            self.engine = runtime.deserialize_cuda_engine(f.read())
 
-        self.trt_context = self.engine.create_execution_context()
-        self.tensors = {}
+        for engine_type in self.ENGINE_TYPES:
+            engine_paths = self.engine_paths[engine_type] = {}
+            for min, max in self.ENGINE_SPANS:
+                engine_paths[(min, max)] = os.path.join(trt_dir, engine_type, f"{min}_{max}.trt")
 
-    def allocate_buffers(self, pipeline, device, dtype, width=512, height=512):
+        print(self.engine_paths)
+
+        for engine_type in self.ENGINE_TYPES:
+            for engine_span in self.ENGINE_SPANS:
+                self.load_engine(engine_type, engine_span)
+
+    def load_engine(self, engine_type, engine_span: tuple):
+        import tensorrt as trt
+
+        try:
+            engine_path = self.engine_paths[engine_type][engine_span]
+
+            if not os.path.exists(engine_path) or os.stat(engine_path).st_size == 0:
+                return
+
+            with open(engine_path, "rb") as f, trt.Runtime(self.TRT_LOGGER) as runtime:
+                engine = runtime.deserialize_cuda_engine(f.read())
+                trt_context = engine.create_execution_context()
+                if engine_type not in self.engines:
+                    self.engines[engine_type] = {}
+                self.engines[engine_span] = engine, trt_context
+        except:
+            traceback.print_exc()
+
+    def allocate_buffers(self, pipeline, device, dtype, width, height):
         "Call this once before an image is generated, not per sample"
 
-        dtype = torch.float32
+        for engine_type in self.ENGINE_TYPES:
+            size = max(width, height) // 256
+            engine_span = (256 * size, 256 * (size + 1))
+            if engine_span not in self.engines[engine_type]:
+                continue
 
-        unet_in_channels = pipeline.unet.config.in_channels
-        num_tokens = pipeline.text_encoder.config.max_position_embeddings
-        text_hidden_size = pipeline.text_encoder.config.hidden_size
+            self._allocate_buffers(engine_type, pipeline, device, dtype, width, height, engine_span)
 
-        self.tensors.clear()
+    def _allocate_buffers(self, engine_type, pipeline, device, dtype, width, height, engine_span):
+        tensors = self.tensors[engine_type]
+        tensors.clear()
 
-        shape_dict = {
-            "sample": (2, unet_in_channels, width // 8, height // 8),
-            "encoder_hidden_states": (2, num_tokens, text_hidden_size),
-            "timestep": (2,),
-        }
-        for i, binding in enumerate(self.engine):
+        dtype = torch.float32  # HACK: but TRT generates black images otherwise
+
+        if engine_type == "unet":
+            unet_in_channels = pipeline.unet.config.in_channels
+            num_tokens = pipeline.text_encoder.config.max_position_embeddings
+            text_hidden_size = pipeline.text_encoder.config.hidden_size
+
+            shape_dict = {
+                "sample": (2, unet_in_channels, width // 8, height // 8),
+                "encoder_hidden_states": (2, num_tokens, text_hidden_size),
+                "timestep": (2,),
+            }
+        elif engine_type == "vae":
+            num_channels_latents = pipeline.unet.config.in_channels
+            vae_scale_factor = pipeline.vae_scale_factor
+
+            shape_dict = {
+                "sample": (2, num_channels_latents, height // vae_scale_factor, width // vae_scale_factor),
+            }
+
+        engine, trt_context = self.engines[engine_type][engine_span]
+
+        for i, binding in enumerate(engine):
             if binding in shape_dict:
                 shape = shape_dict[binding]
             else:
-                shape = self.engine.get_binding_shape(binding)
+                shape = engine.get_binding_shape(binding)
 
             if binding == "out_sample":
-                shape = (2, 4, width // 8, height // 8)
+                shape = shape_dict["sample"]
 
-            if self.engine.binding_is_input(binding):
-                self.trt_context.set_binding_shape(i, shape)
+            if engine.binding_is_input(binding):
+                trt_context.set_binding_shape(i, shape)
 
-            self.tensors[binding] = torch.empty(tuple(shape), dtype=dtype, device=device)
+            tensors[binding] = torch.empty(tuple(shape), dtype=dtype, device=device)
 
-    def forward(self, sample, timestep, encoder_hidden_states, **kwargs):
+    def forward_unet(self, sample, timestep, encoder_hidden_states, **kwargs):
+        feed_dict = {
+            "sample": sample,
+            "timestep": timestep,
+            "encoder_hidden_states": encoder_hidden_states,
+        }
+        return self._forward("unet", feed_dict)
+
+    def forward_vae(self, sample, **kwargs):
+        feed_dict = {
+            "sample": sample,
+        }
+        return self._forward("vae", feed_dict)
+
+    def _forward(self, engine_type, feed_dict):
         from polygraphy import cuda
+
+        # check if we have an engine for this sample, else use the non-trt forward
+        factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
+        sample = feed_dict["sample"]
+        size = max(sample.shape[2], sample.shape[3]) * factor
+        size = (256 * size, 256 * (size + 1))
+        if size not in self.engines[engine_type]:
+            if engine_type == "unet":
+                return [
+                    self.old_forward["unet"](
+                        feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"]
+                    )
+                ]
+            elif engine_type == "vae":
+                return [self.old_forward["vae"](feed_dict["sample"])]
 
         orig_dtype = sample.dtype
         target_dtype = torch.float32
 
-        feed_dict = {
-            "sample": sample.to(target_dtype),
-            "timestep": timestep.to(target_dtype),
-            "encoder_hidden_states": encoder_hidden_states.to(target_dtype),
-        }
+        tensors = self.tensors[engine_type]
+        trt_context = self.engines[engine_type][size][1]
+
         stream = cuda.Stream()
 
         for name, tensor in feed_dict.items():
-            self.tensors[name].copy_(tensor)
+            tensors[name].copy_(tensor.to(target_dtype))
 
-        for name, tensor in self.tensors.items():
-            self.trt_context.set_tensor_address(name, tensor.data_ptr())
+        for name, tensor in tensors.items():
+            trt_context.set_tensor_address(name, tensor.data_ptr())
 
-        if not self.trt_context.execute_async_v3(stream_handle=stream.ptr):
-            raise RuntimeError("Inference failed!")
+        if not trt_context.execute_async_v3(stream_handle=stream.ptr):
+            if engine_type == "unet":
+                sample = self.old_forward["unet"](
+                    feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"]
+                )
+            elif engine_type == "vae":
+                sample = self.old_forward["vae"](feed_dict["sample"])
 
-        sample = self.tensors["out_sample"]
+            sample = sample.to(orig_dtype)
+            return [sample]
+
+        sample = tensors["out_sample"]
         sample = sample.to(orig_dtype)
         return [sample]

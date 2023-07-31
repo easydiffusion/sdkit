@@ -38,7 +38,7 @@ from .memory_utils import (
 )
 from .convert_model_utils import (
     convert_pipeline_unet_to_onnx,
-    convert_pipeline_unet_to_tensorrt,
+    convert_pipeline_to_tensorrt,
 )
 from .device_utils import has_amd_gpu
 from .misc_utils import make_sd_context, get_nested_attr

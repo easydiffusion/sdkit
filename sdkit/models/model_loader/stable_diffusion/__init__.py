@@ -179,7 +179,7 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
 
     # optimize for TRT or DirectML (AMD on Windows)
     model_component, _ = os.path.splitext(model_path)
-    unet_trt_path = model_component + ".unet.trt"
+    model_trt_path = model_component + ".trt"
     unet_onnx_path = model_component + ".unet.onnx"
 
     use_directml = platform.system() == "Windows" and has_amd_gpu()
@@ -199,14 +199,14 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
         log.info("Converting UNet to ONNX to run on AMD on Windows..")
         convert_pipeline_unet_to_onnx(default_pipe, unet_onnx_path, device="cpu", fp16=False)  # on cpu, so fp32
         log.info("Converted UNet to ONNX to run on AMD on Windows!")
-    elif convert_to_tensorrt and (not os.path.exists(unet_trt_path) or os.stat(unet_trt_path).st_size == 0):
-        from sdkit.utils import gc, convert_pipeline_unet_to_tensorrt
+    elif convert_to_tensorrt:
+        from sdkit.utils import gc, convert_pipeline_to_tensorrt
 
         default_pipe = default_pipe.to(context.device, torch.float16 if context.half_precision else torch.float32)
 
-        log.info("Converting UNet to TensorRT for acceleration..")
-        convert_pipeline_unet_to_tensorrt(default_pipe, unet_trt_path, fp16=context.half_precision)
-        log.info("Converted UNet to TensorRT for acceleration!")
+        log.info("Converting model to TensorRT for acceleration..")
+        convert_pipeline_to_tensorrt(default_pipe, model_trt_path, fp16=context.half_precision)
+        log.info("Converted model to TensorRT for acceleration!")
 
         default_pipe = default_pipe.to("cpu", torch.float32)
 
@@ -270,11 +270,10 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
 
         apply_directml_unet(default_pipe, unet_onnx_path)
         log.info("Using DirectML accelerated UNet")
-    elif convert_to_tensorrt and os.path.exists(unet_trt_path) and os.stat(unet_trt_path).st_size > 0:
-        from .accelerators import apply_tensorrt_unet
+    elif convert_to_tensorrt and os.path.exists(model_trt_path):
+        from .accelerators import apply_tensorrt
 
-        apply_tensorrt_unet(default_pipe, unet_trt_path)
-        log.info("Using TensorRT accelerated UNet")
+        apply_tensorrt(default_pipe, model_trt_path)
 
     model = {
         "config": config,
