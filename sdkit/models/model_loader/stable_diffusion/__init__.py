@@ -29,7 +29,7 @@ def load_model(
     check_for_config_with_same_name=True,
     clip_skip=False,
     convert_to_tensorrt=False,
-    trt_build_config={"batch_size_range": (1, 2), "dimensions_range": [(768, 1024)]},
+    trt_build_config={"batch_size_range": (1, 1), "dimensions_range": [(768, 1024)]},
     **kwargs,
 ):
     from sdkit.models import scan_model as scan_model_fn
