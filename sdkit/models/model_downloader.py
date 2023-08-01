@@ -4,7 +4,9 @@ from urllib.parse import urlparse
 from sdkit.utils import download_file, log
 
 
-def download_models(models: dict, download_base_dir: str = None, subdir_for_model_type=True):
+def download_models(
+    models: dict, download_base_dir: str = None, subdir_for_model_type=True, download_config_if_available=True
+):
     """
     Downloads the requested models (and config files) based on the SDKit models database.
     Resumes incomplete downloads, and shows a progress bar.
@@ -24,10 +26,16 @@ def download_models(models: dict, download_base_dir: str = None, subdir_for_mode
         model_ids = model_ids if isinstance(model_ids, list) else [model_ids]
 
         for model_id in model_ids:
-            download_model(model_type, model_id, download_base_dir, subdir_for_model_type)
+            download_model(model_type, model_id, download_base_dir, subdir_for_model_type, download_config_if_available)
 
 
-def download_model(model_type: str, model_id: str, download_base_dir: str = None, subdir_for_model_type=True):
+def download_model(
+    model_type: str,
+    model_id: str,
+    download_base_dir: str = None,
+    subdir_for_model_type=True,
+    download_config_if_available=True,
+):
     """
     Downloads the requested model (and config file) based on the SDKit models database.
     Resumes incomplete downloads, and shows a progress bar.
@@ -55,7 +63,7 @@ def download_model(model_type: str, model_id: str, download_base_dir: str = None
         out_path = os.path.join(download_base_dir, model_file_name)
         download_file(model_url, out_path)
 
-        if config_url:
+        if config_url and download_config_if_available:
             out_path = os.path.join(download_base_dir, config_file_name)
             download_file(config_url, out_path)
     except Exception as e:
