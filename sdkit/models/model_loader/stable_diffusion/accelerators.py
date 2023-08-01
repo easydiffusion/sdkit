@@ -11,7 +11,7 @@ from sdkit.utils import log
 Current issues:
 1. TRT is working only with fp32
 
-2. TRT goes out of memory when converting larger image ranges. Maybe try converting after switching to "balanced"?
+2. TRT goes out of memory when converting larger image ranges.
 
 3. set CUDA_MODULE_LOADING=LAZY
 
@@ -20,7 +20,7 @@ Current issues:
  > TRT: https://github.com/NVIDIA/TensorRT/blob/release/8.6/demo/Diffusion/utilities.py#L90
  > Currently it takes an entire different ONNX file and transfers their weights. One can modify it to target specifically the KQV part of the network for LORAs instead.
 
-5. TRT performance is pretty restricted to a single image size
+5. TRT performance is pretty restricted to narrow image size ranges. Loading multiple engines results in excessive VRAM usage.
 """
 
 
@@ -38,13 +38,13 @@ def apply_tensorrt(pipeline, trt_dir):
         trt = TRTModel(pipeline, trt_dir)
 
         pipeline.unet.forward = trt.forward_unet
-        pipeline.vae.decoder.forward = trt.forward_vae
+        # pipeline.vae.decoder.forward = trt.forward_vae
 
         setattr(pipeline.unet, "_allocate_trt_buffers", trt.allocate_buffers)
         setattr(pipeline.unet, "_non_trt_forward", old_unet_forward)
         setattr(pipeline.unet, "_trt_forward", trt.forward_unet)
-        setattr(pipeline.vae.decoder, "_non_trt_forward", old_vae_forward)
-        setattr(pipeline.vae.decoder, "_trt_forward", trt.forward_vae)
+        # setattr(pipeline.vae.decoder, "_non_trt_forward", old_vae_forward)
+        # setattr(pipeline.vae.decoder, "_trt_forward", trt.forward_vae)
 
         log.info("Using TensorRT accelerated UNet and VAE")
     except:
@@ -113,8 +113,8 @@ class UnetDirectML:
 
 
 class TRTModel:
-    ENGINE_TYPES = ("unet", "vae")
-    ENGINE_SPANS = [(512, 768), (768, 1024), (1024, 1280)]  # pixels
+    ENGINE_TYPES = ("unet",)  # "vae")
+    ENGINE_SPANS = [(768, 1024)]  # [(512, 768), (768, 1024), (1024, 1280)]  # pixels
 
     def __init__(self, pipeline, trt_dir):
         import tensorrt as trt
@@ -159,7 +159,7 @@ class TRTModel:
 
             with open(engine_path, "rb") as f, trt.Runtime(self.TRT_LOGGER) as runtime:
                 engine = runtime.deserialize_cuda_engine(f.read())
-                trt_context = engine.create_execution_context_without_device_memory()
+                trt_context = engine.create_execution_context()
                 if engine_type not in self.engines:
                     self.engines[engine_type] = {}
                 self.engines[engine_type][engine_span] = engine, trt_context
@@ -171,6 +171,8 @@ class TRTModel:
 
         for engine_type in self.ENGINE_TYPES:
             size = max(width, height) // 256
+            if size == 1024 // 256:
+                size -= 1  # pick the lower one
             engine_span = (256 * size, 256 * (size + 1))
             if engine_span not in self.engines[engine_type]:
                 continue
@@ -189,7 +191,7 @@ class TRTModel:
             text_hidden_size = pipeline.text_encoder.config.hidden_size
 
             shape_dict = {
-                "sample": (2, unet_in_channels, width // 8, height // 8),
+                "sample": (2, unet_in_channels, height // 8, width // 8),
                 "encoder_hidden_states": (2, num_tokens, text_hidden_size),
                 "timestep": (2,),
             }
@@ -238,17 +240,20 @@ class TRTModel:
         factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
         sample = feed_dict["sample"]
         size = max(sample.shape[2], sample.shape[3]) * factor // 256
+        if size == 1024 // 256:
+            size -= 1  # pick the lower one
         size = (256 * size, 256 * (size + 1))
         if size not in self.engines[engine_type]:
-            log.warn(
-                f"Did not find a {engine_type} TensorRT engine for {size} {sample.shape}. Using non-TRT rendering.."
-            )
+            # log.warn(
+            #     f"Did not find a {engine_type} TensorRT engine for {size} {sample.shape}. Using non-TRT rendering.."
+            # )
             if engine_type == "unet":
-                return [
-                    self.old_forward["unet"](
-                        feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"]
-                    )
-                ]
+                return self.old_forward["unet"](
+                    feed_dict["sample"],
+                    feed_dict["timestep"],
+                    feed_dict["encoder_hidden_states"],
+                    return_dict=False,
+                )
             elif engine_type == "vae":
                 return self.old_forward["vae"](feed_dict["sample"])
 
@@ -258,20 +263,29 @@ class TRTModel:
         tensors = self.tensors[engine_type]
         trt_context = self.engines[engine_type][size][1]
 
+        # if trt_context:
+        #     log.info(f"Found TensorRT engine for {engine_type} at {size}")
+        # else:
+        #     log.warn(f"No valid TensorRT engine found for {engine_type} at {size}!")
+
         stream = cuda.Stream()
 
         for name, tensor in feed_dict.items():
-            tensors[name].copy_(tensor.to(target_dtype))
+            try:
+                tensors[name].copy_(tensor.to(target_dtype))
+            except Exception as e:
+                # print("failed for", name)
+                raise e
 
         for name, tensor in tensors.items():
             trt_context.set_tensor_address(name, tensor.data_ptr())
 
         if not trt_context.execute_async_v3(stream_handle=stream.ptr):
-            log.warn(f"Error processing the {engine_type} TensorRT engine for {size}. Using non-TRT rendering..")
+            # log.warn(f"Error processing the {engine_type} TensorRT engine for {size}. Using non-TRT rendering..")
             if engine_type == "unet":
                 sample = self.old_forward["unet"](
-                    feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"]
-                )
+                    feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"], return_dict=False
+                )[0]
             elif engine_type == "vae":
                 sample = self.old_forward["vae"](feed_dict["sample"])
 
