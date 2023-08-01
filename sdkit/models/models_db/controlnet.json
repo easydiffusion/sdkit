@@ -1,0 +1,82 @@
+{
+    "control_v11p_sd15_canny": {
+        "name": "Canny",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_canny.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_canny.yaml",
+        "quick_hash": "2a8fb39bba857f051be3cf3171830a8e5abb5f803b8954fa0af17efaa1720d93"
+    },
+    "control_v11p_sd15_openpose": {
+        "name": "OpenPose",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_openpose.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_openpose.yaml",
+        "quick_hash": "9d5917122ddbadfbba313e927b9a902e13b52d6ea0e314a4b75bdf8f359094b7"
+    },
+    "control_v11p_sd15_normalbae": {
+        "name": "Normal BAE",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_normalbae.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_normalbae.yaml",
+        "quick_hash": "5be61377a8d9a5a0351b7d7611a6da45a84e6ddbcc664c86ded07f4409348ebb"
+    },
+    "control_v11f1p_sd15_depth": {
+        "name": "Depth",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11f1p_sd15_depth.pth",
+        "config_url": "configs/controlnet/control_v11f1p_sd15_depth.yaml",
+        "quick_hash": "e321356ced6992474300a4c9b13963a29ebbc63809de867fa1d3be47a4b314d3"
+    },
+    "control_v11p_sd15_scribble": {
+        "name": "Scribble",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_scribble.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_scribble.yaml",
+        "quick_hash": "729cb7a89f72659e2cd5edeeb57ab1fc4a80e7cfebcc3e0376a29c46a53dcd68"
+    },
+    "control_v11p_sd15_softedge": {
+        "name": "Soft Edge",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_softedge.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_softedge.yaml",
+        "quick_hash": "7babc60b95347a4a859df7427d12815b577550f7951999a74f00577c1fec9e2a"
+    },
+
+    "control_v11p_sd15_inpaint": {
+        "name": "Inpaint",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_inpaint.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_inpaint.yaml",
+        "quick_hash": "fded3d682e48c2c448ede8635b5af17856df04f59fdc27628570925c1e1050c9"
+    },
+    "control_v11p_sd15_lineart": {
+        "name": "Line Art",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_lineart.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_lineart.yaml",
+        "quick_hash": "430df738b27f7eb1e1c41705c054c486e5138926bf6d4a479aaeae340ca1155f"
+    },
+    "control_v11p_sd15s2_lineart_anime": {
+        "name": "Line Art Anime",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15s2_lineart_anime.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15s2_lineart_anime.yaml",
+        "quick_hash": "e78bef30362e77b5bebd3ed754f5ca1f0c134900e410d3156414db8d57f5c30d"
+    },
+    "control_v11p_sd15_mlsd": {
+        "name": "Straight Lines",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_mlsd.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_mlsd.yaml",
+        "quick_hash": "b3ff6df7f512a7da9cd6df59fcec1efb024b83cf9bb0dc16ba3ab6c9cf7f4544"
+    },
+
+    "control_v11p_sd15_seg": {
+        "name": "Segment",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_seg.pth",
+        "config_url": "configs/controlnet/control_v11p_sd15_seg.yaml",
+        "quick_hash": "c6f4b16896f321f1784c498cbfcf3db2ea28e2d071410d09860c410777b6c88b"
+    },
+    "control_v11e_sd15_shuffle": {
+        "name": "Shuffle",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11e_sd15_shuffle.pth",
+        "config_url": "configs/controlnet/control_v11e_sd15_shuffle.yaml",
+        "quick_hash": "ec1f015a5aafd84b0bab16ef5ccff4cd9a4e24288428e42babed8f629c881589"
+    },
+    "control_v11f1e_sd15_tile": {
+        "name": "Tile",
+        "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11f1e_sd15_tile.pth",
+        "config_url": "configs/controlnet/control_v11f1e_sd15_tile.yaml",
+        "quick_hash": "b1cf48ae91623ce9a4b5c692afcdd3257494792c4f84da45b3d28f7177bebea3"
+    }
+}

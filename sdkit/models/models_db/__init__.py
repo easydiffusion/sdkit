@@ -25,6 +25,8 @@ def get_models_db():
         db["vae"] = json.load(f)
     with open(db_path / "codeformer.json") as f:
         db["codeformer"] = json.load(f)
+    with open(db_path / "controlnet.json") as f:
+        db["controlnet"] = json.load(f)
     return db
 
 
