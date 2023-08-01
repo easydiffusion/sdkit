@@ -23,7 +23,7 @@ Current issues:
 5. TRT performance is pretty restricted to narrow image size ranges. Loading multiple engines results in excessive VRAM usage.
 """
 
-BATCH_SPAN = 1
+# BATCH_SPAN = 1
 SIZE_SPAN = 256
 
 
@@ -184,8 +184,9 @@ class TRTModel:
     def allocate_buffers(self, pipeline, device, dtype, batch_size, width, height):
         "Call this once before an image is generated, not per sample"
 
-        batch_step = (batch_size - 1) // BATCH_SPAN
-        min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+        # batch_step = (batch_size - 1) // BATCH_SPAN
+        # min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+        min_batch, max_batch = batch_size, batch_size
 
         for engine_type in self.ENGINE_TYPES:
             size = max(width, height) // SIZE_SPAN
@@ -270,8 +271,9 @@ class TRTModel:
 
         # check if we have an engine for this sample, else use the non-trt forward
         batch_size = sample.shape[0]
-        batch_step = (batch_size - 1) // BATCH_SPAN
-        min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+        # batch_step = (batch_size - 1) // BATCH_SPAN
+        # min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+        min_batch, max_batch = batch_size, batch_size
 
         factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
         size = max(sample.shape[2], sample.shape[3]) * factor // SIZE_SPAN
