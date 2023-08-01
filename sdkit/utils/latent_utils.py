@@ -65,7 +65,7 @@ def get_image_latent_and_mask(context: Context, image, mask, desired_width, desi
     model = context.models["stable-diffusion"]
 
     image = image.convert("RGB")
-    image = resize_img(image, desired_width, desired_height, clamp_to_64=True)
+    image = resize_img(image, desired_width, desired_height, clamp_to_8=True)
     image = img_to_tensor(image, batch_size, context.device, context.half_precision, shift_range=True)
     image = model.get_first_stage_encoding(model.encode_first_stage(image))  # move to latent space
 

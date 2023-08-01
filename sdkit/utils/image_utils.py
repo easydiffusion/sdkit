@@ -44,7 +44,7 @@ def base64_str_to_img(img_str):
     return img
 
 
-def resize_img(img, desired_width, desired_height, clamp_to_64=False):
+def resize_img(img, desired_width, desired_height, clamp_to_8=False):
     from PIL import Image
 
     w, h = img.size
@@ -52,8 +52,8 @@ def resize_img(img, desired_width, desired_height, clamp_to_64=False):
     if desired_width is not None and desired_height is not None:
         w, h = desired_width, desired_height
 
-    if clamp_to_64:
-        w, h = map(lambda x: x - x % 64, (w, h))  # resize to integer multiple of 64
+    if clamp_to_8:
+        w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
 
     return img.resize((w, h), resample=Image.Resampling.LANCZOS)
 

@@ -5,6 +5,9 @@ import warnings
 
 from sdkit.utils import log
 
+BATCH_SIZE_RANGE = (1, 2)
+TRT_CONVERT_RANGES = [(768, 1024)]  # [(512, 768), (768, 1024), (1024, 1280)]
+
 
 def convert_pipeline_unet_to_onnx(pipeline, save_path, opset=17, device=None, fp16: bool = False):
     if os.path.exists(save_path) and os.stat(save_path).st_size > 0:
@@ -184,27 +187,28 @@ def onnx_export(
 
 
 def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir):
-    batch_size = 1
+    batch_size_min, batch_size_max = BATCH_SIZE_RANGE
     unet_in_channels = pipeline.unet.config.in_channels
     num_tokens = pipeline.text_encoder.config.max_position_embeddings
     text_hidden_size = pipeline.text_encoder.config.hidden_size
 
     def get_shapes(min_size, max_size):
         opt_size = min_size + int((max_size - min_size) * 0.25)
+        opt_batch_size = batch_size_min + int((batch_size_min - batch_size_max) * 0.25)
         min_shape = {
-            "sample": (batch_size, unet_in_channels, min_size // 8, min_size // 8),
-            "encoder_hidden_states": (batch_size, num_tokens, text_hidden_size),
-            "timestep": (batch_size,),
+            "sample": (batch_size_min * 2, unet_in_channels, min_size // 8, min_size // 8),
+            "encoder_hidden_states": (batch_size_min * 2, num_tokens, text_hidden_size),
+            "timestep": (batch_size_min * 2,),
         }
         opt_shape = {
-            "sample": (batch_size, unet_in_channels, opt_size // 8, opt_size // 8),
-            "encoder_hidden_states": (batch_size, num_tokens, text_hidden_size),
-            "timestep": (batch_size,),
+            "sample": (opt_batch_size * 2, unet_in_channels, opt_size // 8, opt_size // 8),
+            "encoder_hidden_states": (opt_batch_size * 2, num_tokens, text_hidden_size),
+            "timestep": (opt_batch_size * 2,),
         }
         max_shape = {
-            "sample": (batch_size * 2, unet_in_channels, max_size // 8, max_size // 8),
-            "encoder_hidden_states": (batch_size * 2, num_tokens, text_hidden_size),
-            "timestep": (batch_size * 2,),
+            "sample": (batch_size_max * 2, unet_in_channels, max_size // 8, max_size // 8),
+            "encoder_hidden_states": (batch_size_max * 2, num_tokens, text_hidden_size),
+            "timestep": (batch_size_max * 2,),
         }
         return min_shape, opt_shape, max_shape
 
@@ -212,19 +216,20 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir):
 
 
 def convert_onnx_vae_to_tensorrt(pipeline, onnx_path, trt_out_dir):
-    batch_size = 1
+    batch_size_min, batch_size_max = BATCH_SIZE_RANGE
     unet_in_channels = pipeline.unet.config.in_channels
 
     def get_shapes(min_size, max_size):
         opt_size = min_size + int((max_size - min_size) * 0.25)
+        opt_batch_size = batch_size_min + int((batch_size_min - batch_size_max) * 0.25)
         min_shape = {
-            "sample": (batch_size, unet_in_channels, min_size // 8, min_size // 8),
+            "sample": (batch_size_min * 2, unet_in_channels, min_size // 8, min_size // 8),
         }
         opt_shape = {
-            "sample": (batch_size, unet_in_channels, opt_size // 8, opt_size // 8),
+            "sample": (opt_batch_size * 2, unet_in_channels, opt_size // 8, opt_size // 8),
         }
         max_shape = {
-            "sample": (batch_size * 2, unet_in_channels, max_size // 8, max_size // 8),
+            "sample": (batch_size_max * 2, unet_in_channels, max_size // 8, max_size // 8),
         }
         return min_shape, opt_shape, max_shape
 
@@ -232,9 +237,8 @@ def convert_onnx_vae_to_tensorrt(pipeline, onnx_path, trt_out_dir):
 
 
 def _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, shape_fn, name):
-    convert_range = [(768, 1024)]  # [(512, 768), (768, 1024), (1024, 1280)]
     convert = False
-    for min_size, max_size in convert_range:
+    for min_size, max_size in TRT_CONVERT_RANGES:
         save_path = os.path.join(trt_out_dir, f"{min_size}_{max_size}.trt")
         if not os.path.exists(save_path) or os.stat(save_path).st_size == 0:
             convert = True
@@ -258,7 +262,7 @@ def _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, shape_fn, name):
     if not parse_success:
         raise RuntimeError("ONNX model parsing failed")
 
-    for min_size, max_size in convert_range:
+    for min_size, max_size in TRT_CONVERT_RANGES:
         save_path = os.path.join(trt_out_dir, f"{min_size}_{max_size}.trt")
         if os.path.exists(save_path) and os.stat(save_path).st_size > 0:
             continue

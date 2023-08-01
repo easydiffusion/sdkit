@@ -247,11 +247,11 @@ def make_with_diffusers(
     }
     if init_image:
         init_image = get_image(init_image)
-        cmd["image"] = resize_img(init_image.convert("RGB"), width, height, clamp_to_64=True)
+        cmd["image"] = resize_img(init_image.convert("RGB"), width, height, clamp_to_8=True)
         cmd["strength"] = prompt_strength
     if init_image_mask:
         init_image_mask = get_image(init_image_mask)
-        cmd["mask_image"] = resize_img(init_image_mask.convert("RGB"), width, height, clamp_to_64=True)
+        cmd["mask_image"] = resize_img(init_image_mask.convert("RGB"), width, height, clamp_to_8=True)
 
     if init_image:
         operation_to_apply = "inpainting" if init_image_mask else "img2img"
@@ -430,7 +430,9 @@ def make_with_diffusers(
     # create TensorRT buffers, if necessary
     if hasattr(operation_to_apply.unet, "_allocate_trt_buffers"):
         dtype = torch.float16 if context.half_precision else torch.float32
-        operation_to_apply.unet._allocate_trt_buffers(operation_to_apply, context.device, dtype, width, height)
+        operation_to_apply.unet._allocate_trt_buffers(
+            operation_to_apply, context.device, dtype, num_outputs, width, height
+        )
 
     # apply
     log.info(f"applying: {operation_to_apply}")
