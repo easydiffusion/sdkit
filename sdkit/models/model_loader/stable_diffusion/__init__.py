@@ -29,6 +29,7 @@ def load_model(
     check_for_config_with_same_name=True,
     clip_skip=False,
     convert_to_tensorrt=False,
+    trt_build_config={"batch_size_range": (1, 2), "dimensions_range": [(768, 1024)]},
     **kwargs,
 ):
     from sdkit.models import scan_model as scan_model_fn
@@ -55,7 +56,9 @@ def load_model(
             sd_v1_4_info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.4")
             config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
 
-        return load_diffusers_model(context, model_path, config_file_path, clip_skip, convert_to_tensorrt)
+        return load_diffusers_model(
+            context, model_path, config_file_path, clip_skip, convert_to_tensorrt, trt_build_config
+        )
 
     # load the model file
     sd = load_tensor_file(model_path)
@@ -119,7 +122,9 @@ def unload_model(context: Context, **kwargs):
     context.module_in_gpu = None  # don't keep a dangling reference, prevents gc
 
 
-def load_diffusers_model(context: Context, model_path, config_file_path, clip_skip, convert_to_tensorrt):
+def load_diffusers_model(
+    context: Context, model_path, config_file_path, clip_skip, convert_to_tensorrt, trt_build_config
+):
     import torch
     from diffusers import (
         StableDiffusionImg2ImgPipeline,
@@ -204,8 +209,13 @@ def load_diffusers_model(context: Context, model_path, config_file_path, clip_sk
 
         default_pipe = default_pipe.to(context.device, torch.float16 if context.half_precision else torch.float32)
 
+        batch_size_range = trt_build_config["batch_size_range"]
+        dimensions_range = trt_build_config["dimensions_range"]
+
         log.info("Converting model to TensorRT for acceleration..")
-        convert_pipeline_to_tensorrt(default_pipe, model_trt_path, fp16=context.half_precision)
+        convert_pipeline_to_tensorrt(
+            default_pipe, model_trt_path, batch_size_range, dimensions_range, fp16=context.half_precision
+        )
         log.info("Converted model to TensorRT for acceleration!")
 
         default_pipe = default_pipe.to("cpu", torch.float32)

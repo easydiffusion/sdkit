@@ -23,6 +23,9 @@ Current issues:
 5. TRT performance is pretty restricted to narrow image size ranges. Loading multiple engines results in excessive VRAM usage.
 """
 
+BATCH_SPAN = 1
+SIZE_SPAN = 256
+
 
 def apply_directml_unet(pipeline, onnx_path):
     unet_dml = UnetDirectML(onnx_path)
@@ -114,7 +117,7 @@ class UnetDirectML:
 
 class TRTModel:
     ENGINE_TYPES = ("unet",)  # "vae")
-    ENGINE_SPANS = [(512, 768), (768, 1024), (1024, 1280)]  # pixels
+    # ENGINE_SPANS = [(512, 768), (768, 1024), (1024, 1280)]  # pixels
 
     def __init__(self, pipeline, trt_dir):
         import tensorrt as trt
@@ -136,23 +139,33 @@ class TRTModel:
 
         for engine_type in self.ENGINE_TYPES:
             engine_paths = self.engine_paths[engine_type] = {}
-            for min, max in self.ENGINE_SPANS:
-                engine_paths[(min, max)] = os.path.join(trt_dir, engine_type, f"{min}_{max}.trt")
+            engine_type_dir = os.path.join(trt_dir, engine_type)
+
+            for f in os.listdir(engine_type_dir):
+                if not f.endswith(".trt") or len(f.split(",")) != 2:
+                    continue
+
+                info = os.path.splitext(f)[0]
+                parts = info.split(",")
+                batch_min, batch_max = parts[0].split("_")
+                res_min, res_max = parts[1].split("_")
+
+                engine_span = tuple(int(p) for p in (batch_min, batch_max, res_min, res_max))
+
+                engine_paths[engine_span] = os.path.join(engine_type_dir, f)
 
         print("Possible paths", self.engine_paths)
 
-        for engine_type in self.ENGINE_TYPES:
-            for engine_span in self.ENGINE_SPANS:
-                self.load_engine(engine_type, engine_span)
+        for engine_type, engine_paths in self.engine_paths.items():
+            for engine_span, engine_path in engine_paths.items():
+                self.load_engine(engine_type, engine_span, engine_path)
 
         print(self.engines)
 
-    def load_engine(self, engine_type, engine_span: tuple):
+    def load_engine(self, engine_type, engine_span: tuple, engine_path):
         import tensorrt as trt
 
         try:
-            engine_path = self.engine_paths[engine_type][engine_span]
-
             if not os.path.exists(engine_path) or os.stat(engine_path).st_size == 0:
                 log.info(f"No {engine_type} TensorRT engine found for {engine_path}. Skipping this size..")
                 return
@@ -171,19 +184,28 @@ class TRTModel:
     def allocate_buffers(self, pipeline, device, dtype, batch_size, width, height):
         "Call this once before an image is generated, not per sample"
 
+        batch_step = (batch_size - 1) // BATCH_SPAN
+        min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+
         for engine_type in self.ENGINE_TYPES:
-            size = max(width, height) // 256
-            engine_span = (256 * size, 256 * (size + 1))
+            size = max(width, height) // SIZE_SPAN
+            engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
             if engine_span not in self.engines[engine_type]:
-                if size * 256 in (768, 1024, 1280):  # upper bound of loaded engines
+                if size * SIZE_SPAN in (768, 1024, 1280):  # upper bound of loaded engines
                     size -= 1  # pick the lower one
-                    engine_span = (256 * size, 256 * (size + 1))
+                    print("trying size", size)
+                    engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
+                    print("checking engine span", engine_span)
 
                 if engine_span not in self.engines[engine_type]:
                     log.warn(
-                        f"Did not find a {engine_type} TensorRT engine {engine_span}, for {width}x{height}. Using non-TRT rendering.."
+                        f"Did not find a {engine_type} TensorRT engine {engine_span}, for {width}x{height} and batch {batch_size}. Using non-TRT rendering.."
                     )
                     continue
+
+            log.info(
+                f"Using {engine_type} TensorRT engine to render {engine_span} for {width}x{height} and batch {batch_size}.."
+            )
 
             self._allocate_buffers(engine_type, pipeline, device, dtype, batch_size, width, height, engine_span)
 
@@ -244,15 +266,20 @@ class TRTModel:
     def _forward(self, engine_type, feed_dict):
         from polygraphy import cuda
 
-        # check if we have an engine for this sample, else use the non-trt forward
-        factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
         sample = feed_dict["sample"]
-        size = max(sample.shape[2], sample.shape[3]) * factor // 256
-        engine_span = (256 * size, 256 * (size + 1))
+
+        # check if we have an engine for this sample, else use the non-trt forward
+        batch_size = sample.shape[0]
+        batch_step = (batch_size - 1) // BATCH_SPAN
+        min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+
+        factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
+        size = max(sample.shape[2], sample.shape[3]) * factor // SIZE_SPAN
+        engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
         if engine_span not in self.engines[engine_type]:
-            if size * 256 in (768, 1024, 1280):  # upper bound of loaded engines
+            if size * SIZE_SPAN in (768, 1024, 1280):  # upper bound of loaded engines
                 size -= 1  # pick the lower one
-                engine_span = (256 * size, 256 * (size + 1))
+                engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
             # log.warn(
             #     f"Did not find a {engine_type} TensorRT engine for {size} {sample.shape}. Using non-TRT rendering.."
             # )
@@ -289,7 +316,9 @@ class TRTModel:
             trt_context.set_tensor_address(name, tensor.data_ptr())
 
         if not trt_context.execute_async_v3(stream_handle=stream.ptr):
-            log.warn(f"Error processing the {engine_type} TensorRT engine for {size}. Using non-TRT rendering..")
+            log.warn(
+                f"Error processing the {engine_type} TensorRT engine for {engine_span} batch {batch_size}. Using non-TRT rendering.."
+            )
             if engine_type == "unet":
                 sample = self.old_forward["unet"](
                     feed_dict["sample"], feed_dict["timestep"], feed_dict["encoder_hidden_states"], return_dict=False

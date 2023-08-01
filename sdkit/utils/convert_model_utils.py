@@ -5,8 +5,8 @@ import warnings
 
 from sdkit.utils import log
 
-BATCH_SIZE_RANGE = (1, 2)
-TRT_CONVERT_RANGES = [(768, 1024)]  # [(512, 768), (768, 1024), (1024, 1280)]
+# BATCH_SIZE_RANGE = (1, 2)
+# TRT_CONVERT_RANGES = [(768, 1024)]  # [(512, 768), (768, 1024), (1024, 1280)]
 
 
 def convert_pipeline_unet_to_onnx(pipeline, save_path, opset=17, device=None, fp16: bool = False):
@@ -186,8 +186,8 @@ def onnx_export(
     torch.onnx.export(model, model_args, output_path, **kwargs)
 
 
-def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir):
-    batch_size_min, batch_size_max = BATCH_SIZE_RANGE
+def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir, batch_size_range, dimensions_range):
+    batch_size_min, batch_size_max = batch_size_range
     unet_in_channels = pipeline.unet.config.in_channels
     num_tokens = pipeline.text_encoder.config.max_position_embeddings
     text_hidden_size = pipeline.text_encoder.config.hidden_size
@@ -212,11 +212,11 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir):
         }
         return min_shape, opt_shape, max_shape
 
-    _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, get_shapes, "unet")
+    _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, get_shapes, "unet", batch_size_range, dimensions_range)
 
 
-def convert_onnx_vae_to_tensorrt(pipeline, onnx_path, trt_out_dir):
-    batch_size_min, batch_size_max = BATCH_SIZE_RANGE
+def convert_onnx_vae_to_tensorrt(pipeline, onnx_path, trt_out_dir, batch_size_range, dimensions_range):
+    batch_size_min, batch_size_max = batch_size_range
     unet_in_channels = pipeline.unet.config.in_channels
 
     def get_shapes(min_size, max_size):
@@ -233,12 +233,13 @@ def convert_onnx_vae_to_tensorrt(pipeline, onnx_path, trt_out_dir):
         }
         return min_shape, opt_shape, max_shape
 
-    _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, get_shapes, "vae")
+    _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, get_shapes, "vae", batch_size_range, dimensions_range)
 
 
-def _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, shape_fn, name):
+def _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, shape_fn, name, batch_size_range, dimensions_range):
+    batch_size_min, batch_size_max = batch_size_range
     convert = False
-    for min_size, max_size in TRT_CONVERT_RANGES:
+    for min_size, max_size in dimensions_range:
         save_path = os.path.join(trt_out_dir, f"{min_size}_{max_size}.trt")
         if not os.path.exists(save_path) or os.stat(save_path).st_size == 0:
             convert = True
@@ -262,12 +263,14 @@ def _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, shape_fn, name):
     if not parse_success:
         raise RuntimeError("ONNX model parsing failed")
 
-    for min_size, max_size in TRT_CONVERT_RANGES:
-        save_path = os.path.join(trt_out_dir, f"{min_size}_{max_size}.trt")
+    for min_size, max_size in dimensions_range:
+        save_path = os.path.join(trt_out_dir, f"{batch_size_min}_{batch_size_max},{min_size}_{max_size}.trt")
         if os.path.exists(save_path) and os.stat(save_path).st_size > 0:
             continue
 
-        log.info(f"Making TRT engine for {name}, size range from {min_size}x{min_size} to {max_size}x{max_size}..")
+        log.info(
+            f"Making TRT engine for {name}, size range from {min_size}x{min_size} to {max_size}x{max_size}, batch size range: {batch_size_range}.."
+        )
         config = TRT_BUILDER.create_builder_config()
         profile = TRT_BUILDER.create_optimization_profile()
 
@@ -316,7 +319,9 @@ def convert_pipeline_to_onnx(pipeline, save_path, opset=17, device=None, fp16: b
     # convert_pipeline_vae_to_onnx(pipeline, vae_onnx, opset, device=device, fp16=fp16)
 
 
-def convert_pipeline_to_tensorrt(pipeline, trt_dir_path, opset=17, fp16: bool = False):
+def convert_pipeline_to_tensorrt(
+    pipeline, trt_dir_path, batch_size_range, dimensions_range, opset=17, fp16: bool = False
+):
     unet_path = os.path.join(trt_dir_path, "unet")
     # vae_path = os.path.join(trt_dir_path, "vae")
 
@@ -328,5 +333,5 @@ def convert_pipeline_to_tensorrt(pipeline, trt_dir_path, opset=17, fp16: bool = 
     unet_onnx = os.path.join(trt_dir_path, "unet", "model.onnx")
     # vae_onnx = os.path.join(trt_dir_path, "vae", "model.onnx")
 
-    convert_onnx_unet_to_tensorrt(pipeline, unet_onnx, unet_path)
-    # convert_onnx_vae_to_tensorrt(pipeline, vae_onnx, vae_path)
+    convert_onnx_unet_to_tensorrt(pipeline, unet_onnx, unet_path, batch_size_range, dimensions_range)
+    # convert_onnx_vae_to_tensorrt(pipeline, vae_onnx, vae_path, batch_size_range, dimensions_range)
