@@ -242,6 +242,7 @@ class TRTModel:
 
             log.info(f"Using {engine_type} TensorRT engine to render for {width}x{height} and batch {batch_size}..")
 
+            torch.cuda.set_device(device)
             try:
                 engine = self.load_engine(engine_type, engine_info)
             except Exception as e:
