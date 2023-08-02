@@ -239,7 +239,7 @@ def _convert_onnx_to_tensorrt(onnx_path, trt_out_dir, shape_fn, name, batch_size
     batch_size_min, batch_size_max = batch_size_range
     convert = False
     for min_size, max_size in dimensions_range:
-        save_path = os.path.join(trt_out_dir, f"{min_size}_{max_size}.trt")
+        save_path = os.path.join(trt_out_dir, f"{batch_size_min}_{batch_size_max},{min_size}_{max_size}.trt")
         if not os.path.exists(save_path) or os.stat(save_path).st_size == 0:
             convert = True
             break
