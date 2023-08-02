@@ -185,7 +185,6 @@ def onnx_export(
 
 def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir, batch_size_range, dimensions_range):
     batch_size_min, batch_size_max = batch_size_range
-    batch_size_max += 1
 
     unet_in_channels = pipeline.unet.config.in_channels
     num_tokens = pipeline.text_encoder.config.max_position_embeddings
@@ -216,7 +215,6 @@ def convert_onnx_unet_to_tensorrt(pipeline, onnx_path, trt_out_dir, batch_size_r
 
 def convert_onnx_vae_to_tensorrt(pipeline, onnx_path, trt_out_dir, batch_size_range, dimensions_range):
     batch_size_min, batch_size_max = batch_size_range
-    batch_size_max += 1
 
     unet_in_channels = pipeline.unet.config.in_channels
 
