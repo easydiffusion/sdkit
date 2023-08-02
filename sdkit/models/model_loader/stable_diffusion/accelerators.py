@@ -179,8 +179,9 @@ class TRTModel:
                 log.info(f"Reusing loaded {engine_type} TensorRT engine for {engine_path}")
                 return self.engines_for_forward[engine_type]
             else:
-                del curr_engine[0]
-                del curr_engine[1]
+                old_engine, old_context, _ = curr_engine
+                del old_engine
+                del old_context
 
         log.info(f"Loading {engine_type} TensorRT engine from {engine_path}")
 
