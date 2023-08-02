@@ -5,9 +5,6 @@ import warnings
 
 from sdkit.utils import log
 
-# BATCH_SIZE_RANGE = (1, 2)
-# TRT_CONVERT_RANGES = [(768, 1024)]  # [(512, 768), (768, 1024), (1024, 1280)]
-
 
 def convert_pipeline_unet_to_onnx(pipeline, save_path, opset=17, device=None, fp16: bool = False):
     if os.path.exists(save_path) and os.stat(save_path).st_size > 0:

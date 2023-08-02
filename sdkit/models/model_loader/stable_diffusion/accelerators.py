@@ -145,14 +145,17 @@ class TRTModel:
                 if not f.endswith(".trt") or len(f.split(",")) != 2:
                     continue
 
-                info = os.path.splitext(f)[0]
-                parts = info.split(",")
-                batch_min, batch_max = parts[0].split("_")
-                res_min, res_max = parts[1].split("_")
+                try:
+                    info = os.path.splitext(f)[0]
+                    parts = info.split(",")
+                    batch_min, batch_max = parts[0].split("_")
+                    res_min, res_max = parts[1].split("_")
 
-                engine_span = tuple(int(p) for p in (batch_min, batch_max, res_min, res_max))
+                    engine_span = tuple(int(p) for p in (batch_min, batch_max, res_min, res_max))
 
-                engine_paths[engine_span] = os.path.join(engine_type_dir, f)
+                    engine_paths[engine_span] = os.path.join(engine_type_dir, f)
+                except Exception as e:
+                    traceback.print_exc()
 
         print("Possible paths", self.engine_paths)
 
@@ -184,28 +187,16 @@ class TRTModel:
     def allocate_buffers(self, pipeline, device, dtype, batch_size, width, height):
         "Call this once before an image is generated, not per sample"
 
-        # batch_step = (batch_size - 1) // BATCH_SPAN
-        # min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
-        min_batch, max_batch = batch_size, batch_size
-
         for engine_type in self.ENGINE_TYPES:
-            size = max(width, height) // SIZE_SPAN
-            engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
-            if engine_span not in self.engines[engine_type]:
-                if size * SIZE_SPAN in (768, 1024, 1280):  # upper bound of loaded engines
-                    size -= 1  # pick the lower one
-                    print("trying size", size)
-                    engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
-                    print("checking engine span", engine_span)
-
-                if engine_span not in self.engines[engine_type]:
-                    log.warn(
-                        f"Did not find a {engine_type} TensorRT engine {engine_span}, for {width}x{height} and batch {batch_size}. Using non-TRT rendering.."
-                    )
-                    continue
+            engine, engine_span = self.get_engine_for_request(engine_type, batch_size, width, height)
+            if not engine:
+                log.warn(
+                    f"Did not find a {engine_type} TensorRT engine {engine_span} for {width}x{height} and batch {batch_size}. Using non-TRT rendering.."
+                )
+                continue
 
             log.info(
-                f"Using {engine_type} TensorRT engine to render {engine_span} for {width}x{height} and batch {batch_size}.."
+                f"Using {engine_type} TensorRT engine {engine_span} to render for {width}x{height} and batch {batch_size}.."
             )
 
             self._allocate_buffers(engine_type, pipeline, device, dtype, batch_size, width, height, engine_span)
@@ -248,6 +239,7 @@ class TRTModel:
             if engine.binding_is_input(binding):
                 trt_context.set_binding_shape(i, shape)
 
+            log.info(f"Bound: {binding} with {shape} {dtype} on {device}")
             tensors[binding] = torch.empty(tuple(shape), dtype=dtype, device=device)
 
     def forward_unet(self, sample, timestep, encoder_hidden_states, **kwargs):
@@ -264,46 +256,65 @@ class TRTModel:
         }
         return self._forward("vae", feed_dict)
 
+    def get_engine_for_request(self, engine_type, batch_size, width, height) -> tuple:
+        "Returns a tuple (engine, engine_trt_context)"
+
+        # batch_step = (batch_size - 1) // BATCH_SPAN
+        # min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
+        min_batch, max_batch = batch_size, batch_size
+
+        size = max(width, height) // SIZE_SPAN
+        engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
+
+        if engine_span not in self.engines[engine_type]:
+            if size * SIZE_SPAN in (768, 1024, 1280):  # upper bound of loaded engines
+                size -= 1  # pick the lower one
+                engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
+            if engine_span not in self.engines[engine_type]:
+                log.warn(
+                    f"Did not find a {engine_type} TensorRT engine for {engine_span}. Input: {width}x{height}, batch: {batch_size}.."
+                )
+                return None, engine_span
+
+        return self.engines[engine_type][engine_span], engine_span
+
     def _forward(self, engine_type, feed_dict):
         from polygraphy import cuda
 
         sample = feed_dict["sample"]
 
         # check if we have an engine for this sample, else use the non-trt forward
-        batch_size = sample.shape[0]
-        # batch_step = (batch_size - 1) // BATCH_SPAN
-        # min_batch, max_batch = batch_step * BATCH_SPAN + 1, (batch_step + 1) * BATCH_SPAN + 1
-        min_batch, max_batch = batch_size, batch_size
-
         factor = 8 if engine_type == "unet" else self.pipeline.vae_scale_factor
-        size = max(sample.shape[2], sample.shape[3]) * factor // SIZE_SPAN
-        engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
-        if engine_span not in self.engines[engine_type]:
-            if size * SIZE_SPAN in (768, 1024, 1280):  # upper bound of loaded engines
-                size -= 1  # pick the lower one
-                engine_span = (min_batch, max_batch, SIZE_SPAN * size, SIZE_SPAN * (size + 1))
-            # log.warn(
-            #     f"Did not find a {engine_type} TensorRT engine for {size} {sample.shape}. Using non-TRT rendering.."
-            # )
-            if engine_span not in self.engines[engine_type]:
-                if engine_type == "unet":
-                    return self.old_forward["unet"](
-                        feed_dict["sample"],
-                        feed_dict["timestep"],
-                        feed_dict["encoder_hidden_states"],
-                        return_dict=False,
-                    )
-                elif engine_type == "vae":
-                    return self.old_forward["vae"](feed_dict["sample"])
+
+        batch_size = int(sample.shape[0] / 2)
+        width = sample.shape[3] * factor
+        height = sample.shape[2] * factor
+
+        engine, engine_span = self.get_engine_for_request(engine_type, batch_size, width, height)
+        if not engine:
+            log.warn(
+                f"Did not find a {engine_type} TensorRT engine {engine_span} for input: {width}x{height}, batch: {batch_size}. Using non-TRT rendering.."
+            )
+            if engine_type == "unet":
+                return self.old_forward["unet"](
+                    feed_dict["sample"],
+                    feed_dict["timestep"],
+                    feed_dict["encoder_hidden_states"],
+                    return_dict=False,
+                )
+            elif engine_type == "vae":
+                return self.old_forward["vae"](feed_dict["sample"])
 
         orig_dtype = sample.dtype
         target_dtype = torch.float32
 
         tensors = self.tensors[engine_type]
-        trt_context = self.engines[engine_type][engine_span][1]
+        trt_context = engine[1]
 
         if not trt_context:
-            log.warn(f"No valid TensorRT engine found for {engine_type} at {engine_span}!")
+            log.warn(
+                f"No valid TensorRT engine {engine_span} found for {engine_type} for input: {width}x{height}, batch: {batch_size}!"
+            )
 
         stream = cuda.Stream()
 
@@ -319,7 +330,7 @@ class TRTModel:
 
         if not trt_context.execute_async_v3(stream_handle=stream.ptr):
             log.warn(
-                f"Error processing the {engine_type} TensorRT engine for {engine_span} batch {batch_size}. Using non-TRT rendering.."
+                f"Error processing the {engine_type} TensorRT engine {engine_span} for input: {width}x{height}, batch: {batch_size}. Using non-TRT rendering.."
             )
             if engine_type == "unet":
                 sample = self.old_forward["unet"](
