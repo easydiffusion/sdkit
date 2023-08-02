@@ -293,6 +293,7 @@ def load_diffusers_model(
         "params": {
             "clip_skip": clip_skip,
             "convert_to_tensorrt": convert_to_tensorrt,
+            "trt_build_config": trt_build_config,
         },
     }
 

@@ -177,7 +177,7 @@ class TRTModel:
         if curr_engine:
             if curr_engine[2] == engine_path:
                 log.info(f"Reusing loaded {engine_type} TensorRT engine for {engine_path}")
-                return
+                return self.engines_for_forward[engine_type]
             else:
                 del curr_engine[0]
                 del curr_engine[1]
@@ -236,6 +236,7 @@ class TRTModel:
                 log.warn(
                     f"Did not find a {engine_type} TensorRT engine for {width}x{height} and batch {batch_size}. Using non-TRT rendering.."
                 )
+                self.engines_for_forward[engine_type] = None
                 continue
 
             log.info(f"Using {engine_type} TensorRT engine to render for {width}x{height} and batch {batch_size}..")
