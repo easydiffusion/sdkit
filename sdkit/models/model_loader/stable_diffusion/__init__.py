@@ -313,6 +313,10 @@ def load_diffusers_model(
     else:
         pipe_img2img = StableDiffusionImg2ImgPipeline(**default_pipe.components)
 
+    if is_sd_xl:
+        # until the image artifacts go away: https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9/discussions/31
+        pipe_img2img.watermark = None
+
     # inpainting
     if isinstance(default_pipe, (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline)):
         pipe_inpainting = StableDiffusionXLInpaintPipeline(**default_pipe.components)
