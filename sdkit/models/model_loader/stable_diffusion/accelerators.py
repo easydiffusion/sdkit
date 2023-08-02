@@ -129,8 +129,7 @@ class TRTModel:
             "vae": pipeline.vae.decoder.forward,
         }
 
-        self.engine_paths = {}
-        self.engines = {}
+        self.available_engines = {}
         self.tensors = {engine_type: {} for engine_type in self.ENGINE_TYPES}
         self.engines_for_forward = {engine_type: None for engine_type in self.ENGINE_TYPES}
 
@@ -138,11 +137,12 @@ class TRTModel:
         trt.init_libnvinfer_plugins(None, "")
 
         for engine_type in self.ENGINE_TYPES:
-            engine_paths = self.engine_paths[engine_type] = {}
+            engine_infos = self.available_engines[engine_type] = []
             engine_type_dir = os.path.join(trt_dir, engine_type)
 
             for f in os.listdir(engine_type_dir):
-                if not f.endswith(".trt") or len(f.split(",")) != 2:
+                engine_path = os.path.join(engine_type_dir, f)
+                if not f.endswith(".trt") or len(f.split(",")) != 2 or os.stat(engine_path).st_size == 0:
                     continue
 
                 try:
@@ -151,128 +151,52 @@ class TRTModel:
                     batch_min, batch_max = parts[0].split("_")
                     res_min, res_max = parts[1].split("_")
 
-                    engine_span = tuple(int(p) for p in (batch_min, batch_max, res_min, res_max))
+                    batch_min, batch_max, res_min, res_max = tuple(
+                        int(p) for p in (batch_min, batch_max, res_min, res_max)
+                    )
 
-                    engine_paths[engine_span] = os.path.join(engine_type_dir, f)
-                except Exception as e:
-                    traceback.print_exc()
-
-        print("Possible paths", self.engine_paths)
-
-        for engine_type, engine_paths in self.engine_paths.items():
-            for engine_span, engine_path in engine_paths.items():
-                self.load_engine(engine_type, engine_span, engine_path)
-
-        print(self.engines)
-
-    def load_engine(self, engine_type, engine_span: tuple, engine_path):
-        import tensorrt as trt
-
-        batch_min, batch_max, res_min, res_max = engine_span
-
-        try:
-            if not os.path.exists(engine_path) or os.stat(engine_path).st_size == 0:
-                log.info(f"No {engine_type} TensorRT engine found for {engine_path}. Skipping this size..")
-                return
-
-            log.info(f"Loading {engine_type} TensorRT engine from {engine_path}")
-
-            with open(engine_path, "rb") as f, trt.Runtime(self.TRT_LOGGER) as runtime:
-                engine = runtime.deserialize_cuda_engine(f.read())
-                trt_context = engine.create_execution_context()
-                if engine_type not in self.engines:
-                    self.engines[engine_type] = []
-                self.engines[engine_type].append(
-                    {
+                    engine_info = {
                         "batch_min": batch_min,
                         "batch_max": batch_max,
                         "res_min": res_min,
                         "res_max": res_max,
-                        "engine": engine,
-                        "trt_context": trt_context,
+                        "engine_path": engine_path,
                     }
-                )
-        except:
-            traceback.print_exc()
 
-    def allocate_buffers(self, pipeline, device, dtype, batch_size, width, height):
-        "Call this once before an image is generated, not per sample"
+                    engine_infos.append(engine_info)
+                except Exception as e:
+                    traceback.print_exc()
 
-        self.engines_for_forward = {engine_type: None for engine_type in self.ENGINE_TYPES}
+        print("Available engines", self.available_engines)
 
-        for engine_type in self.ENGINE_TYPES:
-            engine = self.get_engine_for_request(engine_type, batch_size, width, height)
-            if not engine or not engine.get("engine"):
-                log.warn(
-                    f"Did not find a {engine_type} TensorRT engine for {width}x{height} and batch {batch_size}. Using non-TRT rendering.."
-                )
-                continue
+    def load_engine(self, engine_type, engine_info):
+        import tensorrt as trt
 
-            log.info(f"Using {engine_type} TensorRT engine to render for {width}x{height} and batch {batch_size}..")
-
-            self._allocate_buffers(engine_type, pipeline, device, dtype, batch_size, width, height, engine)
-
-    def _allocate_buffers(self, engine_type, pipeline, device, dtype, batch_size, width, height, engine):
-        tensors = self.tensors[engine_type]
-        tensors.clear()
-
-        dtype = torch.float32  # HACK: but TRT generates black images otherwise
-
-        if engine_type == "unet":
-            unet_in_channels = pipeline.unet.config.in_channels
-            num_tokens = pipeline.text_encoder.config.max_position_embeddings
-            text_hidden_size = pipeline.text_encoder.config.hidden_size
-
-            shape_dict = {
-                "sample": (batch_size * 2, unet_in_channels, height // 8, width // 8),
-                "encoder_hidden_states": (batch_size * 2, num_tokens, text_hidden_size),
-                "timestep": (batch_size * 2,),
-            }
-        elif engine_type == "vae":
-            num_channels_latents = pipeline.unet.config.in_channels
-            vae_scale_factor = pipeline.vae_scale_factor
-
-            shape_dict = {
-                "sample": (batch_size * 2, num_channels_latents, height // vae_scale_factor, width // vae_scale_factor),
-            }
-
-        self.engines_for_forward[engine_type] = engine
-        engine, trt_context = engine["engine"], engine["trt_context"]
-
-        for i, binding in enumerate(engine):
-            if binding in shape_dict:
-                shape = shape_dict[binding]
+        engine_path = engine_info["engine_path"]
+        curr_engine = self.engines_for_forward[engine_type]
+        if curr_engine:
+            if curr_engine[2] == engine_path:
+                log.info(f"Reusing loaded {engine_type} TensorRT engine for {engine_path}")
+                return
             else:
-                shape = engine.get_binding_shape(binding)
+                del curr_engine[0]
+                del curr_engine[1]
 
-            if binding == "out_sample":
-                shape = shape_dict["sample"]
+        log.info(f"Loading {engine_type} TensorRT engine from {engine_path}")
 
-            if engine.binding_is_input(binding):
-                trt_context.set_binding_shape(i, shape)
+        with open(engine_path, "rb") as f, trt.Runtime(self.TRT_LOGGER) as runtime:
+            engine = runtime.deserialize_cuda_engine(f.read())
+            trt_context = engine.create_execution_context()
 
-            log.info(f"Bound: {binding} with {shape} {dtype} on {device}")
-            tensors[binding] = torch.empty(tuple(shape), dtype=dtype, device=device)
+            self.engines_for_forward[engine_type] = (engine, trt_context, engine_path)
 
-    def forward_unet(self, sample, timestep, encoder_hidden_states, **kwargs):
-        feed_dict = {
-            "sample": sample,
-            "timestep": timestep,
-            "encoder_hidden_states": encoder_hidden_states,
-        }
-        return self._forward("unet", feed_dict)
+        return self.engines_for_forward[engine_type]
 
-    def forward_vae(self, sample, **kwargs):
-        feed_dict = {
-            "sample": sample,
-        }
-        return self._forward("vae", feed_dict)
-
-    def get_engine_for_request(self, engine_type, batch_size, width, height) -> tuple:
+    def get_engine_info_for_request(self, engine_type, batch_size, width, height) -> tuple:
         "Returns a tuple (engine, engine_trt_context)"
 
         possible_engines = []
-        for engine_info in self.engines[engine_type]:
+        for engine_info in self.available_engines[engine_type]:
             batch_min, batch_max = engine_info["batch_min"], engine_info["batch_max"]
             res_min, res_max = engine_info["res_min"], engine_info["res_max"]
             size = max(width, height)
@@ -303,6 +227,84 @@ class TRTModel:
 
         return engine
 
+    def allocate_buffers(self, pipeline, device, dtype, batch_size, width, height):
+        "Call this once before an image is generated, not per sample"
+
+        for engine_type in self.ENGINE_TYPES:
+            engine_info = self.get_engine_info_for_request(engine_type, batch_size, width, height)
+            if not engine_info:
+                log.warn(
+                    f"Did not find a {engine_type} TensorRT engine for {width}x{height} and batch {batch_size}. Using non-TRT rendering.."
+                )
+                continue
+
+            log.info(f"Using {engine_type} TensorRT engine to render for {width}x{height} and batch {batch_size}..")
+
+            try:
+                engine = self.load_engine(engine_type, engine_info)
+            except Exception as e:
+                log.warn(f"Error while loading {engine_type} TensorRT engine: {engine_info}: {e}")
+                traceback.print_exc()
+                self.engines_for_forward[engine_type] = None
+                continue
+
+            self._allocate_buffers(engine_type, pipeline, device, dtype, batch_size, width, height, engine)
+
+    def _allocate_buffers(self, engine_type, pipeline, device, dtype, batch_size, width, height, engine):
+        tensors = self.tensors[engine_type]
+        tensors.clear()
+
+        dtype = torch.float32  # HACK: but TRT generates black images otherwise
+
+        if engine_type == "unet":
+            unet_in_channels = pipeline.unet.config.in_channels
+            num_tokens = pipeline.text_encoder.config.max_position_embeddings
+            text_hidden_size = pipeline.text_encoder.config.hidden_size
+
+            shape_dict = {
+                "sample": (batch_size * 2, unet_in_channels, height // 8, width // 8),
+                "encoder_hidden_states": (batch_size * 2, num_tokens, text_hidden_size),
+                "timestep": (batch_size * 2,),
+            }
+        elif engine_type == "vae":
+            num_channels_latents = pipeline.unet.config.in_channels
+            vae_scale_factor = pipeline.vae_scale_factor
+
+            shape_dict = {
+                "sample": (batch_size * 2, num_channels_latents, height // vae_scale_factor, width // vae_scale_factor),
+            }
+
+        engine, trt_context, _ = engine
+
+        for i, binding in enumerate(engine):
+            if binding in shape_dict:
+                shape = shape_dict[binding]
+            else:
+                shape = engine.get_binding_shape(binding)
+
+            if binding == "out_sample":
+                shape = shape_dict["sample"]
+
+            if engine.binding_is_input(binding):
+                trt_context.set_binding_shape(i, shape)
+
+            log.info(f"Bound: {binding} with {shape} {dtype} on {device}")
+            tensors[binding] = torch.empty(tuple(shape), dtype=dtype, device=device)
+
+    def forward_unet(self, sample, timestep, encoder_hidden_states, **kwargs):
+        feed_dict = {
+            "sample": sample,
+            "timestep": timestep,
+            "encoder_hidden_states": encoder_hidden_states,
+        }
+        return self._forward("unet", feed_dict)
+
+    def forward_vae(self, sample, **kwargs):
+        feed_dict = {
+            "sample": sample,
+        }
+        return self._forward("vae", feed_dict)
+
     def _forward(self, engine_type, feed_dict):
         from polygraphy import cuda
 
@@ -316,9 +318,9 @@ class TRTModel:
         height = sample.shape[2] * factor
 
         engine = self.engines_for_forward[engine_type]
-        if not engine or not engine.get("engine"):
+        if not engine:
             log.warn(
-                f"Did not find a {engine_type} TensorRT engine {engine} for input: {width}x{height}, batch: {batch_size}. Using non-TRT rendering.."
+                f"Did not find a {engine_type} TensorRT engine for input: {width}x{height}, batch: {batch_size}. Using non-TRT rendering.."
             )
             if engine_type == "unet":
                 return self.old_forward["unet"](
@@ -334,11 +336,11 @@ class TRTModel:
         target_dtype = torch.float32
 
         tensors = self.tensors[engine_type]
-        trt_context = engine["trt_context"]
+        engine, trt_context, engine_path = engine
 
         if not trt_context:
             log.warn(
-                f"No valid TensorRT engine {engine} found for {engine_type} for input: {width}x{height}, batch: {batch_size}!"
+                f"No valid {engine_type} TensorRT engine {engine_path} found for input: {width}x{height}, batch: {batch_size}!"
             )
 
         stream = cuda.Stream()
@@ -355,7 +357,7 @@ class TRTModel:
 
         if not trt_context.execute_async_v3(stream_handle=stream.ptr):
             log.warn(
-                f"Error processing the {engine_type} TensorRT engine {engine} for input: {width}x{height}, batch: {batch_size}. Using non-TRT rendering.."
+                f"Error processing the {engine_type} TensorRT engine {engine_path} for input: {width}x{height}, batch: {batch_size}. Using non-TRT rendering.."
             )
             if engine_type == "unet":
                 sample = self.old_forward["unet"](
