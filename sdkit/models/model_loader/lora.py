@@ -139,7 +139,7 @@ def apply_lora_model(context, alphas):
             raise RuntimeError(f"{len(loras)} != {len(alphas)}")
 
         for lora, alpha in zip(loras, alphas):
-            if alpha < 0.0001:  # alpha is too small, not applying
+            if abs(alpha) < 0.0001:  # alpha is too small, not applying
                 continue
             for block in lora.values():
                 block.apply(alpha)
