@@ -278,6 +278,11 @@ def make_with_diffusers(
     else:
         controlnet = context.models["controlnet"]
 
+        sd_config = model["config"]
+        context_dim = sd_config.model.params.get("unet_config", {}).get("params", {}).get("context_dim", None)
+        if is_sd_xl:
+            context_dim = 2048
+
         if isinstance(control_image, list):
             assert isinstance(controlnet, list)
             assert len(control_image) == len(controlnet)
@@ -285,10 +290,14 @@ def make_with_diffusers(
             control_alpha = control_alpha if isinstance(control_alpha, list) else [1.0] * len(control_image)
             assert len(control_alpha) == len(control_image)
 
+            for cn in controlnet:
+                assert_controlnet_model(cn, context_dim)
+
             cmd["controlnet_conditioning_scale"] = control_alpha
             control_image = [get_image(img) for img in control_image]
         else:
             control_image = get_image(control_image)
+            assert_controlnet_model(controlnet, context_dim)
 
         if operation_to_apply == "txt2img":
             cmd["image"] = control_image
@@ -447,6 +456,19 @@ def make_with_diffusers(
         images = blend_mask(images, init_image, init_image_mask, width, height)
 
     return images
+
+
+def assert_controlnet_model(controlnet, sd_context_dim):
+    cn_dim = controlnet.mid_block.attentions[0].transformer_blocks[0].attn2.to_k.weight.shape[1]
+    if cn_dim != sd_context_dim:
+        raise RuntimeError(
+            f"Sorry, you're trying to use a {get_sd_type_from_dim(cn_dim)} controlnet model with a {get_sd_type_from_dim(sd_context_dim)} Stable Diffusion model. They're not compatible, please use a compatible model!"
+        )
+
+
+def get_sd_type_from_dim(dim: int) -> str:
+    dims = {768: "SD 1", 1024: "SD 2", 2048: "SDXL"}
+    return dims.get(dim, "Unknown")
 
 
 def blend_mask(images, init_image, init_image_mask, width, height):
