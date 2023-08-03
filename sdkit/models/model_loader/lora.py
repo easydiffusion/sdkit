@@ -78,11 +78,12 @@ def load_lora(pipe, lora, sd_config):
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
 
-    lora_dim = lora["text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down"].shape[1]
-    if lora_dim != context_dim:
-        raise RuntimeError(
-            f"Sorry, you're trying to use a {get_sd_type_from_dim(lora_dim)} LoRA model with a {get_sd_type_from_dim(context_dim)} Stable Diffusion model. They're not compatible, please use a compatible model!"
-        )
+    if "text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down" in lora:  # check for SD compatibility
+        lora_dim = lora["text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down"].shape[1]
+        if lora_dim != context_dim:
+            raise RuntimeError(
+                f"Sorry, you're trying to use a {get_sd_type_from_dim(lora_dim)} LoRA model with a {get_sd_type_from_dim(context_dim)} Stable Diffusion model. They're not compatible, please use a compatible model!"
+            )
 
     is_lycoris = any("lora.mid" in key for key in lora.keys())
 
