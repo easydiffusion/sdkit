@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 @dataclass
 class LoraBlock:
+    block_name: str
     module: nn.Module = None
     up: torch.Tensor = None
     down: torch.Tensor = None
@@ -21,25 +22,29 @@ class LoraBlock:
         return self.up.shape[1]
 
     def apply(self, alpha):
-        weight = self._get_weight()
+        try:
+            weight = self._get_weight()
 
-        # mix of ideas from diffusers and automatic1111
-        up = self.up.to(weight.device, dtype=torch.float32)
-        down = self.down.to(weight.device, dtype=torch.float32)
-        rank = up.shape[1]
+            # mix of ideas from diffusers and automatic1111
+            up = self.up.to(weight.device, dtype=torch.float32)
+            down = self.down.to(weight.device, dtype=torch.float32)
+            rank = up.shape[1]
 
-        if up.shape[2:] == (1, 1) and down.shape[2:] == (1, 1):
-            up = up.squeeze(2).squeeze(2)
-            down = down.squeeze(2).squeeze(2)
-            y = torch.mm(up, down).unsqueeze(2).unsqueeze(3)
-        elif up.shape[2:] == (3, 3) or down.shape[2:] == (3, 3):
-            y = torch.nn.functional.conv2d(down.permute(1, 0, 2, 3), up).permute(1, 0, 2, 3)
-        else:
-            y = torch.mm(up, down)
+            if up.shape[2:] == (1, 1) and down.shape[2:] == (1, 1):
+                up = up.squeeze(2).squeeze(2)
+                down = down.squeeze(2).squeeze(2)
+                y = torch.mm(up, down).unsqueeze(2).unsqueeze(3)
+            elif up.shape[2:] == (3, 3) or down.shape[2:] == (3, 3):
+                y = torch.nn.functional.conv2d(down.permute(1, 0, 2, 3), up).permute(1, 0, 2, 3)
+            else:
+                y = torch.mm(up, down)
 
-        y *= self.alpha * alpha / rank
+            y *= self.alpha * alpha / rank
 
-        weight.data += y
+            weight.data += y
+        except Exception as e:
+            log.error(f"Unable to apply {alpha} to {self.block_name}")
+            raise e
 
         return y
 
@@ -57,16 +62,27 @@ def load_model(context: Context, **kwargs):
     lora_model_paths = lora_model_path if isinstance(lora_model_path, list) else [lora_model_path]
 
     pipe = context.models["stable-diffusion"]["default"]
+    sd_config = context.models["stable-diffusion"]["config"]
 
     loras = [load_tensor_file(path) for path in lora_model_paths]
-    loras = [load_lora(pipe, lora) for lora in loras]
+    loras = [load_lora(pipe, lora, sd_config) for lora in loras]
 
     return loras
 
 
-def load_lora(pipe, lora):
+def load_lora(pipe, lora, sd_config):
+    context_dim = sd_config.model.params.get("unet_config", {}).get("params", {}).get("context_dim", None)
+    if sd_config.model.params.get("network_config", {}).get("params", {}).get("context_dim", None):
+        context_dim = 2048
+
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
+
+    lora_dim = lora["text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down"].shape[1]
+    if lora_dim != context_dim:
+        raise RuntimeError(
+            f"Sorry, you're trying to use a {get_sd_type_from_dim(lora_dim)} LoRA model with a {get_sd_type_from_dim(context_dim)} Stable Diffusion model. They're not compatible, please use a compatible model!"
+        )
 
     is_lycoris = any("lora.mid" in key for key in lora.keys())
 
@@ -75,7 +91,7 @@ def load_lora(pipe, lora):
         if block_name in lora_blocks:
             block = lora_blocks[block_name]
         else:
-            block = LoraBlock()
+            block = LoraBlock(block_name)
 
             try:
                 block.module = get_nested_attr(pipe, block_name)
@@ -122,11 +138,13 @@ def apply_lora_model(context, alphas):
             raise RuntimeError(f"{len(loras)} != {len(alphas)}")
 
         for lora, alpha in zip(loras, alphas):
+            if alpha < 0.0001:  # alpha is too small, not applying
+                continue
             for block in lora.values():
                 block.apply(alpha)
-    except:
+    except Exception as e:
         log.error(traceback.format_exc())
-        log.error("Could not apply LoRA!")
+        raise e
 
 
 def _name(key):
@@ -164,3 +182,8 @@ def _name(key):
         diffusers_name = diffusers_name.replace("v.proj", "v_proj")
         diffusers_name = diffusers_name.replace("out.proj", "out_proj")
     return diffusers_name
+
+
+def get_sd_type_from_dim(dim: int) -> str:
+    dims = {768: "SD 1", 1024: "SD 2", 2048: "SDXL"}
+    return dims.get(dim, "Unknown")

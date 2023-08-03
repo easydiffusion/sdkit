@@ -236,6 +236,10 @@ def make_with_diffusers(
         default_pipe,
         (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, StableDiffusionXLInpaintPipeline),
     )
+    sd_config = model["config"]
+    context_dim = sd_config.model.params.get("unet_config", {}).get("params", {}).get("context_dim", None)
+    if is_sd_xl:
+        context_dim = 2048
 
     cmd = {
         "guidance_scale": guidance_scale,
@@ -277,11 +281,6 @@ def make_with_diffusers(
         operation_to_apply = model[operation_to_apply]
     else:
         controlnet = context.models["controlnet"]
-
-        sd_config = model["config"]
-        context_dim = sd_config.model.params.get("unet_config", {}).get("params", {}).get("context_dim", None)
-        if is_sd_xl:
-            context_dim = 2048
 
         if isinstance(control_image, list):
             assert isinstance(controlnet, list)

@@ -2,6 +2,7 @@ from sdkit import Context
 from sdkit.utils import gc, log
 
 import importlib
+import traceback
 
 
 class Loader:
@@ -47,11 +48,18 @@ def load_model(context: Context, model_type: str, **kwargs):
 
     # reload dependent models
     if model_type == "stable-diffusion":
-        load_model(context, "vae")
-        load_model(context, "hypernetwork")
-        if "lora" in context.models and hasattr(context, "_last_lora_alpha"):
-            del context._last_lora_alpha
-        load_model(context, "lora")
+        for m in ("vae", "hypernetwork", "lora"):
+            try:
+                if m == "lora" and "lora" in context.models and hasattr(context, "_last_lora_alpha"):
+                    del context._last_lora_alpha
+                load_model(context, m)
+            except Exception as e:
+                log.error(f"Could not load dependent model: {m}")
+                traceback.print_exc()
+                if m in context.models:
+                    del context.models[m]
+
+                gc(context)
 
 
 def unload_model(context: Context, model_type: str, **kwargs):
