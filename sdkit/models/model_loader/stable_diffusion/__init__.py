@@ -253,7 +253,7 @@ def load_diffusers_model(
     # make the compel prompt parser object
     textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
     if is_sd_xl:
-        skip = Skip.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED if clip_skip else Skip.LAST_HIDDEN_STATES_NORMALIZED
+        skip = Skip.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED 
         compel = Compel(
             tokenizer=[default_pipe.tokenizer, default_pipe.tokenizer_2],
             text_encoder=[default_pipe.text_encoder, default_pipe.text_encoder_2],
