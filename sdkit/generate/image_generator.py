@@ -513,7 +513,13 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
             continue
         log.info(f"### Load: embedding {filename} ###")
 
-        embedding = load_tensor_file(filename)
+        try:
+            embedding = load_tensor_file(filename)
+        except Exception as e:
+            log.error("Error loading tensor file")
+            log.error(traceback.format_exc())
+            raise RuntimeError(f"Embedding {filename} can't be loaded: {str(e)}")
+
         dump_embedding_info(embedding)
 
         model_dim = default_pipe.text_encoder.get_input_embeddings().weight.data[0].shape[0]
@@ -534,15 +540,16 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
             log.info(f"Embedding {filename} has an unknown internal structure. Trying to load it anyways.")
 
         if skip_embedding:
-            log.info(
-                f"Skipping embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa."
+            raise RuntimeError(
+                f"Version mismatch: Failed to load embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa."
             )
         else:
             try:
                 default_pipe.load_textual_inversion(filename, embeds_name)
-            except:
-                log.error(f"Embedding {filename} can't be loaded. Proceeding without it!")
+            except Exception as e:
+                log.error(f"Embedding {filename} can't be loaded: {str(e)}")
                 log.error(traceback.format_exc())
+                raise RuntimeError(f"Embedding {filename} can't be loaded: {str(e)}")
             else:
                 context._loaded_embeddings.add(embeds_name)
 
