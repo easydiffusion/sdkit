@@ -1,8 +1,9 @@
 from sdkit import Context
-from sdkit.models import load_model
 
 
 def make_sd_context(model_path: str = "models/stable-diffusion/sd-v1-4.ckpt"):
+    from sdkit.models import load_model
+
     context = Context()
     context.test_diffusers = True
     context.model_paths["stable-diffusion"] = model_path
