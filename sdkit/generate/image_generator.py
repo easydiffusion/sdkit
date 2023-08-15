@@ -3,7 +3,7 @@ from contextlib import nullcontext
 import torch
 from pytorch_lightning import seed_everything
 from tqdm import trange
-from typing import Optional, List, Union
+from typing import Any, Optional, List, Union
 from PIL import Image
 
 from sdkit import Context
@@ -217,6 +217,7 @@ def make_with_diffusers(
         StableDiffusionXLInpaintPipeline,
         StableDiffusionXLControlNetPipeline,
     )
+    from diffusers.models.lora import LoRACompatibleConv
 
     from sdkit.models.model_loader.lora import apply_lora_model
     from sdkit.generate.sampler import diffusers_samplers
@@ -394,6 +395,9 @@ def make_with_diffusers(
                 conv_layers.append(module)
 
     for cl in conv_layers:
+        if isinstance(cl, LoRACompatibleConv) and cl.lora_layer is None:
+            cl.lora_layer = lambda *x: 0
+
         cl._conv_forward = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
 
     # --------------------------------------------------------------------------------------------------
