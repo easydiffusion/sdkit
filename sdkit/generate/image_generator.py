@@ -504,54 +504,67 @@ def load_embeddings(context, prompt, negative_prompt, default_pipe):
 
     log.info("Applying Embeddings...")
 
-    for filename in pt_files + bin_files + st_files:
-        skip_embedding = False
-        embeds_name = get_embedding_token(filename.name).lower()
-        if (
-            embeds_name not in prompt and embeds_name not in negative_prompt
-        ) or embeds_name in context._loaded_embeddings:
-            continue
-        log.info(f"### Load: embedding {filename} ###")
+    te = default_pipe.text_encoder
+    is_cpu_offloaded = hasattr(te, "_hf_hook")
+    if is_cpu_offloaded:
+        from accelerate.hooks import remove_hook_from_module
 
-        try:
-            embedding = load_tensor_file(filename)
-        except Exception as e:
-            log.error("Error loading tensor file")
-            log.error(traceback.format_exc())
-            raise RuntimeError(f"Embedding {filename} can't be loaded: {str(e)}")
+        remove_hook_from_module(te, recurse=True)
 
-        dump_embedding_info(embedding)
+    try:
+        for filename in pt_files + bin_files + st_files:
+            skip_embedding = False
+            embeds_name = get_embedding_token(filename.name).lower()
+            if (
+                embeds_name not in prompt and embeds_name not in negative_prompt
+            ) or embeds_name in context._loaded_embeddings:
+                continue
+            log.info(f"### Load: embedding {filename} ###")
 
-        model_dim = default_pipe.text_encoder.get_input_embeddings().weight.data[0].shape[0]
-
-        if "emb_params" in embedding.keys():
-            if model_dim != embedding["emb_params"].size(dim=-1):
-                skip_embedding = True
-        elif "<concept>" in embedding.keys():
-            if model_dim != embedding["<concept>"].size(dim=-1):
-                skip_embedding = True
-        elif "string_to_param" in embedding.keys():
-            for trained_token in embedding["string_to_param"]:
-                embeds = embedding["string_to_param"][trained_token]
-                if model_dim != embeds.size(dim=-1):
-                    skip_embedding = True
-                    continue
-        else:
-            log.info(f"Embedding {filename} has an unknown internal structure. Trying to load it anyways.")
-
-        if skip_embedding:
-            raise RuntimeError(
-                f"Version mismatch: Failed to load embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa."
-            )
-        else:
             try:
-                default_pipe.load_textual_inversion(filename, embeds_name)
+                embedding = load_tensor_file(filename)
             except Exception as e:
-                log.error(f"Embedding {filename} can't be loaded: {str(e)}")
+                log.error("Error loading tensor file")
                 log.error(traceback.format_exc())
                 raise RuntimeError(f"Embedding {filename} can't be loaded: {str(e)}")
+
+            dump_embedding_info(embedding)
+
+            model_dim = default_pipe.text_encoder.get_input_embeddings().weight.data[0].shape[0]
+
+            if "emb_params" in embedding.keys():
+                if model_dim != embedding["emb_params"].size(dim=-1):
+                    skip_embedding = True
+            elif "<concept>" in embedding.keys():
+                if model_dim != embedding["<concept>"].size(dim=-1):
+                    skip_embedding = True
+            elif "string_to_param" in embedding.keys():
+                for trained_token in embedding["string_to_param"]:
+                    embeds = embedding["string_to_param"][trained_token]
+                    if model_dim != embeds.size(dim=-1):
+                        skip_embedding = True
+                        continue
             else:
-                context._loaded_embeddings.add(embeds_name)
+                log.info(f"Embedding {filename} has an unknown internal structure. Trying to load it anyways.")
+
+            if skip_embedding:
+                raise RuntimeError(
+                    f"Version mismatch: Failed to load embedding {filename}, due to incompatible embedding size, e.g. because this a StableDiffusion 2 embedding used with a StableDiffusion 1 model, or vice versa."
+                )
+            else:
+                try:
+                    default_pipe.load_textual_inversion(filename, embeds_name)
+                except Exception as e:
+                    log.error(f"Embedding {filename} can't be loaded: {str(e)}")
+                    log.error(traceback.format_exc())
+                    raise RuntimeError(f"Embedding {filename} can't be loaded: {str(e)}")
+                else:
+                    context._loaded_embeddings.add(embeds_name)
+    finally:
+        if is_cpu_offloaded:
+            from accelerate import cpu_offload
+
+            cpu_offload(te, context.device, offload_buffers=len(te._parameters) > 0)
 
 
 def dump_embedding_info(embedding):
