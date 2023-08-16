@@ -16,8 +16,6 @@ EXPECTED_DIR = f"{TEST_DATA_FOLDER}/expected_images/lora"
 
 context = None
 
-saved_weights = None
-
 
 def setup_module():
     global context
@@ -27,8 +25,6 @@ def setup_module():
 
 
 def test_load_sd_1_4():
-    global saved_weights
-
     context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
@@ -204,8 +200,6 @@ def test_2_4__multiple_a1111_lora__sd_1_4__alpha_0_0():
 
 # section 3 - sdxl lora
 def test_load_sdxl():
-    global saved_weights
-
     context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
