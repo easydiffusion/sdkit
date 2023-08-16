@@ -70,20 +70,39 @@ def load_model(context: Context, **kwargs):
     return loras
 
 
-def load_lora(pipe, lora, sd_config):
+def get_lora_type(lora):
+    if (
+        "text_encoder_2.text_model.encoder.layers.0.mlp.fc1.alpha" in lora
+        or "unet.up_blocks.0.attentions.0.transformer_blocks.8.attn2.to_q.down" in lora
+    ):
+        return "SDXL"
+
+    if "text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down" in lora:
+        lora_dim = lora["text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down"].shape[1]
+        return get_sd_type_from_dim(lora_dim)
+
+    return "SD 1"
+
+
+def get_sd_type(sd_config):
     context_dim = sd_config.model.params.get("unet_config", {}).get("params", {}).get("context_dim", None)
     if sd_config.model.params.get("network_config", {}).get("params", {}).get("context_dim", None):
         context_dim = 2048
 
+    return get_sd_type_from_dim(context_dim)
+
+
+def load_lora(pipe, lora, sd_config):
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
 
-    if "text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down" in lora:  # check for SD compatibility
-        lora_dim = lora["text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down"].shape[1]
-        if lora_dim != context_dim:
-            raise RuntimeError(
-                f"Sorry, you're trying to use a {get_sd_type_from_dim(lora_dim)} LoRA model with a {get_sd_type_from_dim(context_dim)} Stable Diffusion model. They're not compatible, please use a compatible model!"
-            )
+    lora_type = get_lora_type(lora)
+    sd_type = get_sd_type(sd_config)
+
+    if lora_type != sd_type:
+        raise RuntimeError(
+            f"Sorry, you're trying to use a {lora_type} LoRA model with a {sd_type} Stable Diffusion model. They're not compatible, please use a compatible model!"
+        )
 
     is_lycoris = any("lora.mid" in key for key in lora.keys())
 
@@ -148,9 +167,13 @@ def apply_lora_model(context, alphas):
         raise e
 
 
-def _name(key):
-    diffusers_name = key.replace("lora_unet_", "unet.").replace("lora_te_", "text_encoder.")
-    diffusers_name = diffusers_name.replace("_", ".").replace("text.encoder", "text_encoder")
+def _name(key, unet_layers_per_block=2):
+    diffusers_name = key
+    diffusers_name = diffusers_name.replace("_", ".")
+    diffusers_name = diffusers_name.replace("lora.unet.", "unet.")
+    diffusers_name = diffusers_name.replace("lora.te.", "text_encoder.")
+    diffusers_name = diffusers_name.replace("lora.te1.", "text_encoder.")
+    diffusers_name = diffusers_name.replace("lora.te2.", "text_encoder_2.")
     diffusers_name = diffusers_name.replace("lora.down", "down")
     diffusers_name = diffusers_name.replace("lora.up", "up")
     diffusers_name = diffusers_name.replace("down.weight", "down").replace("up.weight", "up")
@@ -175,7 +198,64 @@ def _name(key):
         diffusers_name = diffusers_name.replace("add.embedding", "add_embedding")
         diffusers_name = diffusers_name.replace("class.embedding", "class_embedding")
         diffusers_name = diffusers_name.replace("encoder.hid.proj", "encoder_hid_proj")
-    elif diffusers_name.startswith("text_encoder."):
+        # SDXL stuff
+        diffusers_name = diffusers_name.replace("in.layers.2", "conv1")
+        diffusers_name = diffusers_name.replace("out.layers.3", "conv2")
+        diffusers_name = diffusers_name.replace("emb.layers.1", "time_emb_proj")
+        diffusers_name = diffusers_name.replace("skip.connection", "conv_shortcut")
+
+        diffusers_name = diffusers_name.replace("input.blocks.0.0.", "conv_in.")
+        diffusers_name = diffusers_name.replace("out.2.", "conv_out.")
+
+        # based on https://github.com/kohya-ss/sd-webui-additional-networks/blob/main/scripts/lora_compvis.py#L194
+        parts = diffusers_name.split(".")
+        if "input.blocks" in diffusers_name:
+            if "op" in parts:
+                idx = parts.index("op")
+                layer_id = int(parts[idx - 2])
+                block_id = (layer_id - 3) // (unet_layers_per_block + 1)
+                diffusers_name = diffusers_name.replace(
+                    f"input.blocks.{layer_id}.0.op", f"down_blocks.{block_id}.downsamplers.0.conv"
+                )
+            else:
+                idx = parts.index("blocks")
+                layer_id, net_type = int(parts[idx + 1]), int(parts[idx + 2])
+                net_type_str = "attentions" if net_type == 1 else "resnets"
+                block_id = (layer_id - 1) // (unet_layers_per_block + 1)
+                layer_in_block_id = (layer_id - 1) % (unet_layers_per_block + 1)
+                diffusers_name = diffusers_name.replace(
+                    f"input.blocks.{layer_id}.{net_type}", f"down_blocks.{block_id}.{net_type_str}.{layer_in_block_id}"
+                )
+        elif "middle.block" in diffusers_name:
+            idx = parts.index("block")
+            net_type = int(parts[idx + 1])
+            net_type_str = "resnets" if net_type % 2 == 0 else "attentions"
+            block_id = net_type // 2
+            diffusers_name = diffusers_name.replace(f"middle.block.{net_type}", f"mid_block.{net_type_str}.{block_id}")
+        elif "output.blocks" in diffusers_name:
+            if "conv" in parts:
+                idx = parts.index("conv")
+                layer_id, t = int(parts[idx - 2]), int(parts[idx - 1])
+                block_id = (layer_id - 2) // (unet_layers_per_block + 1)
+                diffusers_name = diffusers_name.replace(
+                    f"output.blocks.{layer_id}.{t}.conv", f"up_blocks.{block_id}.upsamplers.0.conv"
+                )
+            else:
+                idx = parts.index("blocks")
+                layer_id, net_type = int(parts[idx + 1]), int(parts[idx + 2])
+                net_type_str = "attentions" if net_type == 1 else "resnets"
+                block_id = layer_id // (unet_layers_per_block + 1)
+                layer_in_block_id = layer_id % (unet_layers_per_block + 1)
+                diffusers_name = diffusers_name.replace(
+                    f"output.blocks.{layer_id}.{net_type}", f"up_blocks.{block_id}.{net_type_str}.{layer_in_block_id}"
+                )
+        elif "time.embed" in diffusers_name:
+            idx = parts.index("embed")
+            layer_id = int(parts[idx + 1])
+            block_id = int((layer_id + 2) / 2)
+            diffusers_name = diffusers_name.replace(f"time.embed.{layer_id}", f"time_embedding.linear_{block_id}")
+
+    elif diffusers_name.startswith("text_encoder"):
         diffusers_name = diffusers_name.replace("text.model", "text_model")
         diffusers_name = diffusers_name.replace("self.attn", "self_attn")
         diffusers_name = diffusers_name.replace("q.proj", "q_proj")

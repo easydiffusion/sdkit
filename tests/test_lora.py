@@ -202,7 +202,58 @@ def test_2_4__multiple_a1111_lora__sd_1_4__alpha_0_0():
     )
 
 
-# section 3 - misc
+# section 3 - sdxl lora
+def test_load_sdxl():
+    global saved_weights
+
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    load_model(context, "stable-diffusion")
+
+
+def test_load_single_sdxl_lora():
+    lora_path = "models/lora/daiton-xl-lora-test.safetensors"
+    lora_url = "https://civitai.com/api/download/models/116714"
+
+    if not os.path.exists(lora_path):
+        download_file(lora_url, lora_path)
+
+    context.model_paths["lora"] = lora_path
+    load_model(context, "lora")
+
+
+def test_3_1__single_a1111_lora__sdxl__alpha_0():
+    check_lora_image(
+        expected_image="lora-not-loaded-sdxl.png",
+        test_name="test3.1",
+        lora_alpha=0,
+    )
+
+
+def test_3_2__single_a1111_lora__sdxl__alpha_0_5():
+    check_lora_image(
+        expected_image="lora-sdxl-single-alpha0.5.png",
+        test_name="test3.2",
+        lora_alpha=0.5,
+    )
+
+
+def test_3_2a__single_a1111_lora__sdxl__alpha_0_5_repeat():
+    check_lora_image(
+        expected_image="lora-sdxl-single-alpha0.5.png",
+        test_name="test3.2a",
+        lora_alpha=0.5,
+    )
+
+
+def test_3_3__single_a1111_lora__sdxl__alpha_0_5():
+    check_lora_image(
+        expected_image="lora-sdxl-single-alpha1.png",
+        test_name="test3.3",
+        lora_alpha=1,
+    )
+
+
+# section 4 - misc
 def vram_usage_level_test(vram_usage_level, test_name):
     unload_model(context, "stable-diffusion")
     unload_model(context, "lora")
@@ -232,13 +283,13 @@ def vram_usage_level_test(vram_usage_level, test_name):
     )
 
 
-def test_3_1__vram_mode__works_on_low():
-    vram_usage_level_test(vram_usage_level="low", test_name="test3.1")
+def test_4_1__vram_mode__works_on_low():
+    vram_usage_level_test(vram_usage_level="low", test_name="test4.1")
 
 
-def test_3_2__vram_mode__works_on_balanced():
-    vram_usage_level_test(vram_usage_level="balanced", test_name="test3.2")
+def test_4_2__vram_mode__works_on_balanced():
+    vram_usage_level_test(vram_usage_level="balanced", test_name="test4.2")
 
 
-def test_3_3__vram_mode__works_on_high():
-    vram_usage_level_test(vram_usage_level="high", test_name="test3.3")
+def test_4_3__vram_mode__works_on_high():
+    vram_usage_level_test(vram_usage_level="high", test_name="test4.3")
