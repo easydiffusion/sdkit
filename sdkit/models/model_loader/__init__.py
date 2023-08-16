@@ -21,6 +21,7 @@ def _get_module(model_type):
         "lora": "lora",
         "latent_upscaler": "latent_upscaler",
         "controlnet": "controlnet",
+        "embeddings": "embeddings",
     }
     if model_type not in models:
         return
@@ -48,7 +49,7 @@ def load_model(context: Context, model_type: str, **kwargs):
 
     # reload dependent models
     if model_type == "stable-diffusion":
-        for m in ("vae", "hypernetwork", "lora"):
+        for m in ("vae", "hypernetwork", "lora", "embeddings"):
             try:
                 if m == "lora" and "lora" in context.models and hasattr(context, "_last_lora_alpha"):
                     del context._last_lora_alpha
