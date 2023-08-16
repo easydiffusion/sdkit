@@ -65,8 +65,8 @@ def load_model(context: Context, **kwargs):
     pipe = model["default"]
     sd_type = model["type"]
 
-    loras = [load_tensor_file(path) for path in lora_model_paths]
-    loras = [load_lora(pipe, lora, sd_type) for lora in loras]
+    loras = [(load_tensor_file(path), path) for path in lora_model_paths]
+    loras = [load_lora(pipe, lora, sd_type, path) for lora, path in loras]
 
     return loras
 
@@ -88,14 +88,14 @@ def get_lora_type(lora):
     return "SD1"
 
 
-def load_lora(pipe, lora, sd_type):
+def load_lora(pipe, lora, sd_type, lora_path):
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
 
     lora_type = get_lora_type(lora)
     if lora_type != sd_type:
         raise RuntimeError(
-            f"Sorry, you're trying to use a {lora_type} LoRA model with a {sd_type} Stable Diffusion model. They're not compatible, please use a compatible model!"
+            f"Sorry, could not load {lora_path}. You're trying to use a {lora_type} LoRA model with a {sd_type} Stable Diffusion model. They're not compatible, please use a compatible model!"
         )
 
     is_lycoris = any("lora.mid" in key for key in lora.keys())
