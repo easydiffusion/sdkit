@@ -61,11 +61,12 @@ def load_model(context: Context, **kwargs):
     lora_model_path = context.model_paths.get("lora")
     lora_model_paths = lora_model_path if isinstance(lora_model_path, list) else [lora_model_path]
 
-    pipe = context.models["stable-diffusion"]["default"]
-    sd_config = context.models["stable-diffusion"]["config"]
+    model = context.models["stable-diffusion"]
+    pipe = model["default"]
+    sd_type = model["type"]
 
     loras = [load_tensor_file(path) for path in lora_model_paths]
-    loras = [load_lora(pipe, lora, sd_config) for lora in loras]
+    loras = [load_lora(pipe, lora, sd_type) for lora in loras]
 
     return loras
 
@@ -79,26 +80,19 @@ def get_lora_type(lora):
 
     if "text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down" in lora:
         lora_dim = lora["text_encoder.text_model.encoder.layers.0.self_attn.q_proj.down"].shape[1]
-        return get_sd_type_from_dim(lora_dim)
+        if lora_dim == 768:
+            return "SD1"
+        elif lora_dim == 1024:
+            return "SD2"
 
-    return "SD 1"
-
-
-def get_sd_type(sd_config):
-    context_dim = sd_config.model.params.get("unet_config", {}).get("params", {}).get("context_dim", None)
-    if sd_config.model.params.get("network_config", {}).get("params", {}).get("context_dim", None):
-        context_dim = 2048
-
-    return get_sd_type_from_dim(context_dim)
+    return "SD1"
 
 
-def load_lora(pipe, lora, sd_config):
+def load_lora(pipe, lora, sd_type):
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
 
     lora_type = get_lora_type(lora)
-    sd_type = get_sd_type(sd_config)
-
     if lora_type != sd_type:
         raise RuntimeError(
             f"Sorry, you're trying to use a {lora_type} LoRA model with a {sd_type} Stable Diffusion model. They're not compatible, please use a compatible model!"
@@ -263,8 +257,3 @@ def _name(key, unet_layers_per_block=2):
         diffusers_name = diffusers_name.replace("v.proj", "v_proj")
         diffusers_name = diffusers_name.replace("out.proj", "out_proj")
     return diffusers_name
-
-
-def get_sd_type_from_dim(dim: int) -> str:
-    dims = {768: "SD 1", 1024: "SD 2", 2048: "SDXL"}
-    return dims.get(dim, "Unknown")

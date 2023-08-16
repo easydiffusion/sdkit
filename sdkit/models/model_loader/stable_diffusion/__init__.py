@@ -178,6 +178,16 @@ def load_diffusers_model(
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
 
+    model_type = "SD1"
+    if is_sd_xl:
+        model_type = "SDXL"
+    else:
+        context_dim = default_pipe.text_encoder.get_input_embeddings().weight.data[0].shape[0]
+        if context_dim == 768:
+            model_type = "SD1"
+        elif context_dim == 1024:
+            model_type = "SD2"
+
     if is_sd_xl:
         # until the image artifacts go away: https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9/discussions/31
         default_pipe.watermark = None
@@ -253,7 +263,7 @@ def load_diffusers_model(
     # make the compel prompt parser object
     textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
     if is_sd_xl:
-        skip = Skip.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED 
+        skip = Skip.PENULTIMATE_HIDDEN_STATES_NON_NORMALIZED
         compel = Compel(
             tokenizer=[default_pipe.tokenizer, default_pipe.tokenizer_2],
             text_encoder=[default_pipe.text_encoder, default_pipe.text_encoder_2],
@@ -290,6 +300,7 @@ def load_diffusers_model(
         "default": default_pipe,
         "compel": compel,
         "default_scheduler": default_pipe.scheduler,
+        "type": model_type,
         "params": {
             "clip_skip": clip_skip,
             "convert_to_tensorrt": convert_to_tensorrt,
