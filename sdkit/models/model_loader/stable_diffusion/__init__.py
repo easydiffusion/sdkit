@@ -49,15 +49,26 @@ def load_model(
             raise Exception(f"Model scan failed! Potentially infected model: {model_path}")
 
     if context.test_diffusers:
+        from sdkit.models import get_model_info_from_db
+
+        sd = load_tensor_file(model_path)
+        sd = sd["state_dict"] if "state_dict" in sd else sd
+
+        if config_file_path is None:
+            if "conditioner.embedders.1.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:
+                info = get_model_info_from_db(model_type="stable-diffusion", model_id="sd-xl-base-1.0")
+                config_file_path = resolve_model_config_file_path(info, model_path)
+            elif "conditioner.embedders.0.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:
+                info = get_model_info_from_db(model_type="stable-diffusion", model_id="sd-xl-refiner-1.0")
+                config_file_path = resolve_model_config_file_path(info, model_path)
+
         if config_file_path is None:
             # try using an SD 1.4 config
-            from sdkit.models import get_model_info_from_db
-
             sd_v1_4_info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.4")
             config_file_path = resolve_model_config_file_path(sd_v1_4_info, model_path)
 
         return load_diffusers_model(
-            context, model_path, config_file_path, clip_skip, convert_to_tensorrt, trt_build_config
+            context, sd, model_path, config_file_path, clip_skip, convert_to_tensorrt, trt_build_config
         )
 
     # load the model file
@@ -123,7 +134,7 @@ def unload_model(context: Context, **kwargs):
 
 
 def load_diffusers_model(
-    context: Context, model_path, config_file_path, clip_skip, convert_to_tensorrt, trt_build_config
+    context: Context, state_dict, model_path, config_file_path, clip_skip, convert_to_tensorrt, trt_build_config
 ):
     import torch
     from diffusers import (
@@ -173,7 +184,7 @@ def load_diffusers_model(
             model_load_params["pipeline_class"] = StableDiffusionXLImg2ImgPipeline
 
     # txt2img
-    default_pipe = download_from_original_stable_diffusion_ckpt(model_path, **model_load_params)
+    default_pipe = download_from_original_stable_diffusion_ckpt(state_dict, **model_load_params)
 
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
