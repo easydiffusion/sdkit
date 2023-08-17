@@ -1,5 +1,4 @@
 from threading import local
-from pathlib import Path
 
 
 class Context(local):
@@ -38,8 +37,6 @@ class Context(local):
         self.vram_usage_level = "balanced"
 
         self.test_diffusers = False
-        self._embeddings_path = None
-        self._loaded_embeddings: set = {}
         self.enable_codeformer = False
         """
         Enable this to use CodeFormer.
@@ -88,11 +85,3 @@ class Context(local):
             self.vram_optimizations = {"KEEP_FS_AND_CS_IN_CPU", "SET_ATTENTION_STEP_TO_16"}
         elif level == "high":
             self.vram_optimizations = {"SET_ATTENTION_STEP_TO_2"}
-
-    @property
-    def embeddings_path(self):
-        return self._embeddings_path
-
-    @embeddings_path.setter
-    def embeddings_path(self, value):
-        self._embeddings_path = Path(value)

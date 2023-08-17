@@ -42,7 +42,3 @@ from .convert_model_utils import (
 )
 from .device_utils import has_amd_gpu
 from .misc_utils import make_sd_context, get_nested_attr
-
-
-def get_embedding_token(filename):
-    return filename.split(".")[0].replace(" ", "_")
