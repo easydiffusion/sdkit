@@ -80,3 +80,18 @@ def black_to_transparent(img):
     x[:, :, 3] = (255 * (x[:, :, :3] != 0).any(axis=2)).astype(np.uint8)
 
     return Image.fromarray(x)
+
+
+def get_image(img):
+    if not isinstance(img, str):
+        return img
+
+    if img.startswith("data:image"):
+        return base64_str_to_img(img)
+
+    import os
+
+    if os.path.exists(img):
+        from PIL import Image
+
+        return Image.open(img)

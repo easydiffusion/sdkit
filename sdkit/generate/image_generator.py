@@ -16,6 +16,7 @@ from sdkit.utils import (
     resize_img,
     log,
     black_to_transparent,
+    get_image,
 )
 
 from .prompt_parser import get_cond_and_uncond
@@ -293,8 +294,10 @@ def make_with_diffusers(
 
             cmd["controlnet_conditioning_scale"] = control_alpha
             control_image = [get_image(img) for img in control_image]
+            control_image = [resize_img(img.convert("RGB"), width, height, clamp_to_8=True) for img in control_image]
         else:
             control_image = get_image(control_image)
+            control_image = resize_img(control_image.convert("RGB"), width, height, clamp_to_8=True)
             assert_controlnet_model(controlnet, context_dim)
 
         if operation_to_apply == "txt2img":
@@ -492,18 +495,3 @@ def blend_mask(images, init_image, init_image_mask, width, height):
             images[i] = images[i].convert("RGB")
 
     return images
-
-
-def get_image(img):
-    if not isinstance(img, str):
-        return img
-
-    if img.startswith("data:image"):
-        return base64_str_to_img(img)
-
-    import os
-
-    if os.path.exists(img):
-        from PIL import Image
-
-        return Image.open(img)
