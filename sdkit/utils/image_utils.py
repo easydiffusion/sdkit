@@ -83,15 +83,20 @@ def black_to_transparent(img):
 
 
 def get_image(img):
+    from PIL import Image, ImageOps
+
+    image = None
     if not isinstance(img, str):
-        return img
+        image = img
+    elif img.startswith("data:image"):
+        image = base64_str_to_img(img)
+    else:
+        import os
 
-    if img.startswith("data:image"):
-        return base64_str_to_img(img)
+        if os.path.exists(img):
+            image = Image.open(img)
 
-    import os
+    if image:
+        image = ImageOps.exif_transpose(image)
 
-    if os.path.exists(img):
-        from PIL import Image
-
-        return Image.open(img)
+    return image
