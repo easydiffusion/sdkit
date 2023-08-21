@@ -73,7 +73,7 @@
         "config_url": "configs/controlnet/control_v11e_sd15_shuffle.yaml",
         "quick_hash": "ec1f015a5aafd84b0bab16ef5ccff4cd9a4e24288428e42babed8f629c881589"
     },
-    "control_v11e_sd15_tile": {
+    "control_v11f1e_sd15_tile": {
         "name": "Tile",
         "url": "https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11f1e_sd15_tile.pth",
         "config_url": "configs/controlnet/control_v11f1e_sd15_tile.yaml",
