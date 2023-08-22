@@ -3,6 +3,7 @@ import tempfile
 import traceback
 from pathlib import Path
 from urllib.parse import urlparse
+import math
 
 import ldm.modules.attention
 import ldm.modules.diffusionmodules.model
@@ -61,6 +62,11 @@ def load_model(
             elif "conditioner.embedders.0.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:
                 info = get_model_info_from_db(model_type="stable-diffusion", model_id="sd-xl-refiner-1.0")
                 config_file_path = resolve_model_config_file_path(info, model_path)
+            elif "cond_stage_model.model.transformer.resblocks.14.mlp.c_proj.weight" in sd:
+                info = get_model_info_from_db(model_type="stable-diffusion", model_id="2.0-512-base-ema")
+                config_file_path = resolve_model_config_file_path(info, model_path)
+                # first use the 2.0 config, then test whether to use v-prediction or not
+                # after the unet is ready
 
         if config_file_path is None:
             # try using an SD 1.4 config
@@ -145,6 +151,7 @@ def load_diffusers_model(
         StableDiffusionXLImg2ImgPipeline,
         StableDiffusionXLInpaintPipeline,
     )
+    from diffusers.models.attention_processor import Attention
     from compel import Compel, DiffusersTextualInversionManager, ReturnedEmbeddingsType as Skip
     import platform
 
@@ -271,6 +278,36 @@ def load_diffusers_model(
     if hasattr(default_pipe, "enable_vae_tiling"):
         default_pipe.enable_vae_tiling()
 
+    scheduler_config = dict(default_pipe.scheduler.config)
+
+    # if SD 2, test whether to use 'v' prediction mode
+    if model_type == "SD2":
+        # idea based on https://github.com/AUTOMATIC1111/stable-diffusion-webui/commit/d04e3e921e8ee71442a1f4a1d6e91c05b8238007
+
+        dtype = torch.float16 if context.half_precision else torch.float32
+
+        test_embeds = torch.ones((1, 2, 1024), device=context.device, dtype=dtype) * 0.5
+        test_x = torch.ones((1, 4, 8, 8), device=context.device, dtype=dtype) * 0.5
+        t = torch.asarray([999], device=context.device, dtype=dtype)
+
+        noise_pred = default_pipe.unet(test_x, t, encoder_hidden_states=test_embeds, return_dict=False)[0]
+        out = (noise_pred - test_x).mean().item()
+
+        if math.isnan(out):
+            log.info("Probably black images, trying fp32 attention precision")
+            for m in default_pipe.unet.modules():
+                if not isinstance(m, Attention):
+                    continue
+                m.upcast_attention = True
+
+            noise_pred = default_pipe.unet(test_x, t, encoder_hidden_states=test_embeds, return_dict=False)[0]
+            out = (noise_pred - test_x).mean().item()
+
+        v_prediction_type = out < -1
+
+        scheduler_config["prediction_type"] = "v_prediction" if v_prediction_type else "epsilon"
+        log.info(f"Using {scheduler_config['prediction_type']} parameterization")
+
     # make the compel prompt parser object
     textual_inversion_manager = DiffusersTextualInversionManager(default_pipe)
     if is_sd_xl:
@@ -310,7 +347,7 @@ def load_diffusers_model(
         "config": config,
         "default": default_pipe,
         "compel": compel,
-        "default_scheduler": default_pipe.scheduler,
+        "default_scheduler_config": scheduler_config,
         "type": model_type,
         "params": {
             "clip_skip": clip_skip,
@@ -349,15 +386,11 @@ def load_diffusers_model(
     model["txt2img"] = pipe_txt2img
     model["img2img"] = pipe_img2img
     model["inpainting"] = pipe_inpainting
-    model["default_scheduler"] = default_pipe.scheduler
+    model["default_scheduler_config"] = scheduler_config
 
     if isinstance(default_pipe, StableDiffusionXLImg2ImgPipeline):
         del model["txt2img"]
         del model["inpainting"]
-
-    # test precision
-    if context.half_precision:
-        test_and_fix_precision(context, model, config, attn_precision)
 
     gc(context)
 

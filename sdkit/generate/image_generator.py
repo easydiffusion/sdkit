@@ -325,7 +325,7 @@ def make_with_diffusers(
     if sampler_name.startswith("unipc_tu"):
         sampler_name = "unipc_tu_2" if num_inference_steps < 10 else "unipc_tu"
 
-    operation_to_apply.scheduler = diffusers_samplers.make_sampler(sampler_name, model["default_scheduler"])
+    operation_to_apply.scheduler = diffusers_samplers.make_sampler(sampler_name, model["default_scheduler_config"])
     if operation_to_apply.scheduler is None:
         raise NotImplementedError(f"The sampler '{sampler_name}' is not supported (yet)!")
     log.info(f"Using sampler: {operation_to_apply.scheduler} because of {sampler_name}")

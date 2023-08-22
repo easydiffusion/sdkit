@@ -16,19 +16,19 @@ from diffusers import (
 )
 
 
-def _make_plms(ddim_scheduler):
-    config = dict(ddim_scheduler.config)
+def _make_plms(ddim_scheduler_config):
+    config = dict(ddim_scheduler_config)
     config["skip_prk_steps"] = True
-    return PNDMScheduler.from_config(ddim_scheduler.config)
+    return PNDMScheduler.from_config(ddim_scheduler_config)
 
 
 def _make_unipc(solver_type: str, solver_order: int, time_skip: str):
-    def callback(ddim_scheduler):
+    def callback(ddim_scheduler_config):
         # logSNR and time_quadratic timeskips are not supported in diffusers
         if time_skip != "time_uniform":
             return None
 
-        scheduler = UniPCMultistepScheduler.from_config(ddim_scheduler.config)
+        scheduler = UniPCMultistepScheduler.from_config(ddim_scheduler_config)
         scheduler.config.solver_type = solver_type
         scheduler.config.solver_order = solver_order
         scheduler.config.lower_order_final = True
@@ -40,32 +40,32 @@ def _make_unipc(solver_type: str, solver_order: int, time_skip: str):
 
 _samplers_init = {
     "plms": _make_plms,
-    "ddim": lambda ddim_scheduler: DDIMScheduler.from_config(ddim_scheduler.config),
-    "dpm_solver_stability": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
-        ddim_scheduler.config, algorithm_type="dpmsolver"
+    "ddim": lambda ddim_scheduler_config: DDIMScheduler.from_config(ddim_scheduler_config),
+    "dpm_solver_stability": lambda ddim_scheduler_config: DPMSolverMultistepScheduler.from_config(
+        ddim_scheduler_config, algorithm_type="dpmsolver"
     ),
-    "euler_a": lambda ddim_scheduler: EulerAncestralDiscreteScheduler.from_config(ddim_scheduler.config),
-    "euler": lambda ddim_scheduler: EulerDiscreteScheduler.from_config(ddim_scheduler.config),
-    "lms": lambda ddim_scheduler: LMSDiscreteScheduler.from_config(ddim_scheduler.config),
-    "heun": lambda ddim_scheduler: HeunDiscreteScheduler.from_config(ddim_scheduler.config),
-    "dpm2": lambda ddim_scheduler: KDPM2DiscreteScheduler.from_config(ddim_scheduler.config),
-    "dpm2_a": lambda ddim_scheduler: KDPM2AncestralDiscreteScheduler.from_config(ddim_scheduler.config),
-    "dpmpp_2s_a": lambda ddim_scheduler: DPMSolverSinglestepScheduler.from_config(
-        ddim_scheduler.config, use_karras_sigmas=True
+    "euler_a": lambda ddim_scheduler_config: EulerAncestralDiscreteScheduler.from_config(ddim_scheduler_config),
+    "euler": lambda ddim_scheduler_config: EulerDiscreteScheduler.from_config(ddim_scheduler_config),
+    "lms": lambda ddim_scheduler_config: LMSDiscreteScheduler.from_config(ddim_scheduler_config),
+    "heun": lambda ddim_scheduler_config: HeunDiscreteScheduler.from_config(ddim_scheduler_config),
+    "dpm2": lambda ddim_scheduler_config: KDPM2DiscreteScheduler.from_config(ddim_scheduler_config),
+    "dpm2_a": lambda ddim_scheduler_config: KDPM2AncestralDiscreteScheduler.from_config(ddim_scheduler_config),
+    "dpmpp_2s_a": lambda ddim_scheduler_config: DPMSolverSinglestepScheduler.from_config(
+        ddim_scheduler_config, use_karras_sigmas=True
     ),
-    "dpmpp_2m": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
-        ddim_scheduler.config, use_karras_sigmas=True
+    "dpmpp_2m": lambda ddim_scheduler_config: DPMSolverMultistepScheduler.from_config(
+        ddim_scheduler_config, use_karras_sigmas=True
     ),
-    "dpmpp_2m_sde": lambda ddim_scheduler: DPMSolverMultistepScheduler.from_config(
-        ddim_scheduler.config, algorithm_type="sde-dpmsolver++", use_karras_sigmas=True
+    "dpmpp_2m_sde": lambda ddim_scheduler_config: DPMSolverMultistepScheduler.from_config(
+        ddim_scheduler_config, algorithm_type="sde-dpmsolver++", use_karras_sigmas=True
     ),
-    "dpmpp_sde": lambda ddim_scheduler: DPMSolverSDEScheduler.from_config(
-        ddim_scheduler.config, use_karras_sigmas=True
+    "dpmpp_sde": lambda ddim_scheduler_config: DPMSolverSDEScheduler.from_config(
+        ddim_scheduler_config, use_karras_sigmas=True
     ),
     # "dpm_fast": None,  # Not implemented in diffusers yet
     "dpm_adaptive": None,  # Not implemented in diffusers yet
-    "ddpm": lambda ddim_scheduler: DDPMScheduler.from_config(ddim_scheduler.config),
-    "deis": lambda ddim_scheduler: DEISMultistepScheduler.from_config(ddim_scheduler.config),
+    "ddpm": lambda ddim_scheduler_config: DDPMScheduler.from_config(ddim_scheduler_config),
+    "deis": lambda ddim_scheduler_config: DEISMultistepScheduler.from_config(ddim_scheduler_config),
     "unipc_snr": _make_unipc("bh1", 3, "logSNR"),  # logSNR is not supported in diffusers yet
     "unipc_tu": _make_unipc("bh2", 2, "time_uniform"),
     "unipc_tq": _make_unipc("bh1", 3, "time_quadratic"),  # time_quadratic is not supported in diffusers yet
@@ -81,12 +81,12 @@ _samplers_init["dpm"] = _samplers_init["dpm_solver_stability"]
 _samplers_init["euler-ancestral"] = _samplers_init["euler_a"]
 
 
-def make_sampler(sampler_name, ddim_scheduler):
+def make_sampler(sampler_name, ddim_scheduler_config):
     if sampler_name not in _samplers_init:
         return
 
     sampler_factory = _samplers_init[sampler_name]
 
-    sampler = sampler_factory(ddim_scheduler) if sampler_factory else None
+    sampler = sampler_factory(ddim_scheduler_config) if sampler_factory else None
 
     return sampler
