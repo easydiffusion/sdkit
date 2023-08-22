@@ -201,7 +201,7 @@ def load_diffusers_model(
 
     if is_sd_xl:
         # until the image artifacts go away: https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9/discussions/31
-        default_pipe.watermark = None
+        default_pipe.watermark.apply_watermark = lambda images: images
 
     # optimize for TRT or DirectML (AMD on Windows)
     model_component, _ = os.path.splitext(model_path)
@@ -338,7 +338,7 @@ def load_diffusers_model(
 
     if is_sd_xl:
         # until the image artifacts go away: https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9/discussions/31
-        pipe_img2img.watermark = None
+        pipe_img2img.watermark.apply_watermark = lambda images: images
 
     # inpainting
     if isinstance(default_pipe, (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline)):
