@@ -56,13 +56,23 @@ def load_model(
         sd = sd["state_dict"] if "state_dict" in sd else sd
 
         if config_file_path is None:
-            if "conditioner.embedders.1.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:
+            if "conditioner.embedders.1.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:  # SDXL Base
                 info = get_model_info_from_db(model_type="stable-diffusion", model_id="sd-xl-base-1.0")
                 config_file_path = resolve_model_config_file_path(info, model_path)
-            elif "conditioner.embedders.0.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:
+            elif "conditioner.embedders.0.model.transformer.resblocks.9.mlp.c_proj.bias" in sd:  # SDXL Refiner
                 info = get_model_info_from_db(model_type="stable-diffusion", model_id="sd-xl-refiner-1.0")
                 config_file_path = resolve_model_config_file_path(info, model_path)
-            elif "cond_stage_model.model.transformer.resblocks.14.mlp.c_proj.weight" in sd:
+            elif (
+                "model.diffusion_model.input_blocks.0.0.weight" in sd
+                and sd["model.diffusion_model.input_blocks.0.0.weight"].shape[1] == 9
+            ):  # inpainting
+                if "cond_stage_model.model.transformer.resblocks.7.mlp.c_proj.bias" in sd:
+                    info = get_model_info_from_db(model_type="stable-diffusion", model_id="2.0-512-inpainting-ema")
+                    config_file_path = resolve_model_config_file_path(info, model_path)
+                else:
+                    info = get_model_info_from_db(model_type="stable-diffusion", model_id="1.5-inpainting")
+                    config_file_path = resolve_model_config_file_path(info, model_path)
+            elif "cond_stage_model.model.transformer.resblocks.14.mlp.c_proj.weight" in sd:  # SD 2
                 info = get_model_info_from_db(model_type="stable-diffusion", model_id="2.0-512-base-ema")
                 config_file_path = resolve_model_config_file_path(info, model_path)
                 # first use the 2.0 config, then test whether to use v-prediction or not
@@ -168,6 +178,10 @@ def load_diffusers_model(
         config.model.params.unet_config.params.use_fp16 = context.half_precision
 
     is_sd_xl = hasattr(config.model.params, "network_config")
+    if "model.diffusion_model.input_blocks.0.0.weight" in state_dict:
+        is_inpainting = state_dict["model.diffusion_model.input_blocks.0.0.weight"].shape[1] == 9
+    else:
+        is_inpainting = False
 
     extra_config = config.get("extra", {})
     attn_precision = extra_config.get("attn_precision", "fp16" if context.half_precision else "fp32")
@@ -182,7 +196,7 @@ def load_diffusers_model(
         "device": "cpu",
     }
 
-    if "LatentInpaintDiffusion" in config.model.target:
+    if is_inpainting:
         model_load_params["pipeline_class"] = StableDiffusionInpaintPipeline
     elif is_sd_xl:
         if config.model.params.network_config.params.context_dim == 2048:
@@ -285,7 +299,7 @@ def load_diffusers_model(
     scheduler_config = dict(default_pipe.scheduler.config)
 
     # if SD 2, test whether to use 'v' prediction mode
-    if model_type == "SD2" and not isinstance(default_pipe, StableDiffusionInpaintPipeline):
+    if model_type == "SD2" and not is_inpainting:
         # idea based on https://github.com/AUTOMATIC1111/stable-diffusion-webui/commit/d04e3e921e8ee71442a1f4a1d6e91c05b8238007
 
         dtype = torch.float16 if context.half_precision else torch.float32

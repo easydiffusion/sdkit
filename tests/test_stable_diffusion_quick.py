@@ -1,11 +1,12 @@
 from PIL import Image
 
 import torch
+import os
 
 from sdkit import Context
 from sdkit.generate import generate_images
 from sdkit.models import load_model
-from sdkit.utils import diffusers_latent_samples_to_images, img_to_buffer
+from sdkit.utils import diffusers_latent_samples_to_images, img_to_buffer, download_file
 
 
 from common import (
@@ -294,3 +295,84 @@ def test_2_6__sdxl__runs_on_multiple_devices_in_parallel():
         assert images[0].getbbox(), f"Image is black!"
 
     run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
+
+
+# inpainting models
+## official 1.5 inpainting
+def test_3_0__1_5_inpainting__loads_model():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/1.5/sd-v1-5-inpainting.ckpt"
+    load_model(context, "stable-diffusion")
+
+
+def test_3_1__stable_diffusion_1_5_inpainting_works__64x64():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    image = generate_images(
+        context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img, init_image_mask=mask
+    )[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
+
+
+## official 2.0 inpainting
+def test_3_2__2_0_inpainting__loads_model():
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/2.0/512-inpainting-ema.ckpt"
+    load_model(context, "stable-diffusion")
+
+
+def test_3_3__stable_diffusion_2_0_inpainting_works__64x64():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    image = generate_images(
+        context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img, init_image_mask=mask
+    )[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
+
+
+## custom inpainting 1.5
+def test_3_4__custom_inpainting_1_5__loads_model():
+    model_path = "models/stable-diffusion/custom/rpgInpainting_v4-inpainting.safetensors"
+    model_url = "https://civitai.com/api/download/models/96255"
+
+    if not os.path.exists(model_path):
+        download_file(model_url, model_path)
+
+    context.model_paths["stable-diffusion"] = model_path
+    load_model(context, "stable-diffusion")
+
+
+def test_3_5__stable_diffusion_custom_inpainting_1_5_works__64x64():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    image = generate_images(
+        context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img, init_image_mask=mask
+    )[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
+
+
+## custom inpainting 2.1
+def test_3_6__custom_inpainting_2_1__loads_model():
+    model_path = "models/stable-diffusion/custom/aZovyaRPGArtistTools_sd21768V1Inpainting.safetensors"
+    model_url = "https://civitai.com/api/download/models/57615"
+
+    if not os.path.exists(model_path):
+        download_file(model_url, model_path)
+
+    context.model_paths["stable-diffusion"] = model_path
+    load_model(context, "stable-diffusion")
+
+
+def test_3_7__stable_diffusion_custom_inpainting_2_0_works__64x64():
+    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+    image = generate_images(
+        context, "Horse", seed=42, width=64, height=64, num_inference_steps=3, init_image=init_img, init_image_mask=mask
+    )[0]
+
+    assert image is not None
+    assert image.getbbox(), f"Image is black!"
