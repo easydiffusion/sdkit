@@ -251,6 +251,8 @@ def load_diffusers_model(
     # keep the VAE for future use (maybe use copy.deepcopy() instead of a file)
     save_tensor_file(default_pipe.vae.state_dict(), os.path.join(tempfile.gettempdir(), "sd-base-vae.safetensors"))
 
+    # memory optimizations
+
     if context.vram_usage_level == "low" and "cuda" in context.device:
         if context.half_precision:
             default_pipe = default_pipe.to("cpu", torch.float16, silence_dtype_warnings=True)
@@ -277,6 +279,8 @@ def load_diffusers_model(
         default_pipe.enable_vae_slicing()
     if hasattr(default_pipe, "enable_vae_tiling"):
         default_pipe.enable_vae_tiling()
+
+    # /memory optimizations
 
     scheduler_config = dict(default_pipe.scheduler.config)
 

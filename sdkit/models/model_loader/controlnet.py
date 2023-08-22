@@ -20,6 +20,8 @@ def load_controlnet(context, controlnet_path):
     from sdkit.models import get_model_info_from_db
     from sdkit.models import models_db
 
+    from accelerate import cpu_offload
+
     controlnet_base_path = os.path.splitext(controlnet_path)[0]
     controlnet_config_path = controlnet_base_path + ".yaml"
     if not os.path.exists(controlnet_config_path):
@@ -42,8 +44,28 @@ def load_controlnet(context, controlnet_path):
         from_safetensors=".safetensors" in controlnet_path,
         device="cpu",
     )
+
+    # memory optimizations
+
+    if context.vram_usage_level == "low" and "cuda" in context.device:
+        controlnet = controlnet.to("cpu", torch.float16 if context.half_precision else torch.float32)
+
+        offload_buffers = len(controlnet._parameters) > 0
+        cpu_offload(controlnet, context.device, offload_buffers=offload_buffers)
+    else:
+        controlnet = controlnet.to(context.device, torch.float16 if context.half_precision else torch.float32)
+
     controlnet.set_attention_slice(1)
-    controlnet = controlnet.to(context.device, dtype=torch.float16 if context.half_precision else torch.float32)
+
+    try:
+        import xformers
+
+        controlnet.enable_xformers_memory_efficient_attention()
+    except:
+        pass
+
+    # /memory optimizations
+
     return controlnet
 
 
