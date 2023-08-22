@@ -285,13 +285,16 @@ def load_diffusers_model(
     scheduler_config = dict(default_pipe.scheduler.config)
 
     # if SD 2, test whether to use 'v' prediction mode
-    if model_type == "SD2":
+    if model_type == "SD2" and not isinstance(default_pipe, StableDiffusionInpaintPipeline):
         # idea based on https://github.com/AUTOMATIC1111/stable-diffusion-webui/commit/d04e3e921e8ee71442a1f4a1d6e91c05b8238007
 
         dtype = torch.float16 if context.half_precision else torch.float32
 
-        test_embeds = torch.ones((1, 2, 1024), device=context.device, dtype=dtype) * 0.5
-        test_x = torch.ones((1, 4, 8, 8), device=context.device, dtype=dtype) * 0.5
+        text_hidden_size = default_pipe.text_encoder.config.hidden_size
+        in_channels = default_pipe.unet.config.in_channels
+
+        test_embeds = torch.ones((1, 2, text_hidden_size), device=context.device, dtype=dtype) * 0.5
+        test_x = torch.ones((1, in_channels, 8, 8), device=context.device, dtype=dtype) * 0.5
         t = torch.asarray([999], device=context.device, dtype=dtype)
 
         noise_pred = default_pipe.unet(test_x, t, encoder_hidden_states=test_embeds, return_dict=False)[0]
