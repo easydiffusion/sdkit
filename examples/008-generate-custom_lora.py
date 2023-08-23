@@ -4,7 +4,6 @@ from sdkit.models import load_model
 from sdkit.utils import log, save_images
 
 context = sdkit.Context()
-context.test_diffusers = True
 
 # set the path to the model and LoRA file on the disk
 context.model_paths["lora"] = "D:\\path\\to\\lora.safetensors"

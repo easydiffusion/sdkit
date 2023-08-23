@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdkit"
-version = "1.0.185"
+version = "2.0.0"
 authors = [
   {name="cmdr2", email="secondary.cmdr2@gmail.com"},
 ]
-description = "sdkit (stable diffusion kit) is an easy-to-use library for using Stable Diffusion in your AI Art projects. It is fast, feature-packed, and memory-efficient. It bundles Stable Diffusion along with commonly-used features (like GFPGAN, RealESRGAN, k-samplers, custom VAE, hypernetworks etc). It also includes a model-downloader with a database of commonly used models, and advanced features like running in parallel on multiple GPUs, auto-scanning for malicious models etc. Supports Stable Diffusion 2.1!"
+description = "sdkit (stable diffusion kit) is an easy-to-use library for using Stable Diffusion in your AI Art projects. It is fast, feature-packed, and memory-efficient. It bundles Stable Diffusion along with commonly-used features (like ControlNet, LoRA, Textual Inversion Embeddings, GFPGAN, RealESRGAN, k-samplers, custom VAE etc). It also includes a model-downloader with a database of commonly used models, and advanced features like running in parallel on multiple GPUs, auto-scanning for malicious models etc. Supports Stable Diffusion XL, ControlNet, LoRA, Embeddings!"
 readme = "README.md"
 requires-python = ">=3.8.5"
 classifiers = [

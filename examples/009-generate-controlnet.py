@@ -6,7 +6,6 @@ from sdkit.utils import log
 from PIL import Image
 
 context = sdkit.Context()
-context.test_diffusers = True
 
 
 # convert an existing image into an openpose image (or skip these lines if you have a custom openpose image)

@@ -36,7 +36,7 @@ class Context(local):
         """
         self.vram_usage_level = "balanced"
 
-        self.test_diffusers = False
+        self.test_diffusers = True
         self.enable_codeformer = False
         """
         Enable this to use CodeFormer.

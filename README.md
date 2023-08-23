@@ -3,14 +3,14 @@
 
 [![Discord Server](https://img.shields.io/discord/1014774730907209781?label=Discord)](https://discord.com/invite/u9yhsFmEkB)
 
-*New: Stable Diffusion 2.1 is now supported!*
+*New: Stable Diffusion XL, ControlNets, LoRAs and Embeddings are now supported!*
 
 This is a community project, so please feel free to contribute (and use in your project)!
 
 ![t2i](https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/assets/stable-samples/txt2img/768/merged-0006.png)
 
 # Why?
-The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like GFPGAN and CodeFormer for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs and hypernetworks, NSFW filter etc).
+The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like ControlNets, LoRAs, Textual Inversion Embeddings, GFPGAN and CodeFormer for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs, NSFW filter etc).
 
 Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
@@ -67,7 +67,7 @@ images = generate_images(context, prompt='Photograph of an astronaut riding a ho
 save_images(images, dir_path='D:\\path\\to\\images\\directory')
 ```
 
-Please see the list of [examples](https://github.com/easydiffusion/sdkit/tree/main/examples), to learn how to use the other features (like filters, VAE, Hypernetworks, memory optimizations, running on multiple GPUs etc).
+Please see the list of [examples](https://github.com/easydiffusion/sdkit/tree/main/examples), to learn how to use the other features (like filters, VAE, ControlNet, Embeddings, LoRA, memory optimizations, running on multiple GPUs etc).
 
 # API
 Please see the [API Reference](https://github.com/easydiffusion/sdkit/wiki/API) page for a detailed summary.
@@ -96,9 +96,9 @@ For models that don't match a known hash (e.g. custom models), or if you want to
 ## Does it have all the cool features?
 It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
-**Features include:** SD 2.1, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, Mac Support, GFPGAN and CodeFormer (fix faces), RealESRGAN (upscale), 19 samplers (including k-samplers and UniPC), custom VAE, custom hypernetworks, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
+**Features include:** SD 2.1, SDXL, ControlNet, LoRAs, Embeddings, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, Mac Support, GFPGAN and CodeFormer (fix faces), RealESRGAN (upscale), 16 samplers (including k-samplers and UniPC), custom VAE, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
 
-📢 We're looking to add support for *textual inversion embeddings*, *AMD support*, *ControlNet*, *Pix2Pix*, and *outpainting*. We'd love code contributions for these!
+📢 We're looking to add support for *Lycoris*, *AMD*, *Pix2Pix*, and *outpainting*. We'd love code contributions for these!
 
 ## Is it fast?
 It is pretty fast, and close to the fastest. For the same image, `sdkit` took 5.5 seconds, while `automatic1111` webui took 4.95 seconds. 📢 We're looking for code contributions to make `sdkit` even faster!
@@ -119,10 +119,10 @@ No xformers. No VRAM optimizations for low-memory usage.
 ## Does it work on lower-end GPUs, or without GPUs?
 Yes. It works on NVIDIA/Mac GPUs with atleast 2GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
 
-📢 We don't support AMD yet (it'll run in CPU-mode), but we're looking for code contributions for AMD support!
+📢 We don't support AMD yet on Windows (it'll run in CPU-mode, or in Linux), but we're looking for code contributions for AMD support!
 
 ## Why not just use diffusers?
-You can certainly use diffusers. `sdkit` is infact using `diffusers` internally (currently in beta), so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
+You can certainly use diffusers. `sdkit` is infact using `diffusers` internally, so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
 
 `sdkit`:
 1. is a simple, lightweight toolkit for Stable Diffusion projects.
@@ -132,11 +132,11 @@ You can certainly use diffusers. `sdkit` is infact using `diffusers` internally 
 5. built-in support for running on multiple GPUs.
 6. can download models from any server.
 7. auto-scans for malicious models.
-8. includes 19 samplers (including k-samplers).
+8. includes 16 samplers (including k-samplers).
 9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022.
 
 # Who is using sdkit?
-* [Easy Diffusion (cmdr2 UI)](https://github.com/cmdr2/stable-diffusion-ui) for Stable Diffusion.
+* [Easy Diffusion (cmdr2 UI)](https://github.com/easydiffusion/easydiffusion) for Stable Diffusion.
 * [Arthemy AI](https://arthemy.ai/)
 
 If your project is using sdkit, you can add it to this list. Please feel free to open a pull request (or let us know at our [Discord community](https://discord.com/invite/u9yhsFmEkB)).
@@ -145,9 +145,8 @@ If your project is using sdkit, you can add it to this list. Please feel free to
 We'd love to accept code contributions. Please feel free to drop by our [Discord community](https://discord.com/invite/u9yhsFmEkB)!
 
 📢 We're looking for code contributions for these features (or anything else you'd like to work on):
-- Using custom Textual Inversion embeddings.
+- Lycoris.
 - Outpainting.
-- ControlNet.
 - Pix2Pix.
 - AMD support.
 
@@ -161,7 +160,7 @@ Instructions for running automated tests: [Running Tests](tests/README.md).
 * GFPGAN: https://github.com/TencentARC/GFPGAN
 * RealESRGAN: https://github.com/xinntao/Real-ESRGAN
 * k-diffusion: https://github.com/crowsonkb/k-diffusion
-* Code contributors and artists on the cmdr2 UI: https://github.com/cmdr2/stable-diffusion-ui and Discord (https://discord.com/invite/u9yhsFmEkB)
+* Code contributors and artists on Easy Diffusion (cmdr2 UI): https://github.com/easydiffusion/easydiffusion and Discord (https://discord.com/invite/u9yhsFmEkB)
 * Lots of contributors on the internet
 
 # Disclaimer
