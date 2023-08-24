@@ -24,9 +24,17 @@ def setup_module():
     load_model(context, "stable-diffusion")
 
 
-def test_1_0__tiling_x():
-    prompt = "big four-master sailing vessel, stormy waves, at night"
-    image = generate_images(context, prompt, seed=42, width=512, height=512, tiling="x")[0]
+# def test_1_0__tiling_x():
+#     prompt = "big four-master sailing vessel, stormy waves, at night"
+#     image = generate_images(context, prompt, seed=42, width=512, height=512, tiling="x")[0]
+
+#     expected_image = Image.open(f"{EXPECTED_DIR}/1.4-tiling-x.png")
+#     assert_images_same(image, expected_image, "tiling_test1.0")
+
+
+def test_1_1__tiling_xy():
+    prompt = "Photorealistic multicolored blobs of paint on a white canvas"
+    image = generate_images(context, prompt, seed=265319673, width=768, height=768, tiling="xy")[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/1.4-tiling-x.png")
-    assert_images_same(image, expected_image, "tiling_test1.0")
+    assert_images_same(image, expected_image, "tiling_test1.1")
