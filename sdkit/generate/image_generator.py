@@ -452,9 +452,10 @@ def make_with_diffusers(
     if tiling:
         default_pipe.vae.use_tiling = False  # disable VAE tiling before use, otherwise seamless tiling fails
 
-    images = operation_to_apply(**cmd).images
-
-    default_pipe.vae.use_tiling = enable_vae_tiling
+    try:
+        images = operation_to_apply(**cmd).images
+    finally:
+        default_pipe.vae.use_tiling = enable_vae_tiling
 
     if is_sd_xl and context.half_precision:  # cleanup - workaround since SDXL upcasts the vae
         operation_to_apply.vae = operation_to_apply.vae.to(dtype=torch.float16)
