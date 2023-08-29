@@ -401,6 +401,7 @@ def load_diffusers_model(
     # inpainting
     if isinstance(default_pipe, (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline)):
         pipe_inpainting = StableDiffusionXLInpaintPipeline(**default_pipe.components)
+        pipe_inpainting.watermark.apply_watermark = lambda images: images
     else:  # TODO - the legacy inpainting model may no longer be needed
         pipe_inpainting = StableDiffusionInpaintPipelineLegacy(**default_pipe.components)
 
