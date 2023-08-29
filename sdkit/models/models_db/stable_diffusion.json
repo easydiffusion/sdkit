@@ -202,6 +202,15 @@
         }
     },
 
+    "1.5-pruned-emaonly-fp16": {
+        "name": "SD 1.5 Pruned EMA fp16",
+        "url": "https://github.com/easydiffusion/sdkit-test-data/releases/download/assets/sd-v1-5.safetensors",
+        "config_url": "configs/v1-inference.yaml",
+        "quick_hash": "597d77e9b8756c5545da319318d8a76257480a12f394170c1e77470563779fb4",
+        "metadata": {
+            "min_size": 512
+        }
+    },
     "1.5-pruned-emaonly": {
         "name": "SD 1.5 Pruned EMA",
         "url": "https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt",
