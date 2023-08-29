@@ -8,7 +8,7 @@ setuptools.setup(
         "realesrgan",
         "requests",
         "picklescan",
-        "safetensors==0.3.2",
+        "safetensors==0.3.3",
         "k-diffusion",
         "diffusers==0.19.2",
         "compel==2.0.1",
