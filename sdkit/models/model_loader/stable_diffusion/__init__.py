@@ -167,6 +167,7 @@ def load_diffusers_model(
 
     from sdkit.generate.sampler import diffusers_samplers
     from sdkit.utils import gc, has_amd_gpu
+    import torch.nn.functional as F
 
     from diffusers.pipelines.stable_diffusion.convert_from_ckpt import download_from_original_stable_diffusion_ckpt
 
@@ -208,8 +209,36 @@ def load_diffusers_model(
         else:
             model_load_params["pipeline_class"] = StableDiffusionXLImg2ImgPipeline
 
+    # optimize for TRT or DirectML (AMD on Windows)
+    model_component, _ = os.path.splitext(model_path)
+    model_trt_path = model_component + ".trt"
+    unet_onnx_path = model_component + ".unet.onnx"
+
+    use_directml = platform.system() == "Windows" and has_amd_gpu()
+    try:
+        from importlib.metadata import version
+
+        version("onnxruntime-directml")  # check if this is installed
+    except:
+        use_directml = False
+
+    if "cuda" not in context.device:
+        convert_to_tensorrt = False
+
+    # remove SDPA if torch 2.0 and need to convert to ONNX
+    needs_onnx = convert_to_tensorrt or (
+        use_directml and (not os.path.exists(unet_onnx_path) or os.stat(unet_onnx_path).st_size == 0)
+    )
+    swap_sdpa = needs_onnx and hasattr(F, "scaled_dot_product_attention")
+    old_sdpa = getattr(F, "scaled_dot_product_attention", None) if swap_sdpa else None
+    if swap_sdpa:
+        delattr(F, "scaled_dot_product_attention")
+
     # txt2img
     default_pipe = download_from_original_stable_diffusion_ckpt(state_dict, **model_load_params)
+
+    if swap_sdpa and old_sdpa:
+        setattr(F, "scaled_dot_product_attention", old_sdpa)
 
     default_pipe.requires_safety_checker = False
     default_pipe.safety_checker = None
@@ -227,22 +256,6 @@ def load_diffusers_model(
     if is_sd_xl:
         # until the image artifacts go away: https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9/discussions/31
         default_pipe.watermark.apply_watermark = lambda images: images
-
-    # optimize for TRT or DirectML (AMD on Windows)
-    model_component, _ = os.path.splitext(model_path)
-    model_trt_path = model_component + ".trt"
-    unet_onnx_path = model_component + ".unet.onnx"
-
-    use_directml = platform.system() == "Windows" and has_amd_gpu()
-    try:
-        from importlib.metadata import version
-
-        version("onnxruntime-directml")  # check if this is installed
-    except:
-        use_directml = False
-
-    if "cuda" not in context.device:
-        convert_to_tensorrt = False
 
     if use_directml and (not os.path.exists(unet_onnx_path) or os.stat(unet_onnx_path).st_size == 0):
         from sdkit.utils import gc, convert_pipeline_unet_to_onnx
