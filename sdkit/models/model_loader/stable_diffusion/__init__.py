@@ -183,6 +183,9 @@ def load_diffusers_model(
     else:
         is_inpainting = False
 
+    # fix for NAI keys
+    check_and_fix_nai_keys(state_dict)
+
     extra_config = config.get("extra", {})
     attn_precision = extra_config.get("attn_precision", "fp16" if context.half_precision else "fp32")
     log.info(f"using attn_precision: {attn_precision}")
@@ -535,3 +538,16 @@ def is_lora(sd):
     # for h in heads:
     #    log.info(f"Header '{h}'")
     return "lora_" in heads and "first" not in heads and "cond_" not in heads
+
+
+def check_and_fix_nai_keys(state_dict):
+    NAI_KEYS = (
+        "cond_stage_model.transformer.embeddings.",
+        "cond_stage_model.transformer.encoder.",
+        "cond_stage_model.transformer.final_layer_norm.",
+    )
+    nai_keys = [k for k in state_dict if k.startswith(NAI_KEYS)]
+    for old_key in nai_keys:
+        new_key = old_key.replace(".transformer.", ".transformer.text_model.")
+        state_dict[new_key] = state_dict[old_key]
+        del state_dict[old_key]
