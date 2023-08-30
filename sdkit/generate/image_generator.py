@@ -47,7 +47,7 @@ def generate_images(
     # "dpm_solver_stability", "dpmpp_2s_a", "dpmpp_2m", "dpmpp_sde", "dpm_fast"
     # "dpm_adaptive"
     hypernetwork_strength: float = 0,
-    tiling="none",
+    tiling=None,
     lora_alpha: Union[float, List[float]] = 0,
     sampler_params={},
     callback=None,
@@ -450,6 +450,7 @@ def make_with_diffusers(
 
     enable_vae_tiling = default_pipe.vae.use_tiling
     if tiling:
+        log.info(f"Disabling VAE tiling because seamless tiling is enabled: {tiling}")
         default_pipe.vae.use_tiling = False  # disable VAE tiling before use, otherwise seamless tiling fails
 
     try:
