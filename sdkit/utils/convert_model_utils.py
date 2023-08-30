@@ -124,29 +124,39 @@ def _convert_pipeline_model_to_onnx(
 
     model_args = tuple(m.to(device=_device, dtype=_dtype) for m in model_args if isinstance(m, torch.Tensor))
 
-    onnx_export(
-        model,
-        model_args=model_args,
-        output_path=model_path,
-        ordered_input_names=input_names,
-        output_names=["out_sample"],  # has to be different from "sample" for correct tracing
-        dynamic_axes=dynamic_axes,
-        opset=opset,
-        use_external_data_format=use_external_data_format,
-    )
+    import torch.nn.functional as F
 
-    if use_external_data_format:
-        model = onnx.load(model_path)
-        shutil.rmtree(tmp_dir)
-        # collate external tensor files into one
-        onnx.save_model(
+    sdpa = getattr(F, "scaled_dot_product_attention", None)
+    try:
+        if sdpa is not None:
+            delattr(F, "scaled_dot_product_attention")
+
+        onnx_export(
             model,
-            save_path,
-            save_as_external_data=use_external_data_format,
-            all_tensors_to_one_file=True,
-            location=model_name + ".onnx_weights.pb",
-            convert_attribute=False,
+            model_args=model_args,
+            output_path=model_path,
+            ordered_input_names=input_names,
+            output_names=["out_sample"],  # has to be different from "sample" for correct tracing
+            dynamic_axes=dynamic_axes,
+            opset=opset,
+            use_external_data_format=use_external_data_format,
         )
+
+        if use_external_data_format:
+            model = onnx.load(model_path)
+            shutil.rmtree(tmp_dir)
+            # collate external tensor files into one
+            onnx.save_model(
+                model,
+                save_path,
+                save_as_external_data=use_external_data_format,
+                all_tensors_to_one_file=True,
+                location=model_name + ".onnx_weights.pb",
+                convert_attribute=False,
+            )
+    finally:
+        if sdpa is not None:
+            setattr(F, "scaled_dot_product_attention", sdpa)
 
     pipeline = pipeline.to(orig_device, torch_dtype=orig_dtype)
 
