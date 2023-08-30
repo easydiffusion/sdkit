@@ -194,6 +194,7 @@ def load_diffusers_model(
         "from_safetensors": model_path.endswith(".safetensors"),
         "upcast_attention": (attn_precision == "fp32"),
         "device": "cpu",
+        "load_safety_checker": False,
     }
 
     if is_inpainting:
