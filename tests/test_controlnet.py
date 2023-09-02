@@ -339,16 +339,13 @@ def test_load_sdxl_model():
 
 
 def test_6_1__load_controlnet():
-    context.model_paths["controlnet"] = "models/controlnet/control_v11p_sd15_openpose.pth"
+    context.model_paths["controlnet"] = "models/controlnet/OpenPoseXL2.safetensors"
     load_model(context, "controlnet")
 
     assert context.models["controlnet"] is not None
 
 
 def test_6_2__generates_image_from_single_control_image__txt2img():
-    raise Exception("This won't run until https://github.com/huggingface/diffusers/pull/4309 is merged")
-    raise Exception("This won't run until an SDXL compatible controlnet is used. This one is for SD 1.x only!")
-
     image = generate_images(
         context,
         "1boy, muscular, full armor, armor, shoulder plates, angry, looking at viewer, spiked hair, white hair",
@@ -358,5 +355,5 @@ def test_6_2__generates_image_from_single_control_image__txt2img():
         control_image=Image.open(f"{EXPECTED_DIR}/filters/openpose.png"),
     )[0]
 
-    expected_image = Image.open(f"{EXPECTED_DIR}/controlnet/txt-pose_controlnet.png")
+    expected_image = Image.open(f"{EXPECTED_DIR}/controlnet/txt-pose_controlnet_xl.png")
     assert_images_same(image, expected_image, "test4.1a")

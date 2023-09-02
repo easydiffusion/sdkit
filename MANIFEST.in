@@ -1,3 +1,4 @@
 include sdkit/models/models_db/*.json
 include sdkit/models/models_db/configs/*.yaml
 include sdkit/models/models_db/configs/controlnet/*.yaml
+include sdkit/models/models_db/configs/controlnet/*.json
