@@ -81,3 +81,26 @@ def test_realesrgan_works_on_multiple_devices():
         assert len(filtered_img) == 1
 
     run_test_on_multiple_devices(task, devices=["cpu", "cuda:0"])
+
+
+def test_gfpgan_and_realesrgan_work_together_on_multiple_devices():
+    def task(context):
+        context.model_paths["gfpgan"] = "models/gfpgan/GFPGANv1.3.pth"
+        load_model(context, "gfpgan")
+
+        context.model_paths["realesrgan"] = "models/realesrgan/RealESRGAN_x4plus.pth"
+        load_model(context, "realesrgan")
+
+        img = Image.open(f"{TEST_DATA_FOLDER}/input_images/man-512x512.png")
+
+        filtered_img = apply_filters(context, "gfpgan", img)
+        assert filtered_img is not None
+        assert len(filtered_img) == 1
+
+        filtered_img = filtered_img[0].resize((64, 64))
+
+        filtered_img = apply_filters(context, "realesrgan", filtered_img)
+        assert filtered_img is not None
+        assert len(filtered_img) == 1
+
+    run_test_on_multiple_devices(task, devices=["cpu", "cuda:0"])
