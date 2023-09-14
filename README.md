@@ -31,7 +31,7 @@ A simple example for generating an image from a Stable Diffusion model file (alr
 import sdkit
 from sdkit.models import load_model
 from sdkit.generate import generate_images
-from sdkit.utils import save_images, log
+from sdkit.utils import log
 
 context = sdkit.Context()
 
@@ -43,7 +43,7 @@ load_model(context, 'stable-diffusion')
 images = generate_images(context, prompt='Photograph of an astronaut riding a horse', seed=42, width=512, height=512)
 
 # save the image
-save_images(images, dir_path='D:\\path\\to\\images\\directory')
+images[0].save("image.png") # images is a list of PIL.Image
 
 log.info("Generated images!")
 ```
