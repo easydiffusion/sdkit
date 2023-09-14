@@ -10,7 +10,7 @@ gfpgan_temp_device_lock = Lock()  # workaround: gfpgan currently can only start 
 
 
 def apply(context: Context, image, **kwargs):
-    # This lock is only ever used here. No need to use timeout for the request. Should never deadlock.
+    # this lock is also used in the model loader for gfpgan
     with gfpgan_temp_device_lock:  # Wait for any other devices to complete before starting.
         # hack for a bug in facexlib: https://github.com/xinntao/facexlib/pull/19/files
         from facexlib.detection import retinaface
