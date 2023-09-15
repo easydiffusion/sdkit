@@ -37,9 +37,12 @@ def test_codeformer_works_on_multiple_devices():
 
         load_model(context, "codeformer")
 
+        context.model_paths["realesrgan"] = "models/realesrgan/RealESRGAN_x4plus.pth"
+        load_model(context, "realesrgan")
+
         # apply the filter
         image = Image.open(f"{TEST_DATA_FOLDER}/input_images/man-512x512.png")
-        image_face_fixed = apply_filters(context, "codeformer", image)[0]
+        image_face_fixed = apply_filters(context, "codeformer", image, upscale_faces=True)[0]
 
         expected_image = get_image_for_device(f"{EXPECTED_DIR}/man-512x512-no_upscale", context.device)
         assert_images_same(image_face_fixed, expected_image, "codeformer_test2")
