@@ -10,7 +10,7 @@ download_model(model_type="stable-diffusion", model_id="1.5-pruned-emaonly")
 
 # set the path to the auto-downloaded model
 context.model_paths["stable-diffusion"] = resolve_downloaded_model_path(
-    context, "stable-diffusion", "1.5-pruned-emaonly"
+    "stable-diffusion", "1.5-pruned-emaonly"
 )
 load_model(context, "stable-diffusion")
 
