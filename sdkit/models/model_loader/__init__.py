@@ -3,10 +3,14 @@ from sdkit.utils import gc, log
 
 import importlib
 import traceback
+from threading import Lock
 
 
 class Loader:
     pass
+
+
+model_load_lock = Lock()
 
 
 def _get_module(model_type):
@@ -41,9 +45,13 @@ def load_model(context: Context, model_type: str, **kwargs):
     if model_type in context.models:
         unload_model(context, model_type)
 
-    log.info(f"loading {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
+    with model_load_lock:
+        # only allow one model to load at a time, regardless of how many threads are running
+        # this works around a thread-unsafe behavior of accelerate: https://github.com/huggingface/diffusers/issues/4296
 
-    context.models[model_type] = get_loader_module(model_type).load_model(context, **kwargs)
+        log.info(f"loading {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
+
+        context.models[model_type] = get_loader_module(model_type).load_model(context, **kwargs)
 
     log.info(f"loaded {model_type} model from {context.model_paths.get(model_type)} to device: {context.device}")
 

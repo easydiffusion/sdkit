@@ -104,3 +104,14 @@ def test_gfpgan_and_realesrgan_work_together_on_multiple_devices():
         assert len(filtered_img) == 1
 
     run_test_on_multiple_devices(task, devices=["cpu", "cuda:0"])
+
+
+def test_stable_diffusion_and_gfpgan_load_together_on_multiple_devices():
+    def task(context):
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+        load_model(context, "stable-diffusion")
+
+        context.model_paths["gfpgan"] = "models/gfpgan/GFPGANv1.3.pth"
+        load_model(context, "gfpgan")
+
+    run_test_on_multiple_devices(task, devices=["cuda:0", "cuda:0"])
