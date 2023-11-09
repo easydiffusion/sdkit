@@ -5,17 +5,17 @@
 
 *New: Stable Diffusion XL, ControlNets, LoRAs and Embeddings are now supported!*
 
-This is a community project, so please feel free to contribute (and use in your project)!
+This is a community project, so please feel free to contribute (and to use it in your project)!
 
 ![t2i](https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/assets/stable-samples/txt2img/768/merged-0006.png)
 
 # Why?
 The goal is to let you be productive quickly (at your AI art project), so it bundles Stable Diffusion along with commonly-used features (like ControlNets, LoRAs, Textual Inversion Embeddings, GFPGAN and CodeFormer for face restoration, RealESRGAN for upscaling, k-samplers, support for loading custom VAEs, NSFW filter etc).
 
-Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
+Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models, etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
 # Installation
-Tested with Python 3.8. Supports Windows, Linux and Mac.
+Tested with Python 3.8. Supports Windows, Linux, and Mac.
 
 **Windows/Linux:**
 1. `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu116`
@@ -86,22 +86,22 @@ And a `sdkit.Context` object is passed around, which encapsulates the data relat
 # Models DB
 Click here to see the [list of known models](https://github.com/easydiffusion/sdkit/tree/main/sdkit/models/models_db).
 
-sdkit includes a database of known models and their configurations. This lets you download a known model with a single line of code. You can customize where it saves the downloaded model.
+sdkit includes a database of known models and their configurations. This lets you download a known model with a single line of code. (You can customize where it saves the downloaded model)
 
-Additionally, sdkit will attempt to automatically determine the configuration for a given model (when loading from disk). For e.g. if an SD 2.1 model is being loaded, sdkit will automatically know to use `fp32` for `attn_precision`. If an SD 2.0 v-type model is being loaded, sdkit will automatically know to use the `v2-inference-v.yaml` configuration. It does this by matching the quick-hash of the given model file, with the list of known quick-hashes.
+Additionally, sdkit will attempt to automatically determine the configuration for a given model (when loading from disk). E.g. if an SD 2.1 model is being loaded, sdkit will automatically know to use `fp32` for `attn_precision`. If an SD 2.0 v-type model is being loaded, sdkit will automatically know to use the `v2-inference-v.yaml` configuration. It does this by matching the quick-hash of the given model file, with the list of known quick-hashes.
 
 For models that don't match a known hash (e.g. custom models), or if you want to override the config file, you can set the path to the config file in `context.model_paths`. e.g. `context.model_paths['stable-diffusion'] = 'path/to/config.yaml'`
 
 # FAQ
 ## Does it have all the cool features?
-It has a lot of features! It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
+It was born out of a popular Stable Diffusion UI, splitting out the battle-tested core engine into `sdkit`.
 
 **Features include:** SD 2.1, SDXL, ControlNet, LoRAs, Embeddings, txt2img, img2img, inpainting, NSFW filter, multiple GPU support, Mac Support, GFPGAN and CodeFormer (fix faces), RealESRGAN (upscale), 16 samplers (including k-samplers and UniPC), custom VAE, low-memory optimizations, model merging, safetensor support, picklescan, etc. [Click here to see the full list of features](https://github.com/easydiffusion/sdkit/wiki/Features).
 
-📢 We're looking to add support for *Lycoris*, *AMD*, *Pix2Pix*, and *outpainting*. We'd love code contributions for these!
+📢 We're looking to add support for *Lycoris*, *AMD*, *Pix2Pix*, and *outpainting*. We'd love some code contributions for these!
 
 ## Is it fast?
-It is pretty fast, and close to the fastest. For the same image, `sdkit` took 5.5 seconds, while `automatic1111` webui took 4.95 seconds. 📢 We're looking for code contributions to make `sdkit` even faster!
+It is pretty fast, and close to the fastest. For the same image, `sdkit` took 5.5 seconds, while `automatic1111` WebUI took 4.95 seconds. 📢 We're looking for code contributions to make `sdkit` even faster!
 
 `xformers` is supported experimentally, which will make `sdkit` even faster.
 
@@ -117,21 +117,21 @@ No xformers. No VRAM optimizations for low-memory usage.
 | `automatic1111` webui | 4.95 sec | 6.15 it/s | 5.1 GB |
 
 ## Does it work on lower-end GPUs, or without GPUs?
-Yes. It works on NVIDIA/Mac GPUs with atleast 2GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but atleast you'll be able to try it out!
+Yes. It works on NVIDIA/Mac GPUs with at least 2GB of VRAM. For PCs without a compatible GPU, it can run entirely on the CPU. Running on the CPU will be *very* slow, but at least you'll be able to try it out!
 
-📢 We don't support AMD yet on Windows (it'll run in CPU-mode, or in Linux), but we're looking for code contributions for AMD support!
+📢 We don't support AMD yet on Windows (it'll run in CPU mode, or in Linux), but we're looking for code contributions for AMD support!
 
 ## Why not just use diffusers?
-You can certainly use diffusers. `sdkit` is infact using `diffusers` internally, so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
+You can certainly use diffusers. `sdkit` is in fact using `diffusers` internally, so you can think of `sdkit` as a convenient API and a collection of tools, focused on Stable Diffusion projects.
 
 `sdkit`:
 1. is a simple, lightweight toolkit for Stable Diffusion projects.
-2. natively includes frequently-used projects like GFPGAN, CodeFormer and RealESRGAN.
+2. natively includes frequently-used projects like GFPGAN, CodeFormer, and RealESRGAN.
 3. works with the popular `.ckpt` and `.safetensors` model format.
 4. includes memory optimizations for low-end GPUs.
 5. built-in support for running on multiple GPUs.
 6. can download models from any server.
-7. auto-scans for malicious models.
+7. Auto scans for malicious models.
 8. includes 16 samplers (including k-samplers).
 9. born out of the needs of the new Stable Diffusion AI Art scene, starting Aug 2022.
 
@@ -173,4 +173,4 @@ The license of this software forbids you from sharing any content that:
 - Spreads misinformation.
 - Target vulnerable groups. 
 
-For the full list of restrictions please read [the License](https://github.com/easydiffusion/sdkit/blob/main/LICENSE). You agree to these terms by using this software.
+For the full list of restrictions please read [the License](https://github.com/easydiffusion/sdkit/blob/main/LICENSE). By using this software you agree to the terms.
