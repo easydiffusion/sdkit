@@ -340,6 +340,7 @@ def make_with_diffusers(
         del cmd["strength"]
 
     cmd["callback"] = lambda i, t, x_samples: callback(x_samples, i, operation_to_apply) if callback else None
+    cmd["callback_steps"] = 1
 
     # apply the LoRA (if necessary)
     if context.models.get("lora"):
@@ -377,6 +378,9 @@ def make_with_diffusers(
         working = F.pad(working, self.paddingY, mode=modey)
         return F.conv2d(working, weight, bias, self.stride, torch.nn.modules.utils._pair(0), self.dilation, self.groups)
 
+    def lora_conv_forward(self, hidden_states, scale=1.0):
+        return super(self.__class__, self).forward(hidden_states)
+
     targets = [
         operation_to_apply.vae,
         operation_to_apply.text_encoder,
@@ -395,6 +399,7 @@ def make_with_diffusers(
     for cl in conv_layers:
         if isinstance(cl, LoRACompatibleConv) and cl.lora_layer is None:
             cl.lora_layer = lambda *x: 0
+            cl.forward = lora_conv_forward.__get__(cl)
 
         cl._conv_forward = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
 

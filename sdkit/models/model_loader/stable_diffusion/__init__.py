@@ -192,7 +192,6 @@ def load_diffusers_model(
     log.info(f"using attn_precision: {attn_precision}")
 
     model_load_params = {
-        "original_config_file": config_file_path,
         "extract_ema": False,
         "scheduler_type": "ddim",
         "from_safetensors": model_path.endswith(".safetensors"),
@@ -200,6 +199,10 @@ def load_diffusers_model(
         "device": "cpu",
         "load_safety_checker": False,
     }
+
+    # diffusers now needs the file contents rather than the yaml file path
+    with open(config_file_path, "r") as f:
+        model_load_params["original_config_file"] = f.read()
 
     if is_inpainting:
         model_load_params["pipeline_class"] = StableDiffusionInpaintPipeline
@@ -419,8 +422,8 @@ def load_diffusers_model(
     if isinstance(default_pipe, (StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline)):
         pipe_inpainting = StableDiffusionXLInpaintPipeline(**default_pipe.components)
         pipe_inpainting.watermark.apply_watermark = lambda images: images
-    else:  # TODO - the legacy inpainting model may no longer be needed
-        pipe_inpainting = StableDiffusionInpaintPipelineLegacy(**default_pipe.components)
+    else:
+        pipe_inpainting = StableDiffusionInpaintPipeline(**default_pipe.components)
 
     model["txt2img"] = pipe_txt2img
     model["img2img"] = pipe_img2img
