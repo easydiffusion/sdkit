@@ -399,9 +399,18 @@ def make_with_diffusers(
     for cl in conv_layers:
         if isinstance(cl, LoRACompatibleConv) and cl.lora_layer is None:
             cl.lora_layer = lambda *x: 0
-            cl.forward = lora_conv_forward.__get__(cl)
+            if not hasattr(cl, "_forward_bkp"):
+                cl._forward_bkp = cl.forward
+                cl._forward_tiling = lora_conv_forward.__get__(cl)
 
-        cl._conv_forward = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
+            cl.forward = cl._forward_bkp if tiling is None else cl._forward_tiling
+
+        if not hasattr(cl, "_conv_forward_bkp"):
+            cl._conv_forward_bkp = cl._conv_forward
+
+        _conv_forward_tiling = asymmetricConv2DConvForward.__get__(cl, torch.nn.Conv2d)
+
+        cl._conv_forward = cl._conv_forward_bkp if tiling is None else _conv_forward_tiling
 
     # --------------------------------------------------------------------------------------------------
     log.info("Parsing the prompt...")
