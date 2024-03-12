@@ -78,7 +78,9 @@ def test_1_3b__stable_diffusion_1_4_inpainting_works_with_strict_mask_border__51
     assert_images_same(image, expected_image, "stable_diffusion_test1.3b")
 
 
-def stable_diffusion_works_on_multiple_devices_in_parallel_test(model, vram_usage_level, test_name, args={}):
+def stable_diffusion_works_on_multiple_devices_in_parallel_test(
+    model, vram_usage_level, test_name, args={}, devices=["cuda:0", "cpu"]
+):
     init_args(args)
 
     model_file, model_ver = model
@@ -104,7 +106,13 @@ def stable_diffusion_works_on_multiple_devices_in_parallel_test(model, vram_usag
         assert_images_same(image, expected_image, f"stable_diffusion_{test_name}_{context.device.replace(':', '')}")
 
     # emulate multiple GPUs by running one thread on the CPU, and one on the GPU
-    run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
+    run_test_on_multiple_devices(task, devices)
+
+
+def test_1_4__stable_diffusion_txt2img_works_on_cpu():
+    stable_diffusion_works_on_multiple_devices_in_parallel_test(
+        ("sd-v1-4.ckpt", "1.4"), "low", "test1.4", devices=["cpu"]
+    )
 
 
 def test_1_10a__stable_diffusion_txt2img_works_on_multiple_devices__low_VRAM():
