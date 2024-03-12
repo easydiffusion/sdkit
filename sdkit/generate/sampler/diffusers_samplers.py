@@ -42,7 +42,7 @@ _samplers_init = {
     "plms": _make_plms,
     "ddim": lambda ddim_scheduler_config: DDIMScheduler.from_config(ddim_scheduler_config),
     "dpm_solver_stability": lambda ddim_scheduler_config: DPMSolverMultistepScheduler.from_config(
-        ddim_scheduler_config, algorithm_type="dpmsolver"
+        ddim_scheduler_config, algorithm_type="dpmsolver", final_sigmas_type="sigma_min"
     ),
     "euler_a": lambda ddim_scheduler_config: EulerAncestralDiscreteScheduler.from_config(ddim_scheduler_config),
     "euler": lambda ddim_scheduler_config: EulerDiscreteScheduler.from_config(ddim_scheduler_config),

@@ -423,7 +423,11 @@ def load_diffusers_model(
         pipe_inpainting = StableDiffusionXLInpaintPipeline(**default_pipe.components)
         pipe_inpainting.watermark.apply_watermark = lambda images: images
     else:
-        pipe_inpainting = StableDiffusionInpaintPipeline(**default_pipe.components)
+        inpaint_legacy_components = {}
+        for key in ("vae", "text_encoder", "tokenizer", "unet", "scheduler", "safety_checker", "feature_extractor"):
+            inpaint_legacy_components[key] = getattr(default_pipe, key)
+
+        pipe_inpainting = StableDiffusionInpaintPipelineLegacy(**inpaint_legacy_components)
 
     model["txt2img"] = pipe_txt2img
     model["img2img"] = pipe_img2img
