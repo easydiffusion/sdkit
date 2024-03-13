@@ -13,7 +13,11 @@ from sdkit.filter import apply_filters
 
 input_image = Image.open("man_pose.jpg")  # set your input image here <---------
 
-openpose_image = apply_filters(context, "openpose", input_image)  # you can apply other filters too, e.g. "canny" etc.
+controlnet_filter_name = 'openpose'  # you can set this to other controlnet filters too, e.g. "canny" etc.
+context.model_paths[controlnet_filter_name] = controlnet_filter_name
+load_model(context, controlnet_filter_name)
+
+filtered_image = apply_filters(context, controlnet_filter_name, input_image)
 
 # load SD
 context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"  # <---- SD model path here
@@ -30,7 +34,7 @@ image = generate_images(
     seed=42,
     width=512,
     height=768,
-    control_image=openpose_image,
+    control_image=filtered_image,
 )[0]
 
 # save the image
