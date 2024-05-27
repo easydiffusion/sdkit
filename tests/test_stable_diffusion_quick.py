@@ -30,7 +30,7 @@ def setup_module():
 
 
 def test_sd_1_4_loads():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-5.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
@@ -68,7 +68,7 @@ def test_1_0d__stable_diffusion_1_4_works_on_multiple_devices_and_vram_levels():
         def task(context: Context):
             context.test_diffusers = True
             context.vram_usage_level = vram_usage_level
-            context.model_paths["stable-diffusion"] = f"models/stable-diffusion/sd-v1-5.safetensors"
+            context.model_paths["stable-diffusion"] = f"models/stable-diffusion/sd-v1-4.ckpt"
 
             load_model(context, "stable-diffusion")
 
@@ -158,7 +158,7 @@ def compel_parses_prompts_on_multiple_devices_in_parallel_test(vram_usage_level:
     def task(context: Context):
         context.test_diffusers = True
         context.vram_usage_level = vram_usage_level
-        context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-5.safetensors"
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
 
         load_model(context, "stable-diffusion")
 
