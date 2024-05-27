@@ -215,6 +215,8 @@ def make_with_diffusers(
         StableDiffusionXLImg2ImgPipeline,
         StableDiffusionXLInpaintPipeline,
         StableDiffusionXLControlNetPipeline,
+        StableDiffusionXLControlNetInpaintPipeline,
+        StableDiffusionXLControlNetImg2ImgPipeline,
     )
     from diffusers.models.lora import LoRACompatibleConv
 
@@ -306,12 +308,12 @@ def make_with_diffusers(
             cmd["control_image"] = control_image
 
         if is_sd_xl:
-            if operation_to_apply != "txt2img":
-                raise Exception(
-                    "ControlNet only supports text-to-image with SD-XL right now. Please remove the initial image and try again!"
-                )
-
-            operation_to_apply_cls = StableDiffusionXLControlNetPipeline
+            controlnet_op = {
+                "txt2img": StableDiffusionXLControlNetPipeline,
+                "img2img": StableDiffusionXLControlNetImg2ImgPipeline,
+                "inpainting": StableDiffusionXLControlNetInpaintPipeline,
+            }
+            operation_to_apply_cls = controlnet_op[operation_to_apply]
         else:
             controlnet_op = {
                 "txt2img": StableDiffusionControlNetPipeline,

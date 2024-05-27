@@ -356,4 +356,35 @@ def test_6_2__generates_image_from_single_control_image__txt2img():
     )[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/controlnet/txt-pose_controlnet_xl.png")
-    assert_images_same(image, expected_image, "test4.1a")
+    assert_images_same(image, expected_image, "test6.2")
+
+
+def test_6_3__generates_image_from_single_control_image__img2img():
+    image = generate_images(
+        context,
+        "1boy, muscular, full armor, armor, shoulder plates, angry, looking at viewer, spiked hair, white hair",
+        seed=42,
+        width=512,
+        height=768,
+        init_image=Image.open(f"{INPUT_DIR}/pose.jpg"),
+        control_image=Image.open(f"{EXPECTED_DIR}/filters/openpose.png"),
+    )[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/controlnet/img-pose_controlnet_xl.png")
+    assert_images_same(image, expected_image, "test6.3")
+
+
+def test_6_4__generates_image_from_single_control_image__inpaint():
+    image = generate_images(
+        context,
+        "1boy, muscular, full armor, armor, shoulder plates, angry, looking at viewer, spiked hair, white hair",
+        seed=42,
+        width=512,
+        height=768,
+        init_image=Image.open(f"{INPUT_DIR}/pose.jpg"),
+        init_image_mask=Image.open(f"{INPUT_DIR}/pose_mask.png"),
+        control_image=Image.open(f"{EXPECTED_DIR}/filters/openpose.png"),
+    )[0]
+
+    expected_image = Image.open(f"{EXPECTED_DIR}/controlnet/inpaint-pose_controlnet_xl.png")
+    assert_images_same(image, expected_image, "test6.4")
