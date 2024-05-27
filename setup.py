@@ -2,7 +2,6 @@ import setuptools
 
 setuptools.setup(
     install_requires=[
-        "setuptools==69.5.1",
         "stable-diffusion-sdkit==2.1.5",  # wrapper around stable-diffusion, to allow pip install
         "gfpgan",
         "piexif",
