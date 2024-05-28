@@ -39,7 +39,7 @@ def generate_images(
     init_image=None,
     init_image_mask=None,
     control_image=None,
-    control_alpha=None,
+    control_alpha=1.0,
     prompt_strength: float = 0.8,
     preserve_init_image_color_profile=False,
     strict_mask_border=False,
@@ -191,7 +191,7 @@ def make_with_diffusers(
     init_image=None,
     init_image_mask=None,
     control_image=None,
-    control_alpha=None,
+    control_alpha=1.0,
     prompt_strength: float = 0.8,
     # preserve_init_image_color_profile=False,
     sampler_name: str = "euler_a",  # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
@@ -215,6 +215,8 @@ def make_with_diffusers(
         StableDiffusionXLImg2ImgPipeline,
         StableDiffusionXLInpaintPipeline,
         StableDiffusionXLControlNetPipeline,
+        StableDiffusionXLControlNetInpaintPipeline,
+        StableDiffusionXLControlNetImg2ImgPipeline,
     )
     from diffusers.models.lora import LoRACompatibleConv
 
@@ -268,11 +270,6 @@ def make_with_diffusers(
                 f"This model does not support {operation_to_apply}! This model requires an initial image and mask."
             )
 
-        if control_image and isinstance(model["default"], StableDiffusionXLImg2ImgPipeline):
-            raise RuntimeError(
-                "ControlNet only supports text-to-image with SD-XL right now. Please remove the initial image and try again!"
-            )
-
         raise NotImplementedError(
             f"This model does not support {operation_to_apply}! Supported operations: {model.keys()}"
         )
@@ -300,18 +297,22 @@ def make_with_diffusers(
             control_image = resize_img(control_image.convert("RGB"), width, height, clamp_to_8=True)
             assert_controlnet_model(controlnet, context_dim)
 
+            assert control_alpha is not None and not isinstance(control_alpha, list)
+            control_alpha = float(control_alpha)
+            cmd["controlnet_conditioning_scale"] = control_alpha
+
         if operation_to_apply == "txt2img":
             cmd["image"] = control_image
         else:
             cmd["control_image"] = control_image
 
         if is_sd_xl:
-            if operation_to_apply != "txt2img":
-                raise Exception(
-                    "ControlNet only supports text-to-image with SD-XL right now. Please remove the initial image and try again!"
-                )
-
-            operation_to_apply_cls = StableDiffusionXLControlNetPipeline
+            controlnet_op = {
+                "txt2img": StableDiffusionXLControlNetPipeline,
+                "img2img": StableDiffusionXLControlNetImg2ImgPipeline,
+                "inpainting": StableDiffusionXLControlNetInpaintPipeline,
+            }
+            operation_to_apply_cls = controlnet_op[operation_to_apply]
         else:
             controlnet_op = {
                 "txt2img": StableDiffusionControlNetPipeline,
@@ -321,6 +322,9 @@ def make_with_diffusers(
             operation_to_apply_cls = controlnet_op[operation_to_apply]
 
         operation_to_apply = operation_to_apply_cls(controlnet=controlnet, **default_pipe.components)
+
+        if hasattr(operation_to_apply, "watermark"):
+            operation_to_apply.watermark = None
 
     if sampler_name.startswith("unipc_tu"):
         sampler_name = "unipc_tu_2" if num_inference_steps < 10 else "unipc_tu"
