@@ -39,7 +39,7 @@ def generate_images(
     init_image=None,
     init_image_mask=None,
     control_image=None,
-    control_alpha=None,
+    control_alpha=1.0,
     prompt_strength: float = 0.8,
     preserve_init_image_color_profile=False,
     strict_mask_border=False,
@@ -191,7 +191,7 @@ def make_with_diffusers(
     init_image=None,
     init_image_mask=None,
     control_image=None,
-    control_alpha=None,
+    control_alpha=1.0,
     prompt_strength: float = 0.8,
     # preserve_init_image_color_profile=False,
     sampler_name: str = "euler_a",  # "ddim", "plms", "heun", "euler", "euler_a", "dpm2", "dpm2_a", "lms",
@@ -296,6 +296,10 @@ def make_with_diffusers(
             control_image = get_image(control_image)
             control_image = resize_img(control_image.convert("RGB"), width, height, clamp_to_8=True)
             assert_controlnet_model(controlnet, context_dim)
+
+            assert control_alpha is not None and not isinstance(control_alpha, list)
+            control_alpha = float(control_alpha)
+            cmd["controlnet_conditioning_scale"] = control_alpha
 
         if operation_to_apply == "txt2img":
             cmd["image"] = control_image
