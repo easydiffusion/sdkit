@@ -319,6 +319,9 @@ def make_with_diffusers(
 
         operation_to_apply = operation_to_apply_cls(controlnet=controlnet, **default_pipe.components)
 
+        if hasattr(operation_to_apply, "watermark"):
+            operation_to_apply.watermark = None
+
     if sampler_name.startswith("unipc_tu"):
         sampler_name = "unipc_tu_2" if num_inference_steps < 10 else "unipc_tu"
 
