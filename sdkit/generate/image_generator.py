@@ -297,8 +297,10 @@ def make_with_diffusers(
             control_image = resize_img(control_image.convert("RGB"), width, height, clamp_to_8=True)
             assert_controlnet_model(controlnet, context_dim)
 
-            control_alpha = control_alpha or 1.0
-            assert control_alpha is not None and not isinstance(control_alpha, list)
+            if control_alpha is None:
+                control_alpha = 1.0
+
+            assert not isinstance(control_alpha, list)
             control_alpha = float(control_alpha)
             cmd["controlnet_conditioning_scale"] = control_alpha
 
