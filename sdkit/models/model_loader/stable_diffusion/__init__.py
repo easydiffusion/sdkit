@@ -198,11 +198,8 @@ def load_diffusers_model(
         "upcast_attention": (attn_precision == "fp32"),
         "device": "cpu",
         "load_safety_checker": False,
+        "original_config_file": config_file_path,
     }
-
-    # diffusers now needs the file contents rather than the yaml file path
-    with open(config_file_path, "r") as f:
-        model_load_params["original_config_file"] = f.read()
 
     if is_inpainting:
         model_load_params["pipeline_class"] = StableDiffusionInpaintPipeline
