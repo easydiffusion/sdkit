@@ -21,15 +21,25 @@ def gc(context: Context):
 
 def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix=""):
     import torch
+    from sdkit.utils import log
 
-    cpu_used = psutil.cpu_percent()
-    ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
-    vram_free_device, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
-    if process_usage_only:
-        vram_used = torch.cuda.memory_allocated(device) if "cuda" in device else 0
-    else:
-        vram_used = vram_total - vram_free_device
-    vram_peak = torch.cuda.memory_stats(device)["allocated_bytes.all.peak"] if "cuda" in device else 0
+    try:
+        cpu_used = psutil.cpu_percent()
+        ram_used, ram_total = psutil.virtual_memory().used, psutil.virtual_memory().total
+    except Exception as e:
+        log.error(f"Could not fetch CPU info: {e}")
+        cpu_used, ram_used, ram_total = 0, 0, 0
+
+    try:
+        vram_free_device, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
+        if process_usage_only:
+            vram_used = torch.cuda.memory_allocated(device) if "cuda" in device else 0
+        else:
+            vram_used = vram_total - vram_free_device
+        vram_peak = torch.cuda.memory_stats(device)["allocated_bytes.all.peak"] if "cuda" in device else 0
+    except Exception as e:
+        log.error(f"Could not fetch GPU info: {e}")
+        vram_free_device, vram_total, vram_used, vram_peak = 0, 0, 0, 0
 
     ram_used /= 1024**3
     ram_total /= 1024**3
@@ -38,8 +48,6 @@ def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix
     vram_peak /= 1024**3
 
     if log_info:
-        from sdkit.utils import log
-
         msg = log_prefix + " - " if log_prefix else ""
         msg += f"CPU utilization: {cpu_used:.1f}%, System RAM used: {ram_used:.1f} of {ram_total:.1f} GiB"
         if "cuda" in device:
