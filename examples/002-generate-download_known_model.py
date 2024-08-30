@@ -6,12 +6,10 @@ from sdkit.utils import log, save_images
 context = sdkit.Context()
 
 # download the model (skips if already downloaded, resumes if downloaded partially)
-download_model(model_type="stable-diffusion", model_id="1.5-pruned-emaonly")
+download_model(model_type="stable-diffusion", model_id="1.5-pruned-emaonly-fp16")
 
 # set the path to the auto-downloaded model
-context.model_paths["stable-diffusion"] = resolve_downloaded_model_path(
-    "stable-diffusion", "1.5-pruned-emaonly"
-)
+context.model_paths["stable-diffusion"] = resolve_downloaded_model_path("stable-diffusion", "1.5-pruned-emaonly-fp16")
 load_model(context, "stable-diffusion")
 
 # generate the image
