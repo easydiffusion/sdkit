@@ -108,7 +108,7 @@ def test_gfpgan_and_realesrgan_work_together_on_multiple_devices():
 
 def test_stable_diffusion_and_gfpgan_load_together_on_multiple_devices():
     def task(context):
-        context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
         load_model(context, "stable-diffusion")
 
         context.model_paths["gfpgan"] = "models/gfpgan/GFPGANv1.3.pth"

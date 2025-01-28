@@ -25,7 +25,7 @@ def setup_module():
 
 
 def test_load_sd_1_4():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 

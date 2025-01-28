@@ -20,7 +20,7 @@ def setup_module():
 
     context = Context()
     context.test_diffusers = True
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
