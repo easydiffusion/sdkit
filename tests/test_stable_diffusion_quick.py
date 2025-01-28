@@ -62,23 +62,33 @@ def test_1_0c__stable_diffusion_1_4_inpainting_works__64x64():
     assert image.getbbox(), f"Image is black!"
 
 
-def test_1_0d__stable_diffusion_1_4_works_on_multiple_devices_and_vram_levels():
-    for vram_usage_level in ("low", "balanced", "high"):
+def stable_diffusion_1_4_works_on_multiple_devices_for_vram_levels(vram_usage_level):
+    def task(context: Context):
+        context.test_diffusers = True
+        context.vram_usage_level = vram_usage_level
+        context.model_paths["stable-diffusion"] = f"models/stable-diffusion/1.x/sd-v1-4.ckpt"
 
-        def task(context: Context):
-            context.test_diffusers = True
-            context.vram_usage_level = vram_usage_level
-            context.model_paths["stable-diffusion"] = f"models/stable-diffusion/1.x/sd-v1-4.ckpt"
+        load_model(context, "stable-diffusion")
 
-            load_model(context, "stable-diffusion")
+        image = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)[0]
 
-            image = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)[0]
+        assert image is not None, f"{vram_usage_level} {context.device} - Image is None"
+        assert image.getbbox(), f"{vram_usage_level} {context.device} - Image is black!"
 
-            assert image is not None, f"{vram_usage_level} {context.device} - Image is None"
-            assert image.getbbox(), f"{vram_usage_level} {context.device} - Image is black!"
+    # emulate multiple GPUs by running one thread on the CPU, and one on the GPU
+    run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
 
-        # emulate multiple GPUs by running one thread on the CPU, and one on the GPU
-        run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
+
+def test_1_1a__stable_diffusion_1_4_works_on_multiple_devices__low_VRAM():
+    stable_diffusion_1_4_works_on_multiple_devices_for_vram_levels(vram_usage_level="low")
+
+
+def test_1_1b__stable_diffusion_1_4_works_on_multiple_devices__low_VRAM():
+    stable_diffusion_1_4_works_on_multiple_devices_for_vram_levels(vram_usage_level="balanced")
+
+
+def test_1_1c__stable_diffusion_1_4_works_on_multiple_devices__low_VRAM():
+    stable_diffusion_1_4_works_on_multiple_devices_for_vram_levels(vram_usage_level="high")
 
 
 def make_live_preview_callback(width, height):
@@ -98,7 +108,7 @@ def make_live_preview_callback(width, height):
     return on_step
 
 
-def test_1_15a__live_preview__stable_diffusion_1_4_txt2img_works__64x64():
+def test_1_2a__live_preview__stable_diffusion_1_4_txt2img_works__64x64():
     image = generate_images(
         context,
         "Photograph of an astronaut riding a horse",
@@ -112,7 +122,7 @@ def test_1_15a__live_preview__stable_diffusion_1_4_txt2img_works__64x64():
     assert_images_same(image, expected_image, "test1.15a")
 
 
-def test_1_15b__live_preview__stable_diffusion_1_4_img2img_works__64x64():
+def test_1_2b__live_preview__stable_diffusion_1_4_img2img_works__64x64():
     image = generate_images(
         context,
         "Lion sitting on a bench",
@@ -127,7 +137,7 @@ def test_1_15b__live_preview__stable_diffusion_1_4_img2img_works__64x64():
     assert_images_same(image, expected_image, "test1.15b")
 
 
-def test_1_15c__live_preview__stable_diffusion_1_4_inpaint_works__64x64():
+def test_1_2c__live_preview__stable_diffusion_1_4_inpaint_works__64x64():
     image = generate_images(
         context,
         "Lion sitting on a bench",
