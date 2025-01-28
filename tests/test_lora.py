@@ -25,7 +25,7 @@ def setup_module():
 
 
 def test_load_sd_1_4():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
@@ -200,7 +200,7 @@ def test_2_4__multiple_a1111_lora__sd_1_4__alpha_0_0():
 
 # section 3 - sdxl lora
 def test_load_sdxl():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 

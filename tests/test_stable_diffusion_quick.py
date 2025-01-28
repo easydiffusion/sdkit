@@ -30,7 +30,7 @@ def setup_module():
 
 
 def test_sd_1_4_loads():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
@@ -68,7 +68,7 @@ def test_1_0d__stable_diffusion_1_4_works_on_multiple_devices_and_vram_levels():
         def task(context: Context):
             context.test_diffusers = True
             context.vram_usage_level = vram_usage_level
-            context.model_paths["stable-diffusion"] = f"models/stable-diffusion/sd-v1-4.ckpt"
+            context.model_paths["stable-diffusion"] = f"models/stable-diffusion/1.x/sd-v1-4.ckpt"
 
             load_model(context, "stable-diffusion")
 
@@ -150,7 +150,8 @@ def test_2_0__misc__compel_parses_prompts():
     expected_embeds = f"{TEST_DATA_FOLDER}/expected_embeds/prompt-photograph_of_an_astronaut_riding_a_horse"
     expected_embeds = get_tensor_for_device(expected_embeds, context.device)
 
-    assert embeds.device == torch.device(context.device)
+    assert embeds.device.type == context.torch_device.type
+    assert embeds.device.index == context.torch_device.index
     assert torch.equal(embeds, expected_embeds)
 
 
@@ -158,7 +159,7 @@ def compel_parses_prompts_on_multiple_devices_in_parallel_test(vram_usage_level:
     def task(context: Context):
         context.test_diffusers = True
         context.vram_usage_level = vram_usage_level
-        context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
 
         load_model(context, "stable-diffusion")
 
@@ -168,7 +169,8 @@ def compel_parses_prompts_on_multiple_devices_in_parallel_test(vram_usage_level:
         expected_embeds = f"{TEST_DATA_FOLDER}/expected_embeds/prompt-photograph_of_an_astronaut_riding_a_horse"
         expected_embeds = get_tensor_for_device(expected_embeds, context.device)
 
-        assert embeds.device == torch.device(context.device)
+        assert embeds.device.type == context.torch_device.type
+        assert embeds.device.index == context.torch_device.index
         assert torch.equal(embeds, expected_embeds)
 
     run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
@@ -196,7 +198,7 @@ def init_args(args: dict):
 
 # SD XL
 def test_2_0__sdxl__loads_base_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
@@ -243,7 +245,7 @@ def test_2_1d__live_preview__sdxl_txt2img_works__64x64():
 
 ## refiner model
 def test_2_4__sdxl__loads_refiner_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_refiner_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_refiner_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
@@ -260,7 +262,7 @@ def test_2_4a__sdxl_refiner_img2img_works():
 def test_2_5a__sdxl__base_txt2img_works_on_low():
     context.vram_usage_level = "low"
 
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
     images = generate_images(context, "Horse", seed=42, width=64, height=64, num_inference_steps=1)
@@ -272,7 +274,7 @@ def test_2_5a__sdxl__base_txt2img_works_on_low():
 def test_2_5b__sdxl__refiner_img2img_works_on_low():
     context.vram_usage_level = "low"
 
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_refiner_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_refiner_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
     init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
@@ -285,7 +287,7 @@ def test_2_5b__sdxl__refiner_img2img_works_on_low():
 def test_2_6__sdxl__runs_on_multiple_devices_in_parallel():
     def task(context: Context):
         context.test_diffusers = True
-        context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
 
         load_model(context, "stable-diffusion")
 
@@ -300,7 +302,7 @@ def test_2_6__sdxl__runs_on_multiple_devices_in_parallel():
 # inpainting models
 ## official 1.5 inpainting
 def test_3_0__1_5_inpainting__loads_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/1.5/sd-v1-5-inpainting.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-5-inpainting.ckpt"
     load_model(context, "stable-diffusion")
 
 
@@ -317,7 +319,7 @@ def test_3_1__stable_diffusion_1_5_inpainting_works__64x64():
 
 ## official 2.0 inpainting
 def test_3_2__2_0_inpainting__loads_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/2.0/512-inpainting-ema.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/2.0/512-inpainting-ema.safetensors"
     load_model(context, "stable-diffusion")
 
 
@@ -334,7 +336,7 @@ def test_3_3__stable_diffusion_2_0_inpainting_works__64x64():
 
 ## custom inpainting 1.5
 def test_3_4__custom_inpainting_1_5__loads_model():
-    model_path = "models/stable-diffusion/custom/rpgInpainting_v4-inpainting.safetensors"
+    model_path = "models/stable-diffusion/1.x/rpgInpainting_v4-inpainting.safetensors"
     model_url = "https://civitai.com/api/download/models/96255"
 
     if not os.path.exists(model_path):
@@ -357,7 +359,7 @@ def test_3_5__stable_diffusion_custom_inpainting_1_5_works__64x64():
 
 ## custom inpainting 2.1
 def test_3_6__custom_inpainting_2_1__loads_model():
-    model_path = "models/stable-diffusion/custom/aZovyaRPGArtistTools_sd21768V1Inpainting.safetensors"
+    model_path = "models/stable-diffusion/2.1/aZovyaRPGArtistTools_sd21768V1Inpainting.safetensors"
     model_url = "https://civitai.com/api/download/models/57615"
 
     if not os.path.exists(model_path):
