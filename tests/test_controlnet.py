@@ -379,7 +379,7 @@ def test_5_1c__generates_image_from_single_control_image__high():
 
 # section 6 - SD-XL
 def test_load_sdxl_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
