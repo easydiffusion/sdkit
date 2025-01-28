@@ -139,7 +139,7 @@ def test_2_3__multiple_a1111_embedding__sd_1_4__both_prefixes():
 
 # section 3 - sdxl embedding
 def test_load_sdxl():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
