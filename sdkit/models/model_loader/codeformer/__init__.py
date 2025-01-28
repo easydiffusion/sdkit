@@ -1,3 +1,19 @@
+# hack for basicsr https://github.com/XPixelGroup/BasicSR/pull/650
+# credit: https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/14186/files
+
+import sys
+
+try:
+    import torchvision.transforms.functional_tensor
+except ImportError:
+    try:
+        import torchvision.transforms.functional as functional
+
+        sys.modules["torchvision.transforms.functional_tensor"] = functional
+    except ImportError:
+        pass
+# /hack
+
 from .codeformer_arch import CodeFormer
 
 from sdkit import Context
