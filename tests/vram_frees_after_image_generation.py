@@ -20,7 +20,7 @@ c = Context()
 log.info("Starting..")
 usage_start = DeviceUsage(*get_device_usage(c.device, log_info=True))
 
-c.model_paths["stable-diffusion"] = os.path.join(args.models_dir, "sd-v1-4.ckpt")
+c.model_paths["stable-diffusion"] = os.path.join(args.models_dir, "1.x", "sd-v1-4.ckpt")
 load_model(c, "stable-diffusion")
 
 log.info("Loaded the model..")

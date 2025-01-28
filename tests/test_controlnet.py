@@ -66,7 +66,7 @@ def test_1_2__can_preprocess_multiple_images_via_filter():
 
 # section 2 - load/unload controlnet
 def test_load_sd_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
@@ -342,7 +342,7 @@ def run_on_devices(vram_usage_level):
         context.vram_usage_level = vram_usage_level
 
         # load SD
-        context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
         load_model(context, "stable-diffusion")
 
         # load controlnet

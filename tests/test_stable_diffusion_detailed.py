@@ -29,7 +29,7 @@ def setup_module():
 
 
 def test_sd_1_4_loads():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/sd-v1-4.ckpt"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/1.x/sd-v1-4.ckpt"
     load_model(context, "stable-diffusion")
 
 
@@ -111,20 +111,20 @@ def stable_diffusion_works_on_multiple_devices_in_parallel_test(
 
 def test_1_4__stable_diffusion_txt2img_works_on_cpu():
     stable_diffusion_works_on_multiple_devices_in_parallel_test(
-        ("sd-v1-4.ckpt", "1.4"), "low", "test1.4", devices=["cpu"]
+        ("1.x/sd-v1-4.ckpt", "1.4"), "low", "test1.4", devices=["cpu"]
     )
 
 
 def test_1_10a__stable_diffusion_txt2img_works_on_multiple_devices__low_VRAM():
-    stable_diffusion_works_on_multiple_devices_in_parallel_test(("sd-v1-4.ckpt", "1.4"), "low", "test1.10a")
+    stable_diffusion_works_on_multiple_devices_in_parallel_test(("1.x/sd-v1-4.ckpt", "1.4"), "low", "test1.10a")
 
 
 def test_1_10b__stable_diffusion_txt2img_works_on_multiple_devices__balanced_VRAM():
-    stable_diffusion_works_on_multiple_devices_in_parallel_test(("sd-v1-4.ckpt", "1.4"), "balanced", "test1.10b")
+    stable_diffusion_works_on_multiple_devices_in_parallel_test(("1.x/sd-v1-4.ckpt", "1.4"), "balanced", "test1.10b")
 
 
 def test_1_10c__stable_diffusion_txt2img_works_on_multiple_devices__high_VRAM():
-    stable_diffusion_works_on_multiple_devices_in_parallel_test(("sd-v1-4.ckpt", "1.4"), "high", "test1.10c")
+    stable_diffusion_works_on_multiple_devices_in_parallel_test(("1.x/sd-v1-4.ckpt", "1.4"), "high", "test1.10c")
 
 
 def sd_1_4_image_test(model, vram_usage_mode, test_name, inpaint=False):
@@ -142,39 +142,39 @@ def sd_1_4_image_test(model, vram_usage_mode, test_name, inpaint=False):
 
 
 def test_1_11a__stable_diffusion_img2img_works_on_multiple_devices__low_VRAM():
-    sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "low", "test1.11a")
+    sd_1_4_image_test(("1.x/sd-v1-4.ckpt", "1.4"), "low", "test1.11a")
 
 
 def test_1_11b__stable_diffusion_img2img_works_on_multiple_devices__balanced_VRAM():
-    sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "balanced", "test1.11b")
+    sd_1_4_image_test(("1.x/sd-v1-4.ckpt", "1.4"), "balanced", "test1.11b")
 
 
 def test_1_11c__stable_diffusion_img2img_works_on_multiple_devices__high_VRAM():
-    sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "high", "test1.11c")
+    sd_1_4_image_test(("1.x/sd-v1-4.ckpt", "1.4"), "high", "test1.11c")
 
 
 def test_1_12a__stable_diffusion_legacy_inpaint_works_on_multiple_devices__low_VRAM():
-    sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "low", "test1.12a", inpaint=True)
+    sd_1_4_image_test(("1.x/sd-v1-4.ckpt", "1.4"), "low", "test1.12a", inpaint=True)
 
 
 def test_1_12b__stable_diffusion_legacy_inpaint_works_on_multiple_devices__balanced_VRAM():
-    sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "balanced", "test1.12b", inpaint=True)
+    sd_1_4_image_test(("1.x/sd-v1-4.ckpt", "1.4"), "balanced", "test1.12b", inpaint=True)
 
 
 def test_1_12c__stable_diffusion_legacy_inpaint_works_on_multiple_devices__high_VRAM():
-    sd_1_4_image_test(("sd-v1-4.ckpt", "1.4"), "high", "test1.12c", inpaint=True)
+    sd_1_4_image_test(("1.x/sd-v1-4.ckpt", "1.4"), "high", "test1.12c", inpaint=True)
 
 
 def test_1_13a__stable_diffusion_inpaint_model_works_on_multiple_devices__low_VRAM():
-    sd_1_4_image_test(("512-inpainting-ema.ckpt", "2.0"), "low", "test1.13a", inpaint=True)
+    sd_1_4_image_test(("2.0/512-inpainting-ema.ckpt", "2.0"), "low", "test1.13a", inpaint=True)
 
 
 def test_1_13b__stable_diffusion_inpaint_model_works_on_multiple_devices__balanced_VRAM():
-    sd_1_4_image_test(("512-inpainting-ema.ckpt", "2.0"), "balanced", "test1.13b", inpaint=True)
+    sd_1_4_image_test(("2.0/512-inpainting-ema.ckpt", "2.0"), "balanced", "test1.13b", inpaint=True)
 
 
 def test_1_13c__stable_diffusion_inpaint_model_works_on_multiple_devices__high_VRAM():
-    sd_1_4_image_test(("512-inpainting-ema.ckpt", "2.0"), "high", "test1.13c", inpaint=True)
+    sd_1_4_image_test(("2.0/512-inpainting-ema.ckpt", "2.0"), "high", "test1.13c", inpaint=True)
 
 
 def init_args(args: dict):
@@ -187,7 +187,7 @@ def init_args(args: dict):
 
 # SD XL
 def test_2_0__sdxl__loads_base_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_base_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
@@ -220,7 +220,7 @@ def test_2_3c__sdxl_inpainting_works__768x768():
 
 ## refiner model
 def test_2_4__sdxl__loads_refiner_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/official/sd_xl_refiner_1.0.safetensors"
+    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_refiner_1.0.safetensors"
     load_model(context, "stable-diffusion")
 
 
