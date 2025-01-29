@@ -166,15 +166,15 @@ def test_1_12c__stable_diffusion_legacy_inpaint_works_on_multiple_devices__high_
 
 
 def test_1_13a__stable_diffusion_inpaint_model_works_on_multiple_devices__low_VRAM():
-    sd_1_4_image_test(("2.0/512-inpainting-ema.ckpt", "2.0"), "low", "test1.13a", inpaint=True)
+    sd_1_4_image_test(("2.0/512-inpainting-ema.safetensors", "2.0"), "low", "test1.13a", inpaint=True)
 
 
 def test_1_13b__stable_diffusion_inpaint_model_works_on_multiple_devices__balanced_VRAM():
-    sd_1_4_image_test(("2.0/512-inpainting-ema.ckpt", "2.0"), "balanced", "test1.13b", inpaint=True)
+    sd_1_4_image_test(("2.0/512-inpainting-ema.safetensors", "2.0"), "balanced", "test1.13b", inpaint=True)
 
 
 def test_1_13c__stable_diffusion_inpaint_model_works_on_multiple_devices__high_VRAM():
-    sd_1_4_image_test(("2.0/512-inpainting-ema.ckpt", "2.0"), "high", "test1.13c", inpaint=True)
+    sd_1_4_image_test(("2.0/512-inpainting-ema.safetensors", "2.0"), "high", "test1.13c", inpaint=True)
 
 
 def init_args(args: dict):
