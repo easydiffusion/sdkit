@@ -175,6 +175,7 @@ def test_1_13b__stable_diffusion_inpaint_model_works_on_multiple_devices__balanc
 
 def test_1_13c__stable_diffusion_inpaint_model_works_on_multiple_devices__high_VRAM():
     sd_1_4_image_test(("2.0/512-inpainting-ema.safetensors", "2.0"), "high", "test1.13c", inpaint=True)
+    # this test currently produces black images. I wonder if this test has always been broken
 
 
 def init_args(args: dict):
