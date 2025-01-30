@@ -57,6 +57,18 @@ def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix
     return cpu_used, ram_used, ram_total, vram_used, vram_total, vram_peak
 
 
+def get_vram_usage_slow():
+    import subprocess
+    import platform
+
+    if platform.system() == "Windows":
+        ps_cmd = "(Get-Counter -Counter '\GPU Adapter Memory(*)\Dedicated Usage').CounterSamples[0].CookedValue"
+        x = subprocess.check_output(["powershell", "-Command", ps_cmd], encoding="utf-8")
+        return int(x)
+
+    return 0
+
+
 def get_object_id(o):
     """
     Returns a more-readable object id, than the long number returned by the inbuilt `id()` function.
