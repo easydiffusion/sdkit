@@ -30,6 +30,7 @@ from .latent_utils import (
 from .memory_utils import (
     gc,
     get_device_usage,
+    get_vram_usage_slow,
     get_object_id,
     get_tensors_in_memory,
     print_largest_tensors_in_memory,
