@@ -1,6 +1,12 @@
+import re
 import platform
 import subprocess
 from typing import Union, Tuple, Dict
+
+
+NVIDIA_PATTERN = re.compile(r"\b(?:nvidia|geforce|quadro|tesla)\b", re.IGNORECASE)
+NVIDIA_HALF_PRECISION_BUG_PATTERN = re.compile(r"\b(?:tesla k40m|16\d\d|t\d{2,})\b", re.IGNORECASE)
+AMD_HALF_PRECISION_BUG_PATTERN = re.compile(r"\b(?:navi 1\d)\b", re.IGNORECASE)
 
 
 def has_amd_gpu():
@@ -146,3 +152,10 @@ def is_cpu_device(device) -> bool:  # used for cpu offloading etc
     "Expects a torch.device as the argument"
 
     return device.type in ("cpu", "mps")
+
+
+def has_half_precision_bug(device_name) -> bool:
+    "Check whether the given device requires full precision for generating images due to a firmware bug"
+    if NVIDIA_PATTERN.search(device_name):
+        return NVIDIA_HALF_PRECISION_BUG_PATTERN.search(device_name) is not None
+    return AMD_HALF_PRECISION_BUG_PATTERN.search(device_name) is not None
