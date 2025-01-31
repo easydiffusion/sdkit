@@ -9,6 +9,7 @@ import os
 
 from common import (
     TEST_DATA_FOLDER,
+    USE_DIFFUSERS,
     assert_images_same,
 )
 
@@ -21,7 +22,7 @@ def setup_module():
     global context
 
     context = Context()
-    context.test_diffusers = True
+    context.test_diffusers = USE_DIFFUSERS
 
 
 def test_load_sd_1_4():

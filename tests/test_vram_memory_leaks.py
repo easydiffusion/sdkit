@@ -3,6 +3,8 @@ from sdkit.generate import generate_images
 from sdkit.models import load_model, unload_model
 from sdkit.utils import get_vram_usage_slow, log
 
+from .common import USE_DIFFUSERS
+
 context = None
 
 usage_timeseries = []
@@ -12,7 +14,7 @@ def setup_module():
     global context
 
     context = Context()
-    context.test_diffusers = True
+    context.test_diffusers = USE_DIFFUSERS
 
 
 def setup_function():
@@ -29,6 +31,7 @@ def teardown_function():
 
 def get_vram_usage():
     x = get_vram_usage_slow()
+    print(f"VRAM usage: {int(x) / 1024**3:.1f} Gb")
     usage_timeseries.append(x)
     return x
 

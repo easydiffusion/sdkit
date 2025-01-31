@@ -5,7 +5,14 @@ from sdkit.filter import apply_filters
 from sdkit.models import load_model
 
 
-from common import TEST_DATA_FOLDER, get_image_for_device, assert_images_same, run_test_on_multiple_devices
+from common import (
+    TEST_DATA_FOLDER,
+    GPU_DEVICE_NAME,
+    USE_DIFFUSERS,
+    get_image_for_device,
+    assert_images_same,
+    run_test_on_multiple_devices,
+)
 
 EXPECTED_DIR = f"{TEST_DATA_FOLDER}/expected_images/codeformer"
 
@@ -16,6 +23,7 @@ def setup_module():
     global context
 
     context = Context()
+    context.test_diffusers = USE_DIFFUSERS
     context.model_paths["codeformer"] = "models/codeformer/codeformer.pth"
     context.enable_codeformer = True
 
@@ -48,4 +56,4 @@ def test_codeformer_works_on_multiple_devices():
         assert_images_same(image_face_fixed, expected_image, "codeformer_test2")
 
     # emulate multiple GPUs by running one thread on the CPU, and one on the GPU
-    run_test_on_multiple_devices(task, ["cuda:0", "cpu"])
+    run_test_on_multiple_devices(task, [GPU_DEVICE_NAME, "cpu"])

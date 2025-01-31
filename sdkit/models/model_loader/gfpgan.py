@@ -30,10 +30,10 @@ def load_model(context: Context, **kwargs):
         # hack for a bug in facexlib: https://github.com/xinntao/facexlib/pull/19/files
         from facexlib.detection import retinaface
 
-        retinaface.device = torch.device(context.device)
+        retinaface.device = context.torch_device
 
         return GFPGANer(
-            device=torch.device(context.device),
+            device=context.torch_device,
             model_path=model_path,
             upscale=1,
             arch="clean",

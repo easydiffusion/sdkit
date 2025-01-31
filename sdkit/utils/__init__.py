@@ -42,5 +42,17 @@ from .convert_model_utils import (
     convert_pipeline_unet_to_onnx,
     convert_pipeline_to_tensorrt,
 )
-from .device_utils import has_amd_gpu
+from .device_utils import (
+    has_amd_gpu,
+    get_torch_platform,
+    get_device_count,
+    get_device_name,
+    get_device,
+    mem_get_info,
+    memory_allocated,
+    memory_stats,
+    empty_cache,
+    ipc_collect,
+    is_cpu_device,
+)
 from .misc_utils import make_sd_context, get_nested_attr

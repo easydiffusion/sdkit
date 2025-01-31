@@ -22,6 +22,7 @@ from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
 
 from sdkit import Context
+from sdkit.utils import is_cpu_device
 
 
 def load_model(context: Context, **kwargs):
@@ -40,7 +41,7 @@ def load_model(context: Context, **kwargs):
 
     half = context.half_precision
     model = RealESRGANer(
-        device=torch.device(context.device),
+        device=context.torch_device,
         scale=4,
         model_path=model_path,
         model=model_to_use,
@@ -48,8 +49,8 @@ def load_model(context: Context, **kwargs):
         half=half,
         tile=256,
     )
-    if "cuda" not in context.device:
-        model.model.to(context.device)
+    if is_cpu_device(context.torch_device):
+        model.model.to(context.torch_device)
 
     model.model.name = model_to_use
 

@@ -18,7 +18,7 @@ def load_controlnet(context, controlnet_path):
     import torch
     from sdkit.models import get_model_info_from_db
     from sdkit.models import models_db
-    from sdkit.utils import load_tensor_file
+    from sdkit.utils import load_tensor_file, is_cpu_device
 
     from accelerate import cpu_offload
 
@@ -76,13 +76,13 @@ def load_controlnet(context, controlnet_path):
 
     # memory optimizations
 
-    if context.vram_usage_level == "low" and "cuda" in context.device:
+    if context.vram_usage_level == "low" and not is_cpu_device(context.torch_device):
         controlnet = controlnet.to("cpu", torch.float16 if context.half_precision else torch.float32)
 
         offload_buffers = len(controlnet._parameters) > 0
-        cpu_offload(controlnet, context.device, offload_buffers=offload_buffers)
+        cpu_offload(controlnet, context.torch_device, offload_buffers=offload_buffers)
     else:
-        controlnet = controlnet.to(context.device, torch.float16 if context.half_precision else torch.float32)
+        controlnet = controlnet.to(context.torch_device, torch.float16 if context.half_precision else torch.float32)
 
     controlnet.set_attention_slice(1)
 

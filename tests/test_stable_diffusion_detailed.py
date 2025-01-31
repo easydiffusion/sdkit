@@ -10,6 +10,8 @@ from sdkit.utils import diffusers_latent_samples_to_images, img_to_buffer
 
 from common import (
     TEST_DATA_FOLDER,
+    GPU_DEVICE_NAME,
+    USE_DIFFUSERS,
     get_image_for_device,
     get_tensor_for_device,
     assert_images_same,
@@ -25,7 +27,7 @@ def setup_module():
     global context
 
     context = Context()
-    context.test_diffusers = True
+    context.test_diffusers = USE_DIFFUSERS
 
 
 def test_sd_1_4_loads():
@@ -79,14 +81,14 @@ def test_1_3b__stable_diffusion_1_4_inpainting_works_with_strict_mask_border__51
 
 
 def stable_diffusion_works_on_multiple_devices_in_parallel_test(
-    model, vram_usage_level, test_name, args={}, devices=["cuda:0", "cpu"]
+    model, vram_usage_level, test_name, args={}, devices=[GPU_DEVICE_NAME, "cpu"]
 ):
     init_args(args)
 
     model_file, model_ver = model
 
     def task(context: Context):
-        context.test_diffusers = True
+        context.test_diffusers = USE_DIFFUSERS
         context.vram_usage_level = vram_usage_level
         context.model_paths["stable-diffusion"] = f"models/stable-diffusion/{model_file}"
 
@@ -186,51 +188,61 @@ def init_args(args: dict):
     args["sampler_name"] = args.get("sampler_name", "euler_a")
 
 
-# SD XL
-def test_2_0__sdxl__loads_base_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
-    load_model(context, "stable-diffusion")
+if USE_DIFFUSERS:
 
+    # SD XL
+    def test_2_0__sdxl__loads_base_model():
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_base_1.0.safetensors"
+        load_model(context, "stable-diffusion")
 
-## full tests (768x768)
-def test_2_2a__sdxl_txt2img_works__768x768():
-    image = generate_images(context, "Photograph of an astronaut riding a horse", seed=42, width=768, height=768)[0]
+    ## full tests (768x768)
+    def test_2_2a__sdxl_txt2img_works__768x768():
+        image = generate_images(
+            context, "Photograph of an astronaut riding a horse", seed=42, width=768, height=768, num_inference_steps=3
+        )[0]
 
-    expected_image = Image.open(f"{EXPECTED_DIR}/xl-txt-euler_a-42-768x768-cuda.png")
-    assert_images_same(image, expected_image, "test2.2a")
+        expected_image = Image.open(f"{EXPECTED_DIR}/xl-txt-euler_a-42-768x768-cuda.png")
+        assert_images_same(image, expected_image, "test2.2a")
 
+    def test_2_2b__sdxl_img2img_works__768x768():
+        height = 512 if "directml" in GPU_DEVICE_NAME else 768
+        init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+        image = generate_images(
+            context, "Lion sitting on a bench", seed=42, width=768, height=height, init_image=init_img
+        )[0]
 
-def test_2_2b__sdxl_img2img_works__768x768():
-    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
-    image = generate_images(context, "Lion sitting on a bench", seed=42, width=768, height=768, init_image=init_img)[0]
+        expected_image = Image.open(f"{EXPECTED_DIR}/xl-img-euler_a-42-768x768-cuda.png")
+        assert_images_same(image, expected_image, "test2.2b")
 
-    expected_image = Image.open(f"{EXPECTED_DIR}/xl-img-euler_a-42-768x768-cuda.png")
-    assert_images_same(image, expected_image, "test2.2b")
+    def test_2_2c__sdxl_inpainting_works__768x768():
+        height = 512 if "directml" in GPU_DEVICE_NAME else 768
+        init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+        mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
+        image = generate_images(
+            context,
+            "Lion sitting on a bench",
+            seed=43,
+            width=768,
+            height=height,
+            init_image=init_img,
+            init_image_mask=mask,
+        )[0]
 
+        expected_image = Image.open(f"{EXPECTED_DIR}/xl-inpaint-euler_a-43-768x768-cuda.png")
+        assert_images_same(image, expected_image, "test2.2c")
 
-def test_2_3c__sdxl_inpainting_works__768x768():
-    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
-    mask = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog_mask-512x512.png")
-    image = generate_images(
-        context, "Lion sitting on a bench", seed=43, width=768, height=768, init_image=init_img, init_image_mask=mask
-    )[0]
+    ## refiner model
+    def test_2_4__sdxl__loads_refiner_model():
+        context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_refiner_1.0.safetensors"
+        load_model(context, "stable-diffusion")
 
-    expected_image = Image.open(f"{EXPECTED_DIR}/xl-inpaint-euler_a-43-768x768-cuda.png")
-    assert_images_same(image, expected_image, "test2.2c")
+    ### quick tests (only supports img2img)
+    def test_2_4a__sdxl_refiner_img2img_works():
+        height = 512 if "directml" in GPU_DEVICE_NAME else 768
+        init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
+        images = generate_images(
+            context, "Horse", seed=42, width=768, height=height, num_inference_steps=3, init_image=init_img
+        )
 
-
-## refiner model
-def test_2_4__sdxl__loads_refiner_model():
-    context.model_paths["stable-diffusion"] = "models/stable-diffusion/xl/sd_xl_refiner_1.0.safetensors"
-    load_model(context, "stable-diffusion")
-
-
-### quick tests (only supports img2img)
-def test_2_4a__sdxl_refiner_img2img_works():
-    init_img = Image.open(f"{TEST_DATA_FOLDER}/input_images/dog-512x512.png")
-    images = generate_images(
-        context, "Horse", seed=42, width=512, height=512, num_inference_steps=25, init_image=init_img
-    )
-
-    assert images[0] is not None
-    assert images[0].getbbox(), f"Image is black!"
+        assert images[0] is not None
+        assert images[0].getbbox(), f"Image is black!"

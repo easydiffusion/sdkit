@@ -9,6 +9,8 @@ import os
 
 from common import (
     TEST_DATA_FOLDER,
+    GPU_DEVICE_NAME,
+    USE_DIFFUSERS,
     assert_images_same,
 )
 
@@ -21,7 +23,7 @@ def setup_module():
     global context
 
     context = Context()
-    context.test_diffusers = True
+    context.test_diffusers = USE_DIFFUSERS
 
 
 def test_load_sd_1_4():
@@ -29,13 +31,13 @@ def test_load_sd_1_4():
     load_model(context, "stable-diffusion")
 
 
-def check_lora_image(expected_image, test_name, lora_alpha=0, prefix=""):
+def check_lora_image(expected_image, test_name, lora_alpha=0, prefix="", width=512, height=512):
     prompt = (
         prefix
         + "1boy, muscular, full armor, armor, shoulder plates, angry, looking at viewer, spiked hair, white hair,"
     )
 
-    image = generate_images(context, prompt, seed=42, width=512, height=512, lora_alpha=lora_alpha)[0]
+    image = generate_images(context, prompt, seed=42, width=width, height=height, lora_alpha=lora_alpha)[0]
 
     expected_image = Image.open(f"{EXPECTED_DIR}/{expected_image}")
     assert_images_same(image, expected_image, "lora_" + test_name)
@@ -216,34 +218,46 @@ def test_load_single_sdxl_lora():
 
 
 def test_3_1__single_a1111_lora__sdxl__alpha_0():
+    height = 512 if "directml" in GPU_DEVICE_NAME else 768
     check_lora_image(
         expected_image="lora-not-loaded-sdxl.png",
         test_name="test3.1",
         lora_alpha=0,
+        width=768,
+        height=height,
     )
 
 
 def test_3_2__single_a1111_lora__sdxl__alpha_0_5():
+    height = 512 if "directml" in GPU_DEVICE_NAME else 768
     check_lora_image(
         expected_image="lora-sdxl-single-alpha0.5.png",
         test_name="test3.2",
         lora_alpha=0.5,
+        width=768,
+        height=height,
     )
 
 
 def test_3_2a__single_a1111_lora__sdxl__alpha_0_5_repeat():
+    height = 512 if "directml" in GPU_DEVICE_NAME else 768
     check_lora_image(
         expected_image="lora-sdxl-single-alpha0.5.png",
         test_name="test3.2a",
         lora_alpha=0.5,
+        width=768,
+        height=height,
     )
 
 
-def test_3_3__single_a1111_lora__sdxl__alpha_0_5():
+def test_3_3__single_a1111_lora__sdxl__alpha_1():
+    height = 512 if "directml" in GPU_DEVICE_NAME else 768
     check_lora_image(
         expected_image="lora-sdxl-single-alpha1.png",
         test_name="test3.3",
         lora_alpha=1,
+        width=768,
+        height=height,
     )
 
 

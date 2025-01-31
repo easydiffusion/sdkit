@@ -3,6 +3,7 @@ import torch
 
 from sdkit import Context
 from sdkit.models import load_model, unload_model
+from sdkit.utils import empty_cache
 
 from torchvision.transforms.functional import normalize
 from threading import Lock
@@ -16,7 +17,7 @@ codeformer_temp_device_lock = Lock()  # workaround: codeformer currently can onl
 
 
 def inference(context: Context, image, upscale_bg, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net):
-    device = torch.device(context.device)
+    device = context.torch_device
     face_helper = FaceRestoreHelper(upscale_factor=upscale_factor, use_parse=True, device=device)
     face_helper.clean_all()
     face_helper.read_image(image)
@@ -37,7 +38,7 @@ def inference(context: Context, image, upscale_bg, upscale_faces, upscale_factor
                 output = codeformer_net(cropped_face_t, w=codeformer_fidelity, adain=True)[0]
                 restored_face = tensor2img(output.squeeze(0), rgb2bgr=True, min_max=(-1, 1))
             del output
-            torch.cuda.empty_cache()
+            empty_cache()
         except RuntimeError as error:
             print(f"Failed inference for CodeFormer: {error}")
             restored_face = tensor2img(cropped_face_t, rgb2bgr=True, min_max=(-1, 1))
@@ -72,7 +73,7 @@ def apply(
     if (upscale_background or upscale_faces) and "realesrgan" not in context.models:
         raise Exception("realesrgan not loaded in context.models! Required for upscaling in CodeFormer.")
 
-    device = torch.device(context.device)
+    device = context.torch_device
     codeformer_net = context.models["codeformer"]
 
     # Convert PIL Image to numpy array and ensure it's in BGR format for OpenCV
@@ -84,7 +85,7 @@ def apply(
         # hack for a bug in facexlib: https://github.com/xinntao/facexlib/pull/19/files
         from facexlib.detection import retinaface
 
-        retinaface.device = torch.device(context.device)
+        retinaface.device = context.torch_device
 
         result = inference(
             context, input_img, upscale_background, upscale_faces, upscale_factor, codeformer_fidelity, codeformer_net

@@ -14,6 +14,9 @@ TEST_DATA_REPO = "https://github.com/easydiffusion/sdkit-test-data.git"
 TEST_DATA_FOLDER = "sdkit-test-data"
 OUTPUT_FOLDER = "tmp/tests"
 
+GPU_DEVICE_NAME = "cuda:0"
+USE_DIFFUSERS = True
+
 
 def fetch_test_data():
     "Fetches the test data from the git repository, by issuing a git pull"
@@ -33,11 +36,13 @@ def get_image_diff(img_a: Image, img_b: Image):
 
 
 def get_image_for_device(file_path: str, device: str) -> Image:
+    device = device.replace("directml", "cuda")
     file_path += f"-{torch.device(device).type}.png"
     return Image.open(file_path)
 
 
 def get_tensor_for_device(file_path: str, device: str) -> torch.Tensor:
+    device = device.replace("directml", "cuda")
     file_path += f"-{torch.device(device).type}.pt"
     return torch.load(file_path).to(device)
 
