@@ -3,7 +3,7 @@
 
 [![Discord Server](https://img.shields.io/discord/1014774730907209781?label=Discord)](https://discord.com/invite/u9yhsFmEkB)
 
-*New: Stable Diffusion XL, ControlNets, LoRAs and Embeddings are now supported!*
+*New: DirectML (for AMD on Windows), Stable Diffusion XL, ControlNets, LoRAs and Embeddings are now supported!*
 
 This is a community project, so please feel free to contribute (and to use it in your project)!
 
@@ -15,14 +15,13 @@ The goal is to let you be productive quickly (at your AI art project), so it bun
 Advanced features include a model-downloader (with a database of commonly used models), support for running in parallel on multiple GPUs, auto-scanning for malicious models, etc. [Full list of features](https://github.com/easydiffusion/sdkit/wiki/Features)
 
 # Installation
-Tested with Python 3.8. Supports Windows, Linux, and Mac.
+Tested with Python 3.8+. Supports Windows, Linux, and Mac. 
 
-**Windows/Linux:**
-1. `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu116`
-2. Run `pip install sdkit`
-
-**Mac:**
-1. Run `pip install sdkit`
+```bash
+python -m pip install torchruntime
+torchruntime install torch torchvision
+python -m pip install sdkit
+```
 
 # Example
 ### Local model
