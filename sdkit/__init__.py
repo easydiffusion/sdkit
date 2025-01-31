@@ -93,7 +93,7 @@ class Context(local):
 
     @half_precision.setter
     def half_precision(self, h):
-        if h and "cuda" not in self._device:
+        if h and self.torch_device.type in ("cpu", "mps"):
             raise RuntimeError(f"half precision is not supported on device: {self._device}")
         self._half_precision = h
 
