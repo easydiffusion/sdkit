@@ -41,7 +41,7 @@ def make_load_model(model_type: str):
             model = Processor(model_type)
 
             if hasattr(model.processor, "to"):
-                model.processor = model.processor.to(context.device)
+                model.processor = model.processor.to(context.torch_device)
 
         return model
 

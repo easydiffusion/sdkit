@@ -50,7 +50,7 @@ def make_samples(
     if sampler_module is None:
         raise RuntimeError(f'Unknown sampler "{sampler_name}"!')
 
-    noise = make_some_noise(seed, batch_size, shape, context.device)
+    noise = make_some_noise(seed, batch_size, shape, context.torch_device)
 
     return sampler_module.sample(
         context, sampler_name, noise, batch_size, shape, steps, cond, uncond, guidance_scale, callback, **kwargs

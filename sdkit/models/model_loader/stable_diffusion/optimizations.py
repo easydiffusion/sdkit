@@ -6,7 +6,7 @@ from ldm.util import default
 from torch import einsum
 
 from sdkit import Context
-from sdkit.utils import log
+from sdkit.utils import log, is_cpu_device, memory_stats, mem_get_info
 
 
 def send_to_device(context: Context, model):
@@ -17,10 +17,10 @@ def send_to_device(context: Context, model):
     Please see the documentation for `diffusionkit.types.Context.vram_optimizations`
     for a summary of the logic used for VRAM optimizations
     """
-    if len(context.vram_optimizations) == 0 or context.device == "cpu":
+    if len(context.vram_optimizations) == 0 or is_cpu_device(context.torch_device):
         log.info("No VRAM optimizations being applied")
-        model.to(context.device)
-        model.cond_stage_model.device = context.device
+        model.to(context.torch_device)
+        model.cond_stage_model.device = context.torch_device
         return
 
     log.info(f"VRAM Optimizations: {context.vram_optimizations}")
@@ -45,9 +45,9 @@ def send_to_device(context: Context, model):
                 f"moved {getattr(context.module_in_gpu, 'log_name', context.module_in_gpu.__class__.__name__)} to cpu"
             )
 
-        module.to(context.device)
+        module.to(context.torch_device)
         if module == model.cond_stage_model:
-            module.device = context.device
+            module.device = context.torch_device
         context.module_in_gpu = module
         log.debug(
             f"moved {getattr(context.module_in_gpu, 'log_name', context.module_in_gpu.__class__.__name__)} to GPU"
@@ -67,7 +67,7 @@ def send_to_device(context: Context, model):
         # move the FS, CS and the main model to CPU. And send only the overall reference to the correct device
         tmp = model.cond_stage_model, model.first_stage_model, model.model
         model.cond_stage_model, model.first_stage_model, model.model = (None,) * 3
-        model.to(context.device)
+        model.to(context.torch_device)
         model.cond_stage_model, model.first_stage_model, model.model = tmp
 
         # set forward_pre_hook (a feature of torch NN module) to move each module to the GPU only when required
@@ -87,7 +87,7 @@ def send_to_device(context: Context, model):
 
         tmp = d.input_blocks, d.middle_block, d.output_blocks, d.time_embed
         d.input_blocks, d.middle_block, d.output_blocks, d.time_embed = (None,) * 4
-        model.model.to(context.device)
+        model.model.to(context.torch_device)
         d.input_blocks, d.middle_block, d.output_blocks, d.time_embed = tmp
 
         d.time_embed.log_name = "model.model.diffusion_model.time_embed"
@@ -104,14 +104,14 @@ def send_to_device(context: Context, model):
             block.log_name = f"model.model.diffusion_model.output_blocks[{i}]"
             block.register_forward_pre_hook(move_to_gpu)
     else:
-        model.model.to(context.device)
+        model.model.to(context.torch_device)
 
     if (
         "KEEP_ENTIRE_MODEL_IN_CPU" not in context.vram_optimizations
         and "KEEP_FS_AND_CS_IN_CPU" not in context.vram_optimizations
     ):
-        model.to(context.device)
-        model.cond_stage_model.device = context.device
+        model.to(context.torch_device)
+        model.cond_stage_model.device = context.torch_device
 
 
 def get_context_kv(attention_context):
@@ -127,7 +127,7 @@ def make_attn_forward(context: Context, attn_precision="fp16"):
     app_context = context
 
     def get_steps(q, k):
-        if context.device == "cpu" or "SET_ATTENTION_STEP_TO_2" in context.vram_optimizations:
+        if context.torch_device.type in ("cpu", "mps") or "SET_ATTENTION_STEP_TO_2" in context.vram_optimizations:
             return 2
         elif "SET_ATTENTION_STEP_TO_4" in context.vram_optimizations:
             return 4  # use for balanced
@@ -141,10 +141,10 @@ def make_attn_forward(context: Context, attn_precision="fp16"):
             return 24  # use for low
 
         # figure out the available memory
-        stats = torch.cuda.memory_stats(q.device)
-        mem_active = stats["active_bytes.all.current"]
-        mem_reserved = stats["reserved_bytes.all.current"]
-        mem_free_cuda, _ = torch.cuda.mem_get_info(torch.cuda.current_device())
+        stats = memory_stats(q.device)
+        mem_active = stats.get("active_bytes.all.current", 0)
+        mem_reserved = stats.get("reserved_bytes.all.current", 0)
+        mem_free_cuda, _ = mem_get_info(context.torch_device)
         mem_free_torch = mem_reserved - mem_active
         mem_free_total = mem_free_cuda + mem_free_torch
 
@@ -181,15 +181,13 @@ def make_attn_forward(context: Context, attn_precision="fp16"):
         q, k, v = map(lambda t: rearrange(t, "b n (h d) -> (b h) n d", h=h), (q_in, k_in, v_in))
         del q_in, k_in, v_in
 
-        autocast_device = "cpu" if app_context.device == "cpu" else "cuda"  # doesn't accept (or need) 'cuda:N'
-
         r1 = torch.zeros(q.shape[0], q.shape[1], v.shape[2], device=q.device, dtype=q.dtype)
         steps = get_steps(q, k)
         slice_size = q.shape[1] // steps if (q.shape[1] % steps) == 0 else q.shape[1]
         for i in range(0, q.shape[1], slice_size):
             end = i + slice_size
             if attn_precision == "fp32":
-                with torch.autocast(enabled=False, device_type=autocast_device):
+                with torch.autocast(enabled=False, device_type=app_context.torch_device.type):
                     q, k = q.float(), k.float()
                     s1 = einsum("b i d, b j d -> b i j", q[:, i:end], k)
             else:

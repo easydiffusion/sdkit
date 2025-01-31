@@ -13,13 +13,7 @@ from torch.nn.functional import silu
 from transformers import logging as tr_logging
 
 from sdkit import Context
-from sdkit.utils import (
-    download_file,
-    hash_file_quick,
-    load_tensor_file,
-    log,
-    save_tensor_file,
-)
+from sdkit.utils import download_file, hash_file_quick, load_tensor_file, log, save_tensor_file, is_cpu_device
 
 tr_logging.set_verbosity_error()  # suppress unnecessary logging
 
@@ -222,7 +216,7 @@ def load_diffusers_model(
     except:
         use_directml = False
 
-    if "cuda" not in context.device:
+    if is_cpu_device(context.torch_device):
         convert_to_tensorrt = False
 
     # remove SDPA if torch 2.0 and need to convert to ONNX
@@ -266,7 +260,7 @@ def load_diffusers_model(
     elif convert_to_tensorrt:
         from sdkit.utils import gc, convert_pipeline_to_tensorrt
 
-        default_pipe = default_pipe.to(context.device, torch.float16 if context.half_precision else torch.float32)
+        default_pipe = default_pipe.to(context.torch_device, torch.float16 if context.half_precision else torch.float32)
 
         batch_size_range = trt_build_config["batch_size_range"]
         dimensions_range = trt_build_config["dimensions_range"]
@@ -284,15 +278,15 @@ def load_diffusers_model(
 
     # memory optimizations
 
-    if context.vram_usage_level == "low" and "cuda" in context.device:
+    if context.vram_usage_level == "low" and not is_cpu_device(context.torch_device):
         if context.half_precision:
             default_pipe = default_pipe.to("cpu", torch.float16, silence_dtype_warnings=True)
-        default_pipe.enable_sequential_cpu_offload(gpu_id=torch.device(context.device).index)
+        default_pipe.enable_sequential_cpu_offload(device=context.torch_device)
     else:
         if context.half_precision:
-            default_pipe = default_pipe.to(context.device, torch.float16)
+            default_pipe = default_pipe.to(context.torch_device, torch.float16)
         else:
-            default_pipe = default_pipe.to(context.device)
+            default_pipe = default_pipe.to(context.torch_device)
 
     if context.vram_usage_level == "high":
         default_pipe.enable_attention_slicing(4)
@@ -324,9 +318,9 @@ def load_diffusers_model(
         text_hidden_size = default_pipe.text_encoder.config.hidden_size
         in_channels = default_pipe.unet.config.in_channels
 
-        test_embeds = torch.ones((1, 2, text_hidden_size), device=context.device, dtype=dtype) * 0.5
-        test_x = torch.ones((1, in_channels, 8, 8), device=context.device, dtype=dtype) * 0.5
-        t = torch.asarray([999], device=context.device, dtype=dtype)
+        test_embeds = torch.ones((1, 2, text_hidden_size), device=context.torch_device, dtype=dtype) * 0.5
+        test_x = torch.ones((1, in_channels, 8, 8), device=context.torch_device, dtype=dtype) * 0.5
+        t = torch.asarray([999], device=context.torch_device, dtype=dtype)
 
         noise_pred = default_pipe.unet(test_x, t, encoder_hidden_states=test_embeds, return_dict=False)[0]
         out = (noise_pred - test_x).mean().item()
@@ -355,7 +349,7 @@ def load_diffusers_model(
             text_encoder=[default_pipe.text_encoder, default_pipe.text_encoder_2],
             truncate_long_prompts=False,
             returned_embeddings_type=skip,
-            device=context.device,
+            device=context.torch_device,
             # textual_inversion_manager=textual_inversion_manager, # SD XL doesn't support embeddings (yet)
             requires_pooled=[False, True],
         )
@@ -366,7 +360,7 @@ def load_diffusers_model(
             text_encoder=default_pipe.text_encoder,
             truncate_long_prompts=False,
             returned_embeddings_type=skip,
-            device=context.device,
+            device=context.torch_device,
             textual_inversion_manager=textual_inversion_manager,
         )
 

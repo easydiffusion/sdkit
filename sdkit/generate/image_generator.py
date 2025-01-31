@@ -57,9 +57,6 @@ def generate_images(
     try:
         images = []
 
-        seed_everything(seed)
-        precision_scope = torch.autocast if context.half_precision else nullcontext
-
         if "stable-diffusion" not in context.models:
             raise RuntimeError(
                 "The model for Stable Diffusion has not been loaded yet! If you've tried to load it, please check the logs above this message for errors (while loading the model)."
@@ -96,7 +93,10 @@ def generate_images(
         if "hypernetwork" in context.models:
             context.models["hypernetwork"]["hypernetwork_strength"] = hypernetwork_strength
 
-        with precision_scope("cuda"):
+        seed_everything(seed)
+        precision_scope = torch.autocast if context.half_precision else nullcontext
+
+        with precision_scope(context.torch_device.type):
             cond, uncond = get_cond_and_uncond(prompt, negative_prompt, num_outputs, model)
 
         generate_fn = txt2img if init_image is None else img2img
@@ -113,7 +113,7 @@ def generate_images(
             "callback": callback,
         }
 
-        with torch.no_grad(), precision_scope("cuda"):
+        with torch.no_grad(), precision_scope(context.torch_device.type):
             for _ in trange(1, desc="Sampling"):
                 images += generate_fn(common_sampler_params.copy(), **req_args)
                 gc(context)
@@ -229,10 +229,7 @@ def make_with_diffusers(
 
     model = context.models["stable-diffusion"]
     default_pipe = model["default"]
-    if context.device == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        generator = torch.Generator().manual_seed(seed)
-    else:
-        generator = torch.Generator(context.device).manual_seed(seed)
+    generator = torch.Generator(context.torch_device).manual_seed(seed)
 
     is_sd_xl = isinstance(
         default_pipe,
@@ -448,7 +445,7 @@ def make_with_diffusers(
     if hasattr(operation_to_apply.unet, "_allocate_trt_buffers"):
         dtype = torch.float16 if context.half_precision else torch.float32
         operation_to_apply.unet._allocate_trt_buffers(
-            operation_to_apply, context.device, dtype, num_outputs, width, height
+            operation_to_apply, context.torch_device, dtype, num_outputs, width, height
         )
 
     # apply

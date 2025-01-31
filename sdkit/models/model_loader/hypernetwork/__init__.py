@@ -35,7 +35,7 @@ def load_model(context: Context, **kwargs):
                         activate_output,
                         last_layer_dropout=last_layer_dropout,
                         model=layers,
-                        device=context.device,
+                        device=context.torch_device,
                     ),
                     HypernetworkModule(
                         size,
@@ -48,7 +48,7 @@ def load_model(context: Context, **kwargs):
                         activate_output,
                         last_layer_dropout=last_layer_dropout,
                         model=layers,
-                        device=context.device,
+                        device=context.torch_device,
                     ),
                 )
 

@@ -8,6 +8,8 @@ from sdkit.filter import apply_filters
 
 from common import (
     TEST_DATA_FOLDER,
+    GPU_DEVICE_NAME,
+    USE_DIFFUSERS,
     assert_images_same,
     run_test_on_multiple_devices,
 )
@@ -22,7 +24,7 @@ def setup_module():
     global context
 
     context = Context()
-    context.test_diffusers = True
+    context.test_diffusers = USE_DIFFUSERS
 
 
 # section 1 - pre-processors as filters
@@ -338,7 +340,7 @@ def test_4_2c__generates_image_from_multiple_control_images__img2img():
 # section 5 - multiple devices
 def run_on_devices(vram_usage_level):
     def task(context):
-        context.test_diffusers = True
+        context.test_diffusers = USE_DIFFUSERS
         context.vram_usage_level = vram_usage_level
 
         # load SD
@@ -362,7 +364,7 @@ def run_on_devices(vram_usage_level):
         assert image is not None, f"{context.device} {vram_usage_level} - image is None!"
         assert image.getbbox(), f"{context.device} {vram_usage_level} - image is black!"
 
-    run_test_on_multiple_devices(task=task, devices=["cuda:0", "cpu"])
+    run_test_on_multiple_devices(task=task, devices=[GPU_DEVICE_NAME, "cpu"])
 
 
 def test_5_1a__generates_image_from_single_control_image__low():

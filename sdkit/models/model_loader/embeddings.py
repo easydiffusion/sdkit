@@ -105,7 +105,7 @@ def attach_hooks(context, components):
     from accelerate import cpu_offload
 
     for _, te in components:
-        cpu_offload(te, context.device, offload_buffers=len(te._parameters) > 0)
+        cpu_offload(te, context.torch_device, offload_buffers=len(te._parameters) > 0)
 
 
 def get_embedding(embedding):

@@ -10,7 +10,7 @@ def load_model(context: Context, **kwargs):
     sd = sd["params_ema"]
 
     model = CodeFormer(dim_embd=512, codebook_size=1024, n_head=8, n_layers=9, connect_list=["32", "64", "128", "256"])
-    model = model.to(context.device)
+    model = model.to(context.torch_device)
 
     model.load_state_dict(sd)
     model.eval()

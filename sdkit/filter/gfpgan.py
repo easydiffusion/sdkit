@@ -15,7 +15,7 @@ def apply(context: Context, image, **kwargs):
         # hack for a bug in facexlib: https://github.com/xinntao/facexlib/pull/19/files
         from facexlib.detection import retinaface
 
-        retinaface.device = torch.device(context.device)
+        retinaface.device = context.torch_device
 
         image = image.convert("RGB")
         image = np.array(image, dtype=np.uint8)[..., ::-1]

@@ -31,6 +31,7 @@ def img_to_tensor(img, batch_size, device, half_precision: bool, shift_range=Fal
     from PIL import Image, ImageOps
     import torch
     import numpy as np
+    from .device_utils import is_cpu_device
 
     if img is None:
         return None
@@ -41,7 +42,7 @@ def img_to_tensor(img, batch_size, device, half_precision: bool, shift_range=Fal
     img = 2.0 * img - 1.0 if shift_range else img
     img = img.to(device)
 
-    if "cuda" in device and half_precision:
+    if not is_cpu_device(device) and half_precision:
         img = img.half()
 
     if unsqueeze:
@@ -66,7 +67,7 @@ def get_image_latent_and_mask(context: Context, image, mask, desired_width, desi
 
     image = image.convert("RGB")
     image = resize_img(image, desired_width, desired_height, clamp_to_8=True)
-    image = img_to_tensor(image, batch_size, context.device, context.half_precision, shift_range=True)
+    image = img_to_tensor(image, batch_size, context.torch_device, context.half_precision, shift_range=True)
     image = model.get_first_stage_encoding(model.encode_first_stage(image))  # move to latent space
 
     if mask is None:
@@ -75,7 +76,7 @@ def get_image_latent_and_mask(context: Context, image, mask, desired_width, desi
     mask = mask.convert("RGB")
     mask = resize_img(mask, image.shape[3], image.shape[2])
     mask = ImageOps.invert(mask)
-    mask = img_to_tensor(mask, batch_size, context.device, context.half_precision, unsqueeze=True)
+    mask = img_to_tensor(mask, batch_size, context.torch_device, context.half_precision, unsqueeze=True)
 
     return image, mask
 

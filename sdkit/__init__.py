@@ -1,9 +1,22 @@
+import sys
 from threading import local
+
+if sys.version_info < (3, 9):
+    # polyfill for callable static methods. required for pytorch-directml
+    class CallableStaticMethod(staticmethod):
+        def __call__(self, *args, **kwargs):
+            return self.__func__(*args, **kwargs)
+
+    # Patch the built-in staticmethod with CallableStaticMethod
+    import builtins
+
+    builtins.staticmethod = CallableStaticMethod
 
 
 class Context(local):
     def __init__(self) -> None:
-        self._device: str = "cuda:0"
+        self._device: str = ""
+        self._torch_device = None
         self._half_precision: bool = True
         self._vram_usage_level = None
 
@@ -45,6 +58,10 @@ class Context(local):
         https://github.com/sczhou/CodeFormer/blob/master/LICENSE
         """
 
+        from sdkit.utils import get_torch_platform
+
+        self.device = get_torch_platform()[0]
+
     # hacky approach, but we need to enforce full precision for some devices
     # we also need to force full precision for these devices (haven't implemented this yet):
     # (('nvidia' in device_name or 'geforce' in device_name) and (' 1660' in device_name or ' 1650' in device_name)) or ('Quadro T2000' in device_name)
@@ -55,11 +72,20 @@ class Context(local):
     @device.setter
     def device(self, d):
         self._device = d
-        if "cuda" not in d:
+
+        from sdkit.utils import get_device
+
+        if d.split(":")[0] in ("cpu", "mps"):
             from sdkit.utils import log
 
             log.info(f"forcing full precision for device: {d}")
             self._half_precision = False
+
+        self._torch_device = get_device(d)
+
+    @property
+    def torch_device(self):
+        return self._torch_device
 
     @property
     def half_precision(self):

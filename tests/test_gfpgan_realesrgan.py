@@ -6,6 +6,8 @@ from sdkit.models import load_model
 
 from common import (
     TEST_DATA_FOLDER,
+    GPU_DEVICE_NAME,
+    USE_DIFFUSERS,
     assert_images_same,
     run_test_on_multiple_devices,
 )
@@ -19,7 +21,7 @@ def setup_module():
     global context
 
     context = Context()
-    context.test_diffusers = True
+    context.test_diffusers = USE_DIFFUSERS
 
 
 def test_gfpgan_model_loads():
@@ -54,7 +56,7 @@ def test_gfpgan_works_on_multiple_devices():
         assert filtered_img is not None
         assert len(filtered_img) == 1
 
-    run_test_on_multiple_devices(task, devices=["cpu", "cuda:0"])
+    run_test_on_multiple_devices(task, devices=["cpu", GPU_DEVICE_NAME])
 
 
 def test_realesrgan_applies():
@@ -80,7 +82,7 @@ def test_realesrgan_works_on_multiple_devices():
         assert filtered_img is not None
         assert len(filtered_img) == 1
 
-    run_test_on_multiple_devices(task, devices=["cpu", "cuda:0"])
+    run_test_on_multiple_devices(task, devices=["cpu", GPU_DEVICE_NAME])
 
 
 def test_gfpgan_and_realesrgan_work_together_on_multiple_devices():
@@ -103,7 +105,7 @@ def test_gfpgan_and_realesrgan_work_together_on_multiple_devices():
         assert filtered_img is not None
         assert len(filtered_img) == 1
 
-    run_test_on_multiple_devices(task, devices=["cpu", "cuda:0"])
+    run_test_on_multiple_devices(task, devices=["cpu", GPU_DEVICE_NAME])
 
 
 def test_stable_diffusion_and_gfpgan_load_together_on_multiple_devices():
@@ -114,4 +116,4 @@ def test_stable_diffusion_and_gfpgan_load_together_on_multiple_devices():
         context.model_paths["gfpgan"] = "models/gfpgan/GFPGANv1.3.pth"
         load_model(context, "gfpgan")
 
-    run_test_on_multiple_devices(task, devices=["cuda:0", "cuda:0"])
+    run_test_on_multiple_devices(task, devices=[GPU_DEVICE_NAME, GPU_DEVICE_NAME])

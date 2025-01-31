@@ -11,17 +11,20 @@ recorded_tensor_names = {}
 
 
 def gc(context: Context):
-    import torch
+    from .device_utils import empty_cache, ipc_collect
 
     collect()
-    if "cuda" in context.device:
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
+
+    empty_cache()
+    ipc_collect()
 
 
 def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix=""):
     import torch
-    from sdkit.utils import log
+    from sdkit.utils import log, is_cpu_device, get_device, mem_get_info, memory_allocated, memory_stats
+
+    if isinstance(device, str):
+        device = get_device(device)
 
     try:
         cpu_used = psutil.cpu_percent()
@@ -31,12 +34,12 @@ def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix
         cpu_used, ram_used, ram_total = 0, 0, 0
 
     try:
-        vram_free_device, vram_total = torch.cuda.mem_get_info(device) if "cuda" in device else (0, 0)
+        vram_free_device, vram_total = mem_get_info(device)
         if process_usage_only:
-            vram_used = torch.cuda.memory_allocated(device) if "cuda" in device else 0
+            vram_used = memory_allocated(device)
         else:
             vram_used = vram_total - vram_free_device
-        vram_peak = torch.cuda.memory_stats(device)["allocated_bytes.all.peak"] if "cuda" in device else 0
+        vram_peak = memory_stats(device).get("allocated_bytes.all.peak", 0)
     except Exception as e:
         log.error(f"Could not fetch GPU info: {e}")
         vram_free_device, vram_total, vram_used, vram_peak = 0, 0, 0, 0
@@ -50,7 +53,7 @@ def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix
     if log_info:
         msg = log_prefix + " - " if log_prefix else ""
         msg += f"CPU utilization: {cpu_used:.1f}%, System RAM used: {ram_used:.1f} of {ram_total:.1f} GiB"
-        if "cuda" in device:
+        if not is_cpu_device(device):
             msg += f", GPU RAM used ({device}): {vram_used:.1f} of {vram_total:.1f} GiB (peak: {vram_peak:.1f} GiB)"
         log.info(msg)
 
@@ -117,8 +120,11 @@ def get_tensors_in_memory(device):
     prevent garbage-collection of all the tensors in memory.**
     """
     import torch
+    from .device_utils import get_device
 
-    device = torch.device(device) if isinstance(device, str) else device
+    if isinstance(device, str):
+        device = get_device(device)
+
     tensors = []
     objs_in_mem = get_objects()
     for obj in objs_in_mem:
