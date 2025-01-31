@@ -2,6 +2,8 @@ import argparse
 import os
 from PIL import Image
 
+SUPPORTED_DEVICES = ("cpu", "mps", "cuda", "xpu", "directml", "mtia")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Generate images using sdkit.")
@@ -72,6 +74,13 @@ def main():
         default=1,
         help="Number of images to generate (default: 1).",
     )
+    parser.add_argument(
+        "-d",
+        "--device",
+        type=str,
+        default=None,
+        help="Device to use for rendering. Options: cpu, mps, cuda:0, directml:0, xpu:1 etc (default: automatic pick).",
+    )
 
     args = parser.parse_args()
 
@@ -81,6 +90,13 @@ def main():
 
     context = sdkit.Context()
     context.half_precision = args.type == "f16"
+
+    if args.device:
+        if not args.device.startswith(SUPPORTED_DEVICES):
+            raise RuntimeError(f"Unsupported device: {args.device}! Supported devices: {SUPPORTED_DEVICES}")
+
+        context.device = args.device
+
     context.model_paths["stable-diffusion"] = args.model
     load_model(context, "stable-diffusion")
 
