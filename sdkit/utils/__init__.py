@@ -54,5 +54,6 @@ from .device_utils import (
     empty_cache,
     ipc_collect,
     is_cpu_device,
+    has_half_precision_bug,
 )
 from .misc_utils import make_sd_context, get_nested_attr
