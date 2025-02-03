@@ -1,12 +1,13 @@
 import re
 import platform
 import subprocess
-from typing import Union, Tuple, Dict
+from typing import Tuple, Dict
 
 
-NVIDIA_PATTERN = re.compile(r"\b(?:nvidia|geforce|quadro|tesla)\b", re.IGNORECASE)
-NVIDIA_HALF_PRECISION_BUG_PATTERN = re.compile(r"\b(?:tesla k40m|16\d\d|t\d{2,})\b", re.IGNORECASE)
-AMD_HALF_PRECISION_BUG_PATTERN = re.compile(r"\b(?:navi 1\d)\b", re.IGNORECASE)
+NVIDIA_RE = re.compile(r"\b(?:nvidia|geforce|quadro|tesla)\b", re.IGNORECASE)
+NVIDIA_HALF_PRECISION_BUG_RE = re.compile(r"\b(?:tesla k40m|16\d\d|t\d{2,})\b", re.IGNORECASE)
+AMD_HALF_PRECISION_BUG_RE = re.compile(r"\b(?:navi 1\d)\b", re.IGNORECASE)  # https://github.com/ROCm/ROCm/issues/2527
+# FORCE_FULL_PRECISION won't be necessary for AMD once this is fixed (and torch2 wheels are released for ROCm 6.2): https://github.com/pytorch/pytorch/issues/132570#issuecomment-2313071756
 
 
 def has_amd_gpu():
@@ -25,78 +26,6 @@ def has_amd_gpu():
         return False
 
     return False
-
-
-def _has_directml_platform():
-    import torch
-
-    try:
-        import torch_directml
-
-        torch.directml = torch_directml
-
-        return True
-    except ImportError:
-        pass
-
-    return False
-
-
-def get_torch_platform():
-    import torch
-    from platform import system as os_name
-
-    if _has_directml_platform():
-        return "directml", torch.directml
-
-    if torch.cuda.is_available():
-        return "cuda", torch.cuda
-    if hasattr(torch, "xpu") and torch.xpu.is_available():
-        return "xpu", torch.xpu
-    if hasattr(torch, "mps") and os_name() == "Darwin":
-        return "mps", torch.mps
-    if hasattr(torch, "mtia") and torch.mtia.is_available():
-        return "mtia", torch.mtia
-
-    return "cpu", torch.cpu
-
-
-def get_device_count() -> int:
-    torch_platform_name, torch_platform = get_torch_platform()
-
-    return torch_platform.device_count()
-
-
-def get_device_name(device) -> str:
-    "Expects a torch.device as the argument"
-
-    torch_platform_name, torch_platform = get_torch_platform()
-    if torch_platform_name not in ("xpu", "cuda", "directml"):
-        return f"{torch_platform_name}:{device.index}"
-
-    if torch_platform_name == "directml":
-        return torch_platform.device_name(device.index)
-
-    return torch_platform.get_device_name(device.index)
-
-
-def get_device(device: Union[int, str]):
-    import torch
-
-    if isinstance(device, str):
-        if ":" in device:
-            torch_platform_name, device_index = device.split(":")
-            device_index = int(device_index)
-        else:
-            torch_platform_name, device_index = device, 0
-    else:
-        torch_platform_name, _ = get_torch_platform()
-        device_index = device
-
-    if torch_platform_name == "directml" and _has_directml_platform():
-        return torch.directml.device(device_index)
-
-    return torch.device(torch_platform_name, device_index)
 
 
 def mem_get_info(device) -> Tuple[int, int]:
@@ -133,19 +62,19 @@ def memory_stats(device) -> Dict:
 
 
 def empty_cache():
-    torch_platform_name, torch_platform = get_torch_platform()
-    if torch_platform_name not in ("cuda", "xpu"):
-        return
+    import torch
 
-    torch_platform.empty_cache()
+    if hasattr(torch, "cuda") and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    elif hasattr(torch, "xpu") and torch.xpu.is_available():
+        torch.xpu.empty_cache()
 
 
 def ipc_collect():
-    torch_platform_name, torch_platform = get_torch_platform()
-    if torch_platform_name != "cuda":
-        return
+    import torch
 
-    torch_platform.ipc_collect()
+    if hasattr(torch, "cuda") and torch.cuda.is_available():
+        torch.cuda.ipc_collect()
 
 
 def is_cpu_device(device) -> bool:  # used for cpu offloading etc
@@ -156,6 +85,6 @@ def is_cpu_device(device) -> bool:  # used for cpu offloading etc
 
 def has_half_precision_bug(device_name) -> bool:
     "Check whether the given device requires full precision for generating images due to a firmware bug"
-    if NVIDIA_PATTERN.search(device_name):
-        return NVIDIA_HALF_PRECISION_BUG_PATTERN.search(device_name) is not None
-    return AMD_HALF_PRECISION_BUG_PATTERN.search(device_name) is not None
+    if NVIDIA_RE.search(device_name):
+        return NVIDIA_HALF_PRECISION_BUG_RE.search(device_name) is not None
+    return AMD_HALF_PRECISION_BUG_RE.search(device_name) is not None
