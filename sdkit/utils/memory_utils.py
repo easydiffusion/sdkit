@@ -20,8 +20,8 @@ def gc(context: Context):
 
 
 def get_device_usage(device, log_info=False, process_usage_only=True, log_prefix=""):
-    import torch
-    from sdkit.utils import log, is_cpu_device, get_device, mem_get_info, memory_allocated, memory_stats
+    from torchruntime.utils import get_device
+    from sdkit.utils import log, is_cpu_device, mem_get_info, memory_allocated, memory_stats
 
     if isinstance(device, str):
         device = get_device(device)
@@ -120,7 +120,7 @@ def get_tensors_in_memory(device):
     prevent garbage-collection of all the tensors in memory.**
     """
     import torch
-    from .device_utils import get_device
+    from torchruntime.utils import get_device
 
     if isinstance(device, str):
         device = get_device(device)
