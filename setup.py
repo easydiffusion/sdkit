@@ -15,5 +15,6 @@ setuptools.setup(
         "accelerate==0.23.0",
         "controlnet-aux==0.0.6",
         "invisible-watermark==0.2.0",  # required for SD XL
+        "torchruntime>=1.7.0",
     ],
 )

@@ -58,9 +58,9 @@ class Context(local):
         https://github.com/sczhou/CodeFormer/blob/master/LICENSE
         """
 
-        from sdkit.utils import get_torch_platform
+        from torchruntime.utils import get_installed_torch_platform
 
-        self.device = get_torch_platform()[0]
+        self.device = get_installed_torch_platform()[0]
 
     # hacky approach, but we need to enforce full precision for some devices
     # we also need to force full precision for these devices (haven't implemented this yet):
@@ -73,7 +73,7 @@ class Context(local):
     def device(self, d):
         self._device = d
 
-        from sdkit.utils import get_device
+        from torchruntime.utils import get_device
 
         if d.split(":")[0] in ("cpu", "mps"):
             from sdkit.utils import log

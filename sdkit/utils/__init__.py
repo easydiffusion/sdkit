@@ -44,10 +44,6 @@ from .convert_model_utils import (
 )
 from .device_utils import (
     has_amd_gpu,
-    get_torch_platform,
-    get_device_count,
-    get_device_name,
-    get_device,
     mem_get_info,
     memory_allocated,
     memory_stats,
