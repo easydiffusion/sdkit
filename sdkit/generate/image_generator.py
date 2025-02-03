@@ -229,7 +229,10 @@ def make_with_diffusers(
 
     model = context.models["stable-diffusion"]
     default_pipe = model["default"]
-    generator = torch.Generator(context.torch_device).manual_seed(seed)
+    if context.torch_device.type == "mps" and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        generator = torch.Generator().manual_seed(seed)
+    else:
+        generator = torch.Generator(context.torch_device).manual_seed(seed)
 
     is_sd_xl = isinstance(
         default_pipe,
