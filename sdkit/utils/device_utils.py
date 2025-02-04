@@ -78,9 +78,10 @@ def ipc_collect():
 
 
 def is_cpu_device(device) -> bool:  # used for cpu offloading etc
-    "Expects a torch.device as the argument"
+    "Expects a torch.device or string as the argument"
 
-    return device.type in ("cpu", "mps")
+    device_type = device.split(":")[0] if isinstance(device, str) else device.type
+    return device_type in ("cpu", "mps")
 
 
 def has_half_precision_bug(device_name) -> bool:
