@@ -1,22 +1,47 @@
 import base64
 import re
+import json
+import piexif
+import piexif.helper
 from io import BytesIO
+from PIL.PngImagePlugin import PngInfo
 
 
 # https://stackoverflow.com/a/61114178
-def img_to_base64_str(img, output_format="PNG", output_quality=75, output_lossless=False):
-    buffered = img_to_buffer(img, output_format, output_quality=output_quality, output_lossless=output_lossless)
+def img_to_base64_str(img, output_format="PNG", output_quality=75, output_lossless=False, metadata=None):
+    buffered = img_to_buffer(img, output_format, output_quality=output_quality, output_lossless=output_lossless, metadata=metadata)
     return buffer_to_base64_str(buffered, output_format)
 
 
-def img_to_buffer(img, output_format="PNG", output_quality=75, output_lossless=False):
+def img_to_buffer(img, output_format="PNG", output_quality=75, output_lossless=False, metadata=None):
     buffered = BytesIO()
-    if output_format.upper() == "PNG":
-        img.save(buffered, format=output_format)
-    elif output_format.upper() == "WEBP":
-        img.save(buffered, format=output_format, quality=output_quality, lossless=output_lossless)
+    if metadata:
+        if output_format.upper() == "PNG":
+            embedded_metadata = PngInfo()
+            for key, val in metadata.items():
+                embedded_metadata.add_text(key, str(val))
+            img.save(buffered, format=output_format, pnginfo=embedded_metadata)
+        else:
+            user_comment = json.dumps(metadata)
+            exif_dict = {
+                "Exif": {
+                    piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(user_comment, encoding="unicode")
+                }
+            }
+            exif_bytes = piexif.dump(exif_dict)
+            if output_format.upper() == "WEBP":
+                img.save(buffered, format=output_format, quality=output_quality, lossless=output_lossless, exif=exif_bytes)
+            else:
+                img.save(buffered, format=output_format, quality=output_quality, exif=exif_bytes)
     else:
-        img.save(buffered, format=output_format, quality=output_quality)
+        if output_format.upper() == "PNG":
+            img.save(buffered, format=output_format)
+        elif output_format.upper() == "WEBP":
+            img.save(buffered, format=output_format, quality=output_quality, lossless=output_lossless)
+        else:
+            img.save(buffered, format=output_format, quality=output_quality)
+
+
     buffered.seek(0)
     return buffered
 
