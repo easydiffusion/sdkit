@@ -218,45 +218,45 @@ def test_load_single_sdxl_lora():
 
 
 def test_3_1__single_a1111_lora__sdxl__alpha_0():
-    height = 512 if "directml" in GPU_DEVICE_NAME else 768
+    height = 768 if "directml" in GPU_DEVICE_NAME else 512
     check_lora_image(
         expected_image="lora-not-loaded-sdxl.png",
         test_name="test3.1",
         lora_alpha=0,
-        width=768,
+        width=512,
         height=height,
     )
 
 
 def test_3_2__single_a1111_lora__sdxl__alpha_0_5():
-    height = 512 if "directml" in GPU_DEVICE_NAME else 768
+    height = 768 if "directml" in GPU_DEVICE_NAME else 512
     check_lora_image(
         expected_image="lora-sdxl-single-alpha0.5.png",
         test_name="test3.2",
         lora_alpha=0.5,
-        width=768,
+        width=512,
         height=height,
     )
 
 
 def test_3_2a__single_a1111_lora__sdxl__alpha_0_5_repeat():
-    height = 512 if "directml" in GPU_DEVICE_NAME else 768
+    height = 768 if "directml" in GPU_DEVICE_NAME else 512
     check_lora_image(
         expected_image="lora-sdxl-single-alpha0.5.png",
         test_name="test3.2a",
         lora_alpha=0.5,
-        width=768,
+        width=512,
         height=height,
     )
 
 
 def test_3_3__single_a1111_lora__sdxl__alpha_1():
-    height = 512 if "directml" in GPU_DEVICE_NAME else 768
+    height = 768 if "directml" in GPU_DEVICE_NAME else 512
     check_lora_image(
         expected_image="lora-sdxl-single-alpha1.png",
         test_name="test3.3",
         lora_alpha=1,
-        width=768,
+        width=512,
         height=height,
     )
 
