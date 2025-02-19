@@ -40,7 +40,9 @@ class LoraBlock:
                 y = torch.mm(up, down)
 
             x = self.alpha * alpha / rank
-            y *= x.to(y.device, dtype=y.dtype)
+            if isinstance(x, torch.Tensor):
+                x = x.to(y.device, dtype=y.dtype)
+            y *= x
 
             weight.data += y
         except Exception as e:
