@@ -18,5 +18,6 @@ setuptools.setup(
         "invisible-watermark==0.2.0",  # required for SD XL
         "huggingface_hub==0.21.4",
         "torchruntime>=1.13.1",
+        "numpy<2",
     ],
 )
