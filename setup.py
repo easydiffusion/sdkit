@@ -17,6 +17,6 @@ setuptools.setup(
         "controlnet-aux==0.0.6",
         "invisible-watermark==0.2.0",  # required for SD XL
         "huggingface_hub==0.21.4",
-        "torchruntime>=1.9.4",
+        "torchruntime>=1.13.1",
     ],
 )
