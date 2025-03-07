@@ -5,7 +5,7 @@ from typing import Tuple, Dict
 
 
 NVIDIA_RE = re.compile(r"\b(?:nvidia|geforce|quadro|tesla)\b", re.IGNORECASE)
-NVIDIA_HALF_PRECISION_BUG_RE = re.compile(r"\b(?:tesla k40m|16\d\d|t\d{2,})\b", re.IGNORECASE)
+NVIDIA_HALF_PRECISION_BUG_RE = re.compile(r"\b(?:tesla k40m|16\d\d|t\d{2,}|mx450)\b", re.IGNORECASE)
 AMD_HALF_PRECISION_BUG_RE = re.compile(r"\b(?:navi 1\d)\b", re.IGNORECASE)  # https://github.com/ROCm/ROCm/issues/2527
 # FORCE_FULL_PRECISION won't be necessary for AMD once this is fixed (and torch2 wheels are released for ROCm 6.2): https://github.com/pytorch/pytorch/issues/132570#issuecomment-2313071756
 
