@@ -27,6 +27,8 @@ def get_models_db():
         db["codeformer"] = json.load(f)
     with open(db_path / "controlnet.json") as f:
         db["controlnet"] = json.load(f)
+    with open(db_path / "text_encoder.json") as f:
+        db["text-encoder"] = json.load(f)
     return db
 
 
