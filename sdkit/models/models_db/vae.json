@@ -3,5 +3,15 @@
         "name": "vae-ft-mse-840000-ema-pruned",
         "url": "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.ckpt",
         "quick_hash": "624b0a6cb704569795eb58ed03e4c03ca45b51288016e8f3973e9e449490b8ca"
+    },
+    "flux_vae_fp16": {
+        "name": "flux_vae_fp16",
+        "url": "https://huggingface.co/lodestones/Chroma/resolve/main/ae.safetensors",
+        "quick_hash": "b1f804ebc93a12030a25a2a108a89bbfd7ee73e4748bd45f1ecb1f6039f67317"
+    },
+    "ae": {
+        "name": "flux_vae_fp16",
+        "url": "https://huggingface.co/lodestones/Chroma/resolve/main/ae.safetensors",
+        "quick_hash": "b1f804ebc93a12030a25a2a108a89bbfd7ee73e4748bd45f1ecb1f6039f67317"
     }
 }

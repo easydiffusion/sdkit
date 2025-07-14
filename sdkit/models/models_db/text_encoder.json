@@ -1,0 +1,17 @@
+{
+    "clip_l": {
+        "name": "clip_l_fp16",
+        "url": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors",
+        "quick_hash": "4ad8367b21b253702cdb837adb59624f0beac3fdfe56fce53a2fa3ab8b8bfad1"
+    },
+    "clip_g": {
+        "name": "clip_g_fp16",
+        "url": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/text_encoders/clip_g.safetensors",
+        "quick_hash": "1d3657bcc22176d584e1b098199cc2a8b00ac9e3184e20d46805c845e3c0f8b3"
+    },
+    "t5xxl_fp16": {
+        "name": "t5xxl_fp16",
+        "url": "https://huggingface.co/Comfy-Org/stable-diffusion-3.5-fp8/resolve/main/text_encoders/t5xxl_fp16.safetensors",
+        "quick_hash": "186805f7384fe0e59b79457a4dac3522d6fd6c434c424f12f530d4ca8cab7e30"
+    }
+}
