@@ -1,13 +1,13 @@
 # Generated initially using github-actions-wizard (https://github.com/cmdr2/github-actions-wizard)
 
-name: Publish to PyPI
-run-name: Deployment
+name: CI Pipeline
+run-name: CI Pipeline
 on:
   release:
     types:
     - created
 jobs:
-  deploy:
+  deploy_to_pypi:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -45,3 +45,4 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    if: github.event_name == 'release' && github.event.action == 'created'
