@@ -32,7 +32,7 @@ jobs:
         path: |-
           dist
           pyproject.toml
-  deploy_to_pypi:
+  deploy_to_pypi_on_release_created:
     runs-on: ubuntu-latest
     permissions:
       contents: read
