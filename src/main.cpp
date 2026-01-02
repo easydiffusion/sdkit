@@ -96,6 +96,7 @@ struct CommandLineArgs {
     bool diffusion_fa = false;
     bool control_net_cpu = false;
     bool clip_on_cpu = false;
+    bool chroma_disable_dit_mask = false;
 };
 
 void print_usage(const char* program_name) {
@@ -124,6 +125,8 @@ void print_usage(const char* program_name) {
     std::cerr << "  --diffusion-fa                     Enable diffusion flash attention (default: false)" << std::endl;
     std::cerr << "  --control-net-cpu                  Keep ControlNet on CPU (default: false)" << std::endl;
     std::cerr << "  --clip-on-cpu                      Keep CLIP on CPU (default: false)" << std::endl;
+    std::cerr << "  --chroma-disable-dit-mask          Disable DiT mask for Chroma models (default: false)"
+              << std::endl;
 }
 
 CommandLineArgs parse_args(int argc, char* argv[]) {
@@ -184,6 +187,8 @@ CommandLineArgs parse_args(int argc, char* argv[]) {
             args.control_net_cpu = true;
         } else if (arg == "--clip-on-cpu") {
             args.clip_on_cpu = true;
+        } else if (arg == "--chroma-disable-dit-mask") {
+            args.chroma_disable_dit_mask = true;
         } else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             exit(0);
@@ -265,6 +270,7 @@ int main(int argc, char* argv[]) {
         server_params.diffusion_fa = args.diffusion_fa;
         server_params.control_net_cpu = args.control_net_cpu;
         server_params.clip_on_cpu = args.clip_on_cpu;
+        server_params.chroma_disable_dit_mask = args.chroma_disable_dit_mask;
 
         // Create and start the server
         g_server = std::make_unique<Server>(server_params);

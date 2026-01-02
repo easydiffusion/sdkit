@@ -89,7 +89,8 @@ ImageGenerator::ImageGenerator(std::shared_ptr<TaskStateManager> task_state_mana
       offload_to_cpu_(server_params.offload_to_cpu),
       diffusion_fa_(server_params.diffusion_fa),
       control_net_cpu_(server_params.control_net_cpu),
-      clip_on_cpu_(server_params.clip_on_cpu) {
+      clip_on_cpu_(server_params.clip_on_cpu),
+      chroma_disable_dit_mask_(server_params.chroma_disable_dit_mask) {
     LOG_INFO("ImageGenerator created");
 }
 
@@ -578,6 +579,7 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     params.diffusion_flash_attn = diffusion_fa_;
     params.keep_control_net_on_cpu = control_net_cpu_;
     params.keep_clip_on_cpu = clip_on_cpu_;
+    params.chroma_use_dit_mask = !chroma_disable_dit_mask_;
 
     if (vae_on_cpu_) {
         LOG_INFO("VAE will be kept on CPU");
@@ -593,6 +595,9 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     }
     if (clip_on_cpu_) {
         LOG_INFO("CLIP will be kept on CPU");
+    }
+    if (chroma_disable_dit_mask_) {
+        LOG_INFO("DiT mask disabled for Chroma models");
     }
 
     // Create SD context

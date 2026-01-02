@@ -118,6 +118,7 @@ class ImageGenerator {
     bool diffusion_fa_;
     bool control_net_cpu_;
     bool clip_on_cpu_;
+    bool chroma_disable_dit_mask_;
 };
 
 #endif  // __IMAGE_GENERATOR_H__

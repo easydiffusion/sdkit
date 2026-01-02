@@ -21,6 +21,7 @@ struct ServerParams {
     bool diffusion_fa = false;
     bool control_net_cpu = false;
     bool clip_on_cpu = false;
+    bool chroma_disable_dit_mask = false;
 };
 
 class Server {
