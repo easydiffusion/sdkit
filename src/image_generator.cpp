@@ -1,6 +1,9 @@
 #include "image_generator.h"
 
 #include <cstring>
+#include <filesystem>
+#include <map>
+#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -14,6 +17,8 @@
 #include "logging.h"
 #include "model_detection.h"
 #include "server.h"
+
+namespace fs = std::filesystem;
 
 // Global callback data structure
 struct CallbackData {
@@ -102,6 +107,114 @@ ImageGenerator::~ImageGenerator() {
     }
 }
 
+// Helper function to parse loras from prompt and return cleaned prompt
+static std::string parseLoras(const std::string& prompt, const std::string& lora_model_dir,
+                              std::map<std::string, float>& lora_map,
+                              std::map<std::string, float>& high_noise_lora_map) {
+    if (lora_model_dir.empty()) {
+        return prompt;  // Return original prompt if no lora directory
+    }
+
+    static const std::regex re(R"(<lora:([^:>]+):([^>]+)>)");
+    static const std::vector<std::string> valid_ext = {".gguf", ".safetensors", ".pt", ".sft"};
+    std::smatch m;
+    std::string cleaned_prompt = prompt;  // Start with original prompt
+
+    std::string tmp = prompt;
+
+    while (std::regex_search(tmp, m, re)) {
+        std::string raw_path = m[1].str();
+        const std::string raw_mul = m[2].str();
+
+        float mul = 0.f;
+        try {
+            mul = std::stof(raw_mul);
+        } catch (...) {
+            tmp = m.suffix().str();
+            cleaned_prompt = std::regex_replace(cleaned_prompt, re, "", std::regex_constants::format_first_only);
+            continue;
+        }
+
+        bool is_high_noise = false;
+        static const std::string prefix = "|high_noise|";
+        if (raw_path.rfind(prefix, 0) == 0) {
+            raw_path.erase(0, prefix.size());
+            is_high_noise = true;
+        }
+
+        fs::path final_path;
+        if (fs::path(raw_path).is_absolute()) {
+            final_path = raw_path;
+        } else {
+            final_path = fs::path(lora_model_dir) / raw_path;
+        }
+
+        if (!fs::exists(final_path)) {
+            bool found = false;
+            for (const auto& ext : valid_ext) {
+                fs::path try_path = final_path;
+                try_path += ext;
+                if (fs::exists(try_path)) {
+                    final_path = try_path;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                LOG_WARNING("Cannot find lora %s", final_path.lexically_normal().string().c_str());
+                tmp = m.suffix().str();
+                cleaned_prompt = std::regex_replace(cleaned_prompt, re, "", std::regex_constants::format_first_only);
+                continue;
+            }
+        }
+
+        const std::string key = final_path.lexically_normal().string();
+
+        if (is_high_noise)
+            high_noise_lora_map[key] += mul;
+        else
+            lora_map[key] += mul;
+
+        cleaned_prompt = std::regex_replace(cleaned_prompt, re, "", std::regex_constants::format_first_only);
+
+        tmp = m.suffix().str();
+    }
+
+    return cleaned_prompt;
+}
+
+// Helper function to build embedding map from directory
+static void buildEmbeddingMap(const std::string& embedding_dir, std::map<std::string, std::string>& embedding_map) {
+    static const std::vector<std::string> valid_ext = {".gguf", ".safetensors", ".pt", ".sft"};
+
+    if (embedding_dir.empty() || !fs::exists(embedding_dir) || !fs::is_directory(embedding_dir)) {
+        return;
+    }
+
+    for (auto& p : fs::directory_iterator(embedding_dir)) {
+        if (!p.is_regular_file()) continue;
+
+        auto path = p.path();
+        std::string ext = path.extension().string();
+
+        bool valid = false;
+        for (auto& e : valid_ext) {
+            if (ext == e) {
+                valid = true;
+                break;
+            }
+        }
+        if (!valid) {
+            continue;
+        }
+
+        std::string key = path.stem().string();
+        std::string value = path.string();
+
+        embedding_map[key] = value;
+    }
+}
+
 bool ImageGenerator::isInitialized() const { return initialized_ && sd_ctx_ != nullptr; }
 
 std::string ImageGenerator::getCurrentModelPath() const { return current_model_path_; }
@@ -165,11 +278,47 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     LOG_INFO("Generating %s: prompt='%s', size=%dx%d, steps=%d, seed=%lld", is_img2img ? "img2img" : "txt2img",
              params.prompt.c_str(), params.width, params.height, params.steps, params.seed);
 
+    // Parse loras from prompt and get cleaned prompt
+    std::map<std::string, float> lora_map;
+    std::map<std::string, float> high_noise_lora_map;
+    std::vector<sd_lora_t> lora_vec;
+    std::string lora_dir_str = current_lora_model_dir_;
+
+    std::string cleaned_prompt = parseLoras(params.prompt, lora_dir_str, lora_map, high_noise_lora_map);
+
+    // Build lora vector from parsed maps
+    for (const auto& kv : lora_map) {
+        sd_lora_t item;
+        item.is_high_noise = false;
+        item.path = kv.first.c_str();
+        item.multiplier = kv.second;
+        lora_vec.push_back(item);
+    }
+
+    for (const auto& kv : high_noise_lora_map) {
+        sd_lora_t item;
+        item.is_high_noise = true;
+        item.path = kv.first.c_str();
+        item.multiplier = kv.second;
+        lora_vec.push_back(item);
+    }
+
+    if (!lora_vec.empty()) {
+        LOG_INFO("Using %zu LoRA(s)", lora_vec.size());
+        for (const auto& lora : lora_vec) {
+            LOG_DEBUG("  LoRA: %s (%.2f) %s", lora.path, lora.multiplier, lora.is_high_noise ? "[high_noise]" : "");
+        }
+    }
+
     // Initialize generation parameters
     sd_img_gen_params_t gen_params;
     sd_img_gen_params_init(&gen_params);
 
-    gen_params.prompt = params.prompt.c_str();
+    // Set loras
+    gen_params.loras = lora_vec.empty() ? nullptr : lora_vec.data();
+    gen_params.lora_count = static_cast<uint32_t>(lora_vec.size());
+
+    gen_params.prompt = cleaned_prompt.c_str();
     gen_params.negative_prompt = params.negative_prompt.empty() ? "" : params.negative_prompt.c_str();
     gen_params.clip_skip = params.clip_skip;
     gen_params.width = params.width;
@@ -483,12 +632,14 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     }
 
     std::string lora_dir_str = model_manager_->getLoraDir();
+    std::string embeddings_dir_str = model_manager_->getEmbeddingsDir();
 
     // Check if we need to reload the model (check all paths including controlnet)
     bool needs_reload = !initialized_ || !sd_ctx_ || model_path != current_model_path_ ||
                         vae_path_str != current_vae_path_ || clip_l_path_str != current_clip_l_path_ ||
                         clip_g_path_str != current_clip_g_path_ || t5xxl_path_str != current_t5xxl_path_ ||
-                        llm_path_str != current_llm_path_ || controlnet_path_str != current_controlnet_path_;
+                        llm_path_str != current_llm_path_ || controlnet_path_str != current_controlnet_path_ ||
+                        embeddings_dir_str != current_embeddings_dir_;
 
     if (!needs_reload) {
         LOG_DEBUG("Model already loaded: %s", model_path.c_str());
@@ -543,8 +694,28 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     params.llm_path = llm_path_str.empty() ? nullptr : llm_path_str.c_str();
     params.taesd_path = nullptr;
     params.control_net_path = controlnet_path_str.empty() ? nullptr : controlnet_path_str.c_str();
-    params.lora_model_dir = lora_dir_str.empty() ? nullptr : lora_dir_str.c_str();
-    params.embedding_dir = nullptr;
+
+    // Build embeddings
+    std::map<std::string, std::string> embedding_map;
+    std::vector<sd_embedding_t> embedding_vec;
+    buildEmbeddingMap(embeddings_dir_str, embedding_map);
+
+    if (!embedding_map.empty()) {
+        embedding_vec.reserve(embedding_map.size());
+        for (const auto& kv : embedding_map) {
+            sd_embedding_t item;
+            item.name = kv.first.c_str();
+            item.path = kv.second.c_str();
+            embedding_vec.emplace_back(item);
+        }
+        params.embeddings = embedding_vec.data();
+        params.embedding_count = static_cast<uint32_t>(embedding_vec.size());
+        LOG_INFO("Loading %zu embedding(s)", embedding_vec.size());
+    } else {
+        params.embeddings = nullptr;
+        params.embedding_count = 0;
+    }
+
     params.vae_decode_only = false;  // We need encoding for img2img
 
     // Log what we're loading
@@ -567,7 +738,10 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
         LOG_INFO("Loading ControlNet model: %s", controlnet_path_str.c_str());
     }
     if (!lora_dir_str.empty()) {
-        LOG_INFO("Using LoRA model directory: %s", lora_dir_str.c_str());
+        LOG_DEBUG("LoRA model directory: %s", lora_dir_str.c_str());
+    }
+    if (!embeddings_dir_str.empty()) {
+        LOG_DEBUG("Embeddings directory: %s", embeddings_dir_str.c_str());
     }
 
     // Set RNG type
@@ -616,7 +790,7 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     current_llm_path_ = llm_path_str;
     current_taesd_path_ = "";
     current_lora_model_dir_ = lora_dir_str;
-    current_embeddings_dir_ = "";
+    current_embeddings_dir_ = embeddings_dir_str;
     current_controlnet_path_ = controlnet_path_str;
 
     initialized_ = true;

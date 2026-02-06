@@ -51,6 +51,7 @@ class ModelManager {
     // Get model directories
     std::string getRealesrganModelsPath() const;
     std::string getLoraDir() const;
+    std::string getEmbeddingsDir() const;
 
     // Scan directories and build the model index
     void scanAllDirectories();

@@ -88,6 +88,12 @@ std::string ModelManager::getLoraDir() const {
     return it != model_directories_.end() ? it->second : "";
 }
 
+std::string ModelManager::getEmbeddingsDir() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = model_directories_.find(ModelType::EMBEDDINGS);
+    return it != model_directories_.end() ? it->second : "";
+}
+
 bool ModelManager::isValidModelFile(const std::string& filename) const {
     std::string lower_filename = filename;
     std::transform(lower_filename.begin(), lower_filename.end(), lower_filename.begin(), ::tolower);
