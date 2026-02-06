@@ -174,8 +174,8 @@ static std::string parseLoras(const std::string& prompt, const std::string& lora
         fs::path raw_path_p = fs::path(utf8_to_wstring(raw_path));
         fs::path lora_dir_p = fs::path(utf8_to_wstring(lora_model_dir));
 #else
-        fs::path raw_path_p = fs::u8path(raw_path);
-        fs::path lora_dir_p = fs::u8path(lora_model_dir);
+        fs::path raw_path_p = fs::path(reinterpret_cast<const char8_t*>(raw_path.c_str()));
+        fs::path lora_dir_p = fs::path(reinterpret_cast<const char8_t*>(lora_model_dir.c_str()));
 #endif
 
         fs::path final_path;
