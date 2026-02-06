@@ -17,6 +17,7 @@
 #include "logging.h"
 #include "model_detection.h"
 #include "server.h"
+#include "string_utils.h"
 
 namespace fs = std::filesystem;
 
@@ -107,6 +108,27 @@ ImageGenerator::~ImageGenerator() {
     }
 }
 
+// Helper function to find a file recursively by stem and extension
+static fs::path findFileRecursively(const fs::path& dir, const std::string& stem,
+                                    const std::vector<std::string>& exts) {
+    for (auto& p : fs::recursive_directory_iterator(dir)) {
+        if (!p.is_regular_file()) continue;
+
+        auto path = p.path();
+        // Use UTF-8 safe conversion for path comparison
+        std::string path_stem = path_to_utf8(path.stem());
+        if (path_stem == stem) {
+            std::string ext = path_to_utf8(path.extension());
+            for (auto& e : exts) {
+                if (ext == e) {
+                    return path;
+                }
+            }
+        }
+    }
+    return {};
+}
+
 // Helper function to parse loras from prompt and return cleaned prompt
 static std::string parseLoras(const std::string& prompt, const std::string& lora_model_dir,
                               std::map<std::string, float>& lora_map,
@@ -115,23 +137,28 @@ static std::string parseLoras(const std::string& prompt, const std::string& lora
         return prompt;  // Return original prompt if no lora directory
     }
 
-    static const std::regex re(R"(<lora:([^:>]+):([^>]+)>)");
-    static const std::vector<std::string> valid_ext = {".gguf", ".safetensors", ".pt", ".sft"};
-    std::smatch m;
-    std::string cleaned_prompt = prompt;  // Start with original prompt
+    // Convert to wstring for proper UTF-8 handling
+    std::wstring w_prompt = utf8_to_wstring(prompt);
+    static const std::wregex re(L"(<lora:([^:>]+):([^>]+)>)");
+    std::wsmatch m;
+    std::wstring w_cleaned_prompt = w_prompt;  // Start with original prompt
 
-    std::string tmp = prompt;
+    std::wstring w_tmp = w_prompt;
 
-    while (std::regex_search(tmp, m, re)) {
-        std::string raw_path = m[1].str();
-        const std::string raw_mul = m[2].str();
+    while (std::regex_search(w_tmp, m, re)) {
+        std::wstring w_raw_path = m[2].str();       // Capture group 2 is the path
+        const std::wstring w_raw_mul = m[3].str();  // Capture group 3 is the multiplier
+
+        std::string raw_path = wstring_to_utf8(w_raw_path);
+        std::string raw_mul = wstring_to_utf8(w_raw_mul);
 
         float mul = 0.f;
         try {
             mul = std::stof(raw_mul);
         } catch (...) {
-            tmp = m.suffix().str();
-            cleaned_prompt = std::regex_replace(cleaned_prompt, re, "", std::regex_constants::format_first_only);
+            std::wstring w_suffix = m.suffix().str();
+            w_tmp = w_suffix;
+            w_cleaned_prompt = std::regex_replace(w_cleaned_prompt, re, L"", std::regex_constants::format_first_only);
             continue;
         }
 
@@ -142,17 +169,31 @@ static std::string parseLoras(const std::string& prompt, const std::string& lora
             is_high_noise = true;
         }
 
+        // Build platform-correct paths from UTF-8 input to avoid mojibake on Windows
+#ifdef _WIN32
+        fs::path raw_path_p = fs::path(utf8_to_wstring(raw_path));
+        fs::path lora_dir_p = fs::path(utf8_to_wstring(lora_model_dir));
+#else
+        fs::path raw_path_p = fs::u8path(raw_path);
+        fs::path lora_dir_p = fs::u8path(lora_model_dir);
+#endif
+
         fs::path final_path;
-        if (fs::path(raw_path).is_absolute()) {
-            final_path = raw_path;
+        if (raw_path_p.is_absolute()) {
+            final_path = raw_path_p;
         } else {
-            final_path = fs::path(lora_model_dir) / raw_path;
+            final_path = lora_dir_p / raw_path_p;
         }
 
+        // Log the resolved path for debugging
+        LOG_DEBUG("Resolved LoRA path: %s", path_to_utf8(final_path.lexically_normal()).c_str());
+
         if (!fs::exists(final_path)) {
+            LOG_WARNING("LoRA file does not exist: %s", path_to_utf8(final_path).c_str());
             bool found = false;
-            for (const auto& ext : valid_ext) {
+            for (const auto& ext : {"gguf", "safetensors", "pt", "sft"}) {
                 fs::path try_path = final_path;
+                try_path += ".";
                 try_path += ext;
                 if (fs::exists(try_path)) {
                     final_path = try_path;
@@ -160,27 +201,40 @@ static std::string parseLoras(const std::string& prompt, const std::string& lora
                     break;
                 }
             }
+            if (!found && !raw_path_p.is_absolute()) {
+                std::string stem = path_to_utf8(raw_path_p.stem());
+                fs::path found_path = findFileRecursively(lora_dir_p, stem, {"gguf", "safetensors", "pt", "sft"});
+                if (!found_path.empty()) {
+                    final_path = found_path;
+                    found = true;
+                }
+            }
+
+            // Remove the matched tag from the cleaned prompt and advance the regex search to avoid infinite loop
+            w_cleaned_prompt = std::regex_replace(w_cleaned_prompt, re, L"", std::regex_constants::format_first_only);
+            std::wstring w_suffix = m.suffix().str();
+            w_tmp = w_suffix;
+
             if (!found) {
-                LOG_WARNING("Cannot find lora %s", final_path.lexically_normal().string().c_str());
-                tmp = m.suffix().str();
-                cleaned_prompt = std::regex_replace(cleaned_prompt, re, "", std::regex_constants::format_first_only);
+                LOG_ERROR("Failed to find LoRA file: %s", raw_path.c_str());
                 continue;
             }
         }
 
-        const std::string key = final_path.lexically_normal().string();
+        const std::string key = path_to_utf8(final_path.lexically_normal());
 
         if (is_high_noise)
             high_noise_lora_map[key] += mul;
         else
             lora_map[key] += mul;
 
-        cleaned_prompt = std::regex_replace(cleaned_prompt, re, "", std::regex_constants::format_first_only);
+        w_cleaned_prompt = std::regex_replace(w_cleaned_prompt, re, L"", std::regex_constants::format_first_only);
 
-        tmp = m.suffix().str();
+        std::wstring w_suffix = m.suffix().str();
+        w_tmp = w_suffix;
     }
 
-    return cleaned_prompt;
+    return wstring_to_utf8(w_cleaned_prompt);
 }
 
 // Helper function to build embedding map from directory
@@ -191,11 +245,11 @@ static void buildEmbeddingMap(const std::string& embedding_dir, std::map<std::st
         return;
     }
 
-    for (auto& p : fs::directory_iterator(embedding_dir)) {
+    for (auto& p : fs::recursive_directory_iterator(embedding_dir)) {
         if (!p.is_regular_file()) continue;
 
         auto path = p.path();
-        std::string ext = path.extension().string();
+        std::string ext = path_to_utf8(path.extension());
 
         bool valid = false;
         for (auto& e : valid_ext) {
@@ -208,8 +262,8 @@ static void buildEmbeddingMap(const std::string& embedding_dir, std::map<std::st
             continue;
         }
 
-        std::string key = path.stem().string();
-        std::string value = path.string();
+        std::string key = path_to_utf8(path.stem());
+        std::string value = path_to_utf8(path);
 
         embedding_map[key] = value;
     }

@@ -5,6 +5,7 @@
 
 #include "image_utils.h"
 #include "logging.h"
+#include "string_utils.h"
 
 namespace fs = std::filesystem;
 
@@ -182,7 +183,7 @@ bool ImageFilters::ensureUpscalerLoaded(const std::string& upscaler_name) {
 
     // Construct full path to the model
     fs::path model_path = fs::path(realesrgan_dir) / (upscaler_name + ".pth");
-    std::string upscaler_path = model_path.string();
+    std::string upscaler_path = path_to_utf8(model_path);
 
     LOG_INFO("Loading upscaler from: %s", upscaler_path.c_str());
 
