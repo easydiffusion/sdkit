@@ -59,8 +59,8 @@ def get_release_files(build_dir):
     """Get the list of all distributable release files (executables and shared libraries)."""
     files = []
 
-    def process_file(filename):
-        if filename.endswith((".dylib", ".dll")):
+    def process_file(filename, subdir):
+        if filename.endswith((".dylib", ".dll")) or subdir == "bin":
             files.append(os.path.join(root, filename))
         elif filename.endswith(".so"):
             # On Linux, only include base .so files, not versioned symlinks
@@ -74,7 +74,7 @@ def get_release_files(build_dir):
         if os.path.exists(dir_path):
             for root, dirs, filenames in os.walk(dir_path):
                 for filename in filenames:
-                    process_file(filename)
+                    process_file(filename, subdir)
 
     return files
 
