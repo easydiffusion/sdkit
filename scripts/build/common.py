@@ -57,25 +57,25 @@ def build_cmake(build_dir, env=None):
 
 def get_release_files(build_dir):
     """Get the list of all distributable release files (executables and shared libraries)."""
-    bin_dir = os.path.join(build_dir, "bin")
-    lib_dir = os.path.join(build_dir, "lib")
     files = []
-    # Collect all files in bin (executables and dlls)
-    if os.path.exists(bin_dir):
-        for root, dirs, filenames in os.walk(bin_dir):
-            for filename in filenames:
+
+    def process_file(filename):
+        if filename.endswith((".dylib", ".dll")):
+            files.append(os.path.join(root, filename))
+        elif filename.endswith(".so"):
+            # On Linux, only include base .so files, not versioned symlinks
+            # e.g., include foo.so but not foo.so.0 or foo.so.0.12
+            if re.match(r".*\.so$", filename) and not re.match(r".*\.so\.\d+", filename):
                 files.append(os.path.join(root, filename))
-    # Collect shared libraries in lib (.so, .dylib, .dll)
-    if os.path.exists(lib_dir):
-        for root, dirs, filenames in os.walk(lib_dir):
-            for filename in filenames:
-                if filename.endswith((".dylib", ".dll")):
-                    files.append(os.path.join(root, filename))
-                elif filename.endswith(".so"):
-                    # On Linux, only include base .so files, not versioned symlinks
-                    # e.g., include foo.so but not foo.so.0 or foo.so.0.12
-                    if re.match(r".*\.so$", filename) and not re.match(r".*\.so\.\d+", filename):
-                        files.append(os.path.join(root, filename))
+
+    # Collect all files in bin (executables and dlls)
+    for subdir in ["bin", "lib"]:
+        dir_path = os.path.join(build_dir, subdir)
+        if os.path.exists(dir_path):
+            for root, dirs, filenames in os.walk(dir_path):
+                for filename in filenames:
+                    process_file(filename)
+
     return files
 
 
