@@ -5,6 +5,7 @@ import sys
 import json
 import platform
 import tarfile
+import re
 
 
 def get_os():
@@ -68,8 +69,13 @@ def get_release_files(build_dir):
     if os.path.exists(lib_dir):
         for root, dirs, filenames in os.walk(lib_dir):
             for filename in filenames:
-                if filename.endswith((".so", ".dylib", ".dll")):
+                if filename.endswith((".dylib", ".dll")):
                     files.append(os.path.join(root, filename))
+                elif filename.endswith(".so"):
+                    # On Linux, only include base .so files, not versioned symlinks
+                    # e.g., include foo.so but not foo.so.0 or foo.so.0.12
+                    if re.match(r".*\.so$", filename) and not re.match(r".*\.so\.\d+", filename):
+                        files.append(os.path.join(root, filename))
     return files
 
 
