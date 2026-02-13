@@ -251,10 +251,14 @@ def compare_and_upload(
                     remote_path = existing_asset["browser_download_url"]
 
                     actual_local_hash = hash_file_quick(local_path)
-                    actual_remote_hash = hash_url_quick(remote_path)
+                    actual_remote_hash = None
+                    try:
+                        actual_remote_hash = hash_url_quick(remote_path)
+                    except Exception as e:
+                        print(f"    Error hashing remote file: {e}")
 
-                    print(f"    Local file: {local_path} (hash: {actual_local_hash[:16]}...)")
-                    print(f"    Remote file: {remote_path} (hash: {actual_remote_hash[:16]}...)")
+                    print(f"    Local file: {local_path} (hash: {actual_local_hash}...)")
+                    print(f"    Remote file: {remote_path} (hash: {actual_remote_hash}...)")
 
                     if actual_local_hash == actual_remote_hash:
                         print(f"    Actual file hash matches, skipping")
