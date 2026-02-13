@@ -26,6 +26,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
+from scripts.upload.hash_utils import hash_url_quick, hash_file_quick
+
 try:
     import requests
 except ImportError:
@@ -244,7 +246,23 @@ def compare_and_upload(
                 if remote_hash:
                     print(f"    Manifest hash differs (local: {local_hash[:16]}..., remote: {remote_hash[:16]}...)")
                 else:
-                    print(f"    Remote hash not found in manifest, uploading")
+                    print(f"    Remote hash not found in manifest, checking actual file hash")
+
+                    remote_path = existing_asset["browser_download_url"]
+
+                    actual_local_hash = hash_file_quick(local_path)
+                    actual_remote_hash = hash_url_quick(remote_path)
+
+                    print(f"    Local file: {local_path} (hash: {actual_local_hash[:16]}...)")
+                    print(f"    Remote file: {remote_path} (hash: {actual_remote_hash[:16]}...)")
+
+                    if actual_local_hash == actual_remote_hash:
+                        print(f"    Actual file hash matches, skipping")
+                        skipped += 1
+                        continue
+
+                    print(f"    Actual file hash differs, uploading new version")
+
                 # Delete old asset before uploading new one
                 uploader.delete_asset(existing_asset["id"], asset_name)
 
