@@ -61,6 +61,10 @@ def get_release_files(build_dir):
 
     def process_file(filename, subdir):
         if filename.endswith((".dylib", ".dll")) or subdir == "bin":
+            if "vulkan-shaders-gen" in filename:
+                # skip the vulkan-shaders-gen build tool, we only want the generated shaders
+                return
+
             files.append(os.path.join(root, filename))
         elif filename.endswith(".so"):
             # On Linux, only include base .so files, not versioned symlinks
