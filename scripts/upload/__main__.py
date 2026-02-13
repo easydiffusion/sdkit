@@ -269,6 +269,8 @@ def compare_and_upload(
 
                 # Delete old asset before uploading new one
                 uploader.delete_asset(existing_asset["id"], asset_name)
+        else:
+            print(f"  Uploading asset: {asset_name}")
 
         # Upload the file
         uploader.upload_asset(release_id, upload_url, local_path, asset_name)
