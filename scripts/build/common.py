@@ -7,6 +7,8 @@ import platform
 import tarfile
 import re
 
+INTERMEDIATE_LIB_PATTERN = re.compile(r".*\.so\.\d+|.*\.\d+\.dylib$")  # skip foo.so.1, foo.1.dylib etc
+
 
 def get_os():
     """Get OS name for target."""
@@ -57,29 +59,22 @@ def build_cmake(build_dir, env=None):
 
 def get_release_files(build_dir):
     """Get the list of all distributable release files (executables and shared libraries)."""
+    bin_dir = os.path.join(build_dir, "bin")
+    lib_dir = os.path.join(build_dir, "lib")
     files = []
-
-    def process_file(filename, subdir):
-        if filename.endswith((".dylib", ".dll")):
-            files.append(os.path.join(root, filename))
-        elif re.match(r".*\.so", filename):
-            if re.match(r".*\.so$", filename):  # skip versioned .so files, e.g. foo.so.0 or foo.so.0.12
-                files.append(os.path.join(root, filename))
-        elif subdir == "bin":
-            if "vulkan-shaders-gen" in filename:
-                # skip the vulkan-shaders-gen build tool, we only want the generated shaders
-                return
-
-            files.append(os.path.join(root, filename))
-
     # Collect all files in bin (executables and dlls)
-    for subdir in ["bin", "lib"]:
-        dir_path = os.path.join(build_dir, subdir)
-        if os.path.exists(dir_path):
-            for root, dirs, filenames in os.walk(dir_path):
-                for filename in filenames:
-                    process_file(filename, subdir)
-
+    if os.path.exists(bin_dir):
+        for root, dirs, filenames in os.walk(bin_dir):
+            for filename in filenames:
+                if INTERMEDIATE_LIB_PATTERN.match(filename):
+                    continue
+                files.append(os.path.join(root, filename))
+    # Collect shared libraries in lib (.so, .dylib, .dll)
+    if os.path.exists(lib_dir):
+        for root, dirs, filenames in os.walk(lib_dir):
+            for filename in filenames:
+                if filename.endswith((".so", ".dylib", ".dll")):
+                    files.append(os.path.join(root, filename))
     return files
 
 
