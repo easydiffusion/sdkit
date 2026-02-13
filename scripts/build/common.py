@@ -66,7 +66,7 @@ def get_release_files(build_dir):
     if os.path.exists(bin_dir):
         for root, dirs, filenames in os.walk(bin_dir):
             for filename in filenames:
-                if INTERMEDIATE_LIB_PATTERN.match(filename):
+                if INTERMEDIATE_LIB_PATTERN.match(filename) or "vulkan-shaders-gen" in filename:
                     continue
                 files.append(os.path.join(root, filename))
     # Collect shared libraries in lib (.so, .dylib, .dll)
