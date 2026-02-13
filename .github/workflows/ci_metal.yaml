@@ -11,8 +11,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: 'v3'
+
+      - name: Check for v3 codebase
+        run: |
+          if [ ! -f CMakeLists.txt ]; then
+            echo "CMakeLists.txt not found"
+            exit 1
+          fi
 
       - name: Update submodules
         run: git submodule update --init --recursive
