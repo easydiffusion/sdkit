@@ -5,6 +5,9 @@ project(sdkit)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Disable versioned sonames on platforms that support it
+set(CMAKE_PLATFORM_NO_VERSIONED_SONAME ON)
+
 # Option to build tools
 option(SDKIT_BUILD_TOOLS "Build sdkit tools" OFF)
 
