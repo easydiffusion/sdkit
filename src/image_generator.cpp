@@ -405,6 +405,15 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
         LOG_INFO("Using ControlNet with strength %.2f", params.control_strength);
     }
 
+    // Reference images for vision-based models (Qwen, etc.)
+    std::vector<sd_image_t> ref_images_vec = createRefImages(params);
+    if (!ref_images_vec.empty()) {
+        gen_params.ref_images = ref_images_vec.data();
+        gen_params.ref_images_count = static_cast<int>(ref_images_vec.size());
+        gen_params.auto_resize_ref_image = params.auto_resize_ref_image;
+        LOG_INFO("Using %d reference image(s)", gen_params.ref_images_count);
+    }
+
     // VAE tiling (if enabled via CLI)
     if (vae_tiling_) {
         gen_params.vae_tiling_params.enabled = true;
@@ -455,6 +464,13 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     // Free control image if used
     if (control_image.data) {
         freeImage(control_image);
+    }
+
+    // Free reference images if used
+    for (auto& ref_image : ref_images_vec) {
+        if (ref_image.data) {
+            freeImage(ref_image);
+        }
     }
 
     if (!result) {
@@ -573,6 +589,53 @@ sd_image_t ImageGenerator::createControlImage(const ImageGenerationParams& param
     }
 
     return control_image;
+}
+
+std::vector<sd_image_t> ImageGenerator::createRefImages(const ImageGenerationParams& params) {
+    std::vector<sd_image_t> ref_images;
+
+    if (params.ref_images_base64.empty()) {
+        return ref_images;  // Return empty vector if no ref images
+    }
+
+    LOG_INFO("Processing %zu reference image(s)", params.ref_images_base64.size());
+
+    for (size_t i = 0; i < params.ref_images_base64.size(); i++) {
+        if (params.ref_images_base64[i].empty()) {
+            LOG_WARNING("Skipping empty reference image at index %zu", i);
+            continue;
+        }
+
+        // Decode reference image from base64
+        sd_image_t ref_image = base64ToImage(params.ref_images_base64[i]);
+        if (!ref_image.data) {
+            LOG_ERROR("Failed to decode reference image at index %zu", i);
+            // Free previously decoded images before throwing
+            for (auto& img : ref_images) {
+                freeImage(img);
+            }
+            throw std::runtime_error("Failed to decode reference image at index " + std::to_string(i));
+        }
+
+        // Resize reference image if auto_resize_ref_image is enabled
+        if (params.auto_resize_ref_image) {
+            if (!resizeImage(ref_image, params.width, params.height, true)) {
+                LOG_ERROR("Failed to resize reference image at index %zu", i);
+                freeImage(ref_image);
+                // Free previously decoded images
+                for (auto& img : ref_images) {
+                    freeImage(img);
+                }
+                throw std::runtime_error("Failed to resize reference image at index " + std::to_string(i));
+            }
+        }
+
+        LOG_DEBUG("Loaded reference image %zu: %ux%u channels", i, ref_image.width, ref_image.height, ref_image.channel);
+        ref_images.push_back(ref_image);
+    }
+
+    LOG_INFO("Successfully loaded %zu reference image(s)", ref_images.size());
+    return ref_images;
 }
 
 void ImageGenerator::freeImage(sd_image_t& image) {

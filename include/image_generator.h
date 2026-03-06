@@ -40,6 +40,10 @@ struct ImageGenerationParams {
     float control_strength = 1.0f;
     std::string controlnet_model;
 
+    // Reference images for vision-based models (Qwen, etc.)
+    std::vector<std::string> ref_images_base64;
+    bool auto_resize_ref_image = true;
+
     // Other options
     int clip_skip = -1;
 };
@@ -74,6 +78,9 @@ class ImageGenerator {
 
     // Create control image from base64 string and apply canny preprocessing
     sd_image_t createControlImage(const ImageGenerationParams& params);
+
+    // Create reference images from base64 strings (for vision-based models)
+    std::vector<sd_image_t> createRefImages(const ImageGenerationParams& params);
 
     // Free sd_image_t data
     void freeImage(sd_image_t& image);
