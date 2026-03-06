@@ -307,6 +307,13 @@ crow::response Server::generateImage(const crow::json::rvalue& json_body, bool i
             params.strength = json_body.has("denoising_strength") ? json_body["denoising_strength"].d() : 0.75f;
         }
 
+        // reference images
+        if (json_body.has("ref_images") && json_body["ref_images"].size() > 0) {
+            for (size_t i = 0; i < json_body["ref_images"].size(); i++) {
+                params.ref_images_base64.push_back(std::string(json_body["ref_images"][i].s()));
+            }
+        }
+
         // ControlNet parameters from alwayson_scripts
         if (json_body.has("alwayson_scripts") && json_body["alwayson_scripts"].has("controlnet")) {
             auto controlnet_obj = json_body["alwayson_scripts"]["controlnet"];
