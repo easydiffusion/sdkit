@@ -81,20 +81,16 @@ std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_
         return "vae";  // Default to VAE if we can't determine
     }
 
-    // Check for LLM model indicators
-    for (const std::string& name : tensor_keys) {
-        if (name.find("blk.35.attn_k.weight") != std::string::npos ||
-            name.find("model.layers.35.post_attention_layernorm.weight") != std::string::npos) {
-            LOG_DEBUG("Detected LLM model");
-            return "llm";
-        }
-    }
-
     bool has_text_model = false;
     bool has_text_projection = false;
     bool has_position_ids = false;
     bool has_self_attention = false;
     bool has_dense_relu_dense = false;
+    bool has_llm_token_embedding = false;
+    bool has_llm_attention = false;
+    bool has_llm_mlp = false;
+    bool has_llm_output_norm = false;
+    bool has_llm_qk_norm = false;
 
     // Count transformer layers to distinguish CLIP-L (12 layers) from CLIP-G (32 layers)
     int max_layer_number = -1;
@@ -124,6 +120,44 @@ std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_
             has_dense_relu_dense = true;
         }
 
+        // LLM model indicators. Support both raw GGUF naming and converted safetensors naming.
+        if (name_lower.find("token_embd.weight") != std::string::npos ||
+            name_lower.find("embed_tokens.weight") != std::string::npos) {
+            has_llm_token_embedding = true;
+        }
+        if ((name_lower.find("blk.") != std::string::npos &&
+             (name_lower.find("attn_q.weight") != std::string::npos ||
+              name_lower.find("attn_k.weight") != std::string::npos ||
+              name_lower.find("attn_v.weight") != std::string::npos ||
+              name_lower.find("attn_output.weight") != std::string::npos)) ||
+            (name_lower.find("model.layers.") != std::string::npos &&
+             (name_lower.find("self_attn.q_proj.weight") != std::string::npos ||
+              name_lower.find("self_attn.k_proj.weight") != std::string::npos ||
+              name_lower.find("self_attn.v_proj.weight") != std::string::npos ||
+              name_lower.find("self_attn.o_proj.weight") != std::string::npos))) {
+            has_llm_attention = true;
+        }
+        if ((name_lower.find("blk.") != std::string::npos &&
+             (name_lower.find("ffn_gate.weight") != std::string::npos ||
+              name_lower.find("ffn_up.weight") != std::string::npos ||
+              name_lower.find("ffn_down.weight") != std::string::npos)) ||
+            (name_lower.find("model.layers.") != std::string::npos &&
+             (name_lower.find("mlp.gate_proj.weight") != std::string::npos ||
+              name_lower.find("mlp.up_proj.weight") != std::string::npos ||
+              name_lower.find("mlp.down_proj.weight") != std::string::npos))) {
+            has_llm_mlp = true;
+        }
+        if (name_lower.find("output_norm.weight") != std::string::npos ||
+            name_lower.find("model.norm.weight") != std::string::npos) {
+            has_llm_output_norm = true;
+        }
+        if (name_lower.find("attn_q_norm.weight") != std::string::npos ||
+            name_lower.find("attn_k_norm.weight") != std::string::npos ||
+            name_lower.find("self_attn.q_norm.weight") != std::string::npos ||
+            name_lower.find("self_attn.k_norm.weight") != std::string::npos) {
+            has_llm_qk_norm = true;
+        }
+
         // Extract layer numbers from tensor names
         // Look for patterns like "layers.11", "layer.31", "blocks.5", etc.
         if (name_lower.find("layer") != std::string::npos || name_lower.find("block") != std::string::npos) {
@@ -150,6 +184,15 @@ std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_
     if (has_self_attention && has_dense_relu_dense) {
         LOG_DEBUG("Detected T5 model");
         return "t5xxl";
+    }
+
+    // Qwen3 and similar LLMs expose a transformer block structure with token embeddings,
+    // attention projections, MLP projections, and a final output norm.
+    if ((has_llm_token_embedding && has_llm_attention && has_llm_mlp) ||
+        (has_llm_attention && has_llm_mlp && has_llm_output_norm) ||
+        (has_llm_attention && has_llm_mlp && has_llm_qk_norm)) {
+        LOG_DEBUG("Detected LLM model");
+        return "llm";
     }
 
     // If it's a CLIP model (has text model indicators)
