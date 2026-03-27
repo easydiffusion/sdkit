@@ -17,18 +17,23 @@ BUILD_PLATFORMS = {
         ("vulkan", "x64"),
     ],
     "Darwin": [
-        ("metal", "arm64"),
+        ("metal", "arm64", "11.0"),
+        ("metal", "x64", "10.14"),
     ],
 }
 
 print(f"Detected OS: {OS_NAME}")
-platforms = BUILD_PLATFORMS.get(OS_NAME, ["cpu"])
+platforms = BUILD_PLATFORMS.get(OS_NAME, [("cpu", "x64")])
 print(f"Platforms to build for: {platforms}")
 
 
 def main():
-    for platform_name, arch in platforms:
+    for platform_name, arch, *rest in platforms:
+        macos_min_version = rest[0] if rest else None
         cmd = [sys.executable, "-m", "scripts.build", "--platform", platform_name, "--arch", arch]
+
+        if macos_min_version:
+            cmd.extend(["--macos-min-version", macos_min_version])
 
         print(f"Running build script: {cmd}")
         result = subprocess.run(cmd)

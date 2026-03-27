@@ -23,11 +23,17 @@ def main():
         default=None,
         help="The variant to build for (e.g., 'sm86' for CUDA). If not specified, the default variant for the platform will be used.",
     )
+    parser.add_argument(
+        "--macos-min-version",
+        default=None,
+        help="Minimum supported macOS version to pass as CMAKE_OSX_DEPLOYMENT_TARGET.",
+    )
     args = parser.parse_args()
 
     platform = args.platform
     arch = args.arch
     variant = args.variant
+    macos_min_version = args.macos_min_version
     try:
         module = globals()[f"platform_{platform}"]
     except KeyError:
@@ -52,6 +58,7 @@ def main():
         env_func,
         arch,
         variant,
+        macos_min_version,
     )
 
 

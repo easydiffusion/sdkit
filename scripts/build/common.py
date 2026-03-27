@@ -8,6 +8,8 @@ import tarfile
 import re
 
 INTERMEDIATE_LIB_PATTERN = re.compile(r".*\.so\.\d+|.*\.\d+\.dylib$")  # skip foo.so.1, foo.1.dylib etc
+MACOS_CMAKE_ARCH = {"x64": "x86_64", "arm64": "arm64"}
+DEFAULT_MACOS_DEPLOYMENT_TARGET = {"x64": "10.14", "arm64": "11.0"}
 
 
 def get_os():
@@ -34,11 +36,31 @@ def get_arch():
         return machine
 
 
-def configure_cmake(build_dir, source_dir, options=[], env=None):
+def get_target_arch(arch=None):
+    """Get the requested target architecture or fall back to the host arch."""
+    return arch if arch else get_arch()
+
+
+def get_cmake_configure_args(arch=None, macos_min_version=None):
+    """Get target-specific CMake configure arguments."""
+    os_name = get_os()
+    arch_name = get_target_arch(arch)
+    cmake_args = []
+
+    if os_name == "mac":
+        cmake_args.append(f"-DCMAKE_OSX_ARCHITECTURES={MACOS_CMAKE_ARCH[arch_name]}")
+        deployment_target = macos_min_version or DEFAULT_MACOS_DEPLOYMENT_TARGET[arch_name]
+        cmake_args.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={deployment_target}")
+
+    return cmake_args
+
+
+def configure_cmake(build_dir, source_dir, options=None, env=None):
     """Configure CMake with given options."""
+    options = options or []
     options = options + ["-DCMAKE_BUILD_TYPE=Release"]
     os.makedirs(build_dir, exist_ok=True)
-    cmake_cmd = ["cmake", "-S", source_dir, "-B", build_dir] + options
+    cmake_cmd = ["cmake"] + ["-S", source_dir, "-B", build_dir] + options
     print(f"Configuring CMake: {' '.join(cmake_cmd)}")
 
     result = subprocess.run(cmake_cmd, env=env)
@@ -116,7 +138,7 @@ def get_target(get_platform_name_func, variant_name, arch=None):
     """
     platform_name = get_platform_name_func()
     os_name = get_os()
-    arch_name = arch if arch else get_arch()
+    arch_name = get_target_arch(arch)
     target = f"{os_name}-{arch_name}-{platform_name}-{variant_name}"
     return target
 
@@ -194,6 +216,7 @@ def build_project(
     get_env_func=None,
     arch=None,
     variant=None,
+    macos_min_version=None,
 ):
     """Common build logic for all backends.
 
@@ -206,6 +229,7 @@ def build_project(
         get_additional_files_func: Optional function that returns additional files
         get_env_func: Optional function that returns environment dict for cmake
         arch: Optional architecture to build for
+        macos_min_version: Optional macOS deployment target override
     """
     # Check if platform module has get_variants function
     variants = []
@@ -225,6 +249,7 @@ def build_project(
 
     # Get target for "any" variant to use for additional files
     target_any = get_target(get_platform_name_func, "any", arch)
+    cmake_args = get_cmake_configure_args(arch, macos_min_version)
 
     # Get environment for cmake
     env = get_env_func(target_any) if get_env_func else None
@@ -239,7 +264,7 @@ def build_project(
 
         # Combine base compile flags with variant-specific flags
         base_options = get_compile_flags_func(target_any)
-        options = base_options + variant_compile_flags
+        options = cmake_args + base_options + variant_compile_flags
 
         # Resolve additional files if available
         additional_files = get_additional_files_func() if get_additional_files_func else []

@@ -36,14 +36,17 @@ def get_compile_flags(target_any):
     """Get compile flags for Vulkan."""
     # Disable GGML_NATIVE for portable CPU code (works on both Intel and AMD)
     # Enable AVX2/FMA/F16C for good performance while maintaining compatibility
-    flags = [
-        "-DSD_VULKAN=ON",
-        "-DGGML_NATIVE=OFF",
-        "-DGGML_AVX2=ON",
-        "-DGGML_FMA=ON",
-        "-DGGML_F16C=ON",
-        "-DGGML_BMI2=ON",
-    ]
+    flags = ["-DSD_VULKAN=ON", "-DGGML_NATIVE=OFF"]
+
+    if "-x64-" in target_any:
+        flags.extend(
+            [
+                "-DGGML_AVX2=ON",
+                "-DGGML_FMA=ON",
+                "-DGGML_F16C=ON",
+                "-DGGML_BMI2=ON",
+            ]
+        )
 
     if target_any.startswith("win-arm64"):
         vulkan_sdk_path = os.environ["VULKAN_SDK"].replace("\\", "/")
