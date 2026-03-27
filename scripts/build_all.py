@@ -18,7 +18,7 @@ BUILD_PLATFORMS = {
     ],
     "Darwin": [
         ("metal", "arm64", "11.0"),
-        ("metal", "x64", "10.14"),
+        ("metal", "x64", "10.15"),
     ],
 }
 
