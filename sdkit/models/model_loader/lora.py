@@ -95,11 +95,11 @@ def load_lora(pipe, lora, sd_type, lora_path):
     lora_blocks = {}
     lora = {_name(key): val for key, val in lora.items()}
 
-    lora_type = get_lora_type(lora)
-    if lora_type != sd_type:
-        raise RuntimeError(
-            f"Sorry, could not load {lora_path}. You're trying to use a {lora_type} LoRA model with a {sd_type} Stable Diffusion model. They're not compatible, please use a compatible model!"
-        )
+    # lora_type = get_lora_type(lora)
+    # if lora_type != sd_type:
+    #     raise RuntimeError(
+    #         f"Sorry, could not load {lora_path}. You're trying to use a {lora_type} LoRA model with a {sd_type} Stable Diffusion model. They're not compatible, please use a compatible model!"
+    #     )
 
     is_lycoris = any("lora.mid" in key for key in lora.keys())
 
