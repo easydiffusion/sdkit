@@ -34,10 +34,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install requests
 
-      - name: Configure + Build
-        run: python -m scripts.build_all
-
-      - name: Upload Artifact
+      - name: Build + Upload Artifact
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python -m scripts.upload_all --tag v3.1.0
+        run: python -m scripts.ci
