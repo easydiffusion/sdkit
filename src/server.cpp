@@ -275,6 +275,16 @@ crow::response Server::generateImage(const crow::json::rvalue& json_body, bool i
         ImageGenerationParams params;
         params.prompt = json_body.has("prompt") ? std::string(json_body["prompt"].s()) : "";
         params.negative_prompt = json_body.has("negative_prompt") ? std::string(json_body["negative_prompt"].s()) : "";
+        if (json_body.has("lora_paths") && json_body["lora_paths"].t() == crow::json::type::List) {
+            for (size_t i = 0; i < json_body["lora_paths"].size(); i++) {
+                params.lora_paths.push_back(std::string(json_body["lora_paths"][i].s()));
+            }
+        }
+        if (json_body.has("lora_alphas") && json_body["lora_alphas"].t() == crow::json::type::List) {
+            for (size_t i = 0; i < json_body["lora_alphas"].size(); i++) {
+                params.lora_alphas.push_back(static_cast<float>(json_body["lora_alphas"][i].d()));
+            }
+        }
         params.width = json_body.has("width") ? json_body["width"].i() : 512;
         params.height = json_body.has("height") ? json_body["height"].i() : 512;
         params.steps = json_body.has("steps") ? json_body["steps"].i() : 20;

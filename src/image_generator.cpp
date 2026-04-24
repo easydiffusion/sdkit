@@ -3,7 +3,6 @@
 #include <cstring>
 #include <filesystem>
 #include <map>
-#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -108,135 +107,6 @@ ImageGenerator::~ImageGenerator() {
     }
 }
 
-// Helper function to find a file recursively by stem and extension
-static fs::path findFileRecursively(const fs::path& dir, const std::string& stem,
-                                    const std::vector<std::string>& exts) {
-    for (auto& p : fs::recursive_directory_iterator(dir)) {
-        if (!p.is_regular_file()) continue;
-
-        auto path = p.path();
-        // Use UTF-8 safe conversion for path comparison
-        std::string path_stem = path_to_utf8(path.stem());
-        if (path_stem == stem) {
-            std::string ext = path_to_utf8(path.extension());
-            for (auto& e : exts) {
-                if (ext == e) {
-                    return path;
-                }
-            }
-        }
-    }
-    return {};
-}
-
-// Helper function to parse loras from prompt and return cleaned prompt
-static std::string parseLoras(const std::string& prompt, const std::string& lora_model_dir,
-                              std::map<std::string, float>& lora_map,
-                              std::map<std::string, float>& high_noise_lora_map) {
-    if (lora_model_dir.empty()) {
-        return prompt;  // Return original prompt if no lora directory
-    }
-
-    // Convert to wstring for proper UTF-8 handling
-    std::wstring w_prompt = utf8_to_wstring(prompt);
-    static const std::wregex re(L"(<lora:([^:>]+):([^>]+)>)");
-    std::wsmatch m;
-    std::wstring w_cleaned_prompt = w_prompt;  // Start with original prompt
-
-    std::wstring w_tmp = w_prompt;
-
-    while (std::regex_search(w_tmp, m, re)) {
-        std::wstring w_raw_path = m[2].str();       // Capture group 2 is the path
-        const std::wstring w_raw_mul = m[3].str();  // Capture group 3 is the multiplier
-
-        std::string raw_path = wstring_to_utf8(w_raw_path);
-        std::string raw_mul = wstring_to_utf8(w_raw_mul);
-
-        float mul = 0.f;
-        try {
-            mul = std::stof(raw_mul);
-        } catch (...) {
-            std::wstring w_suffix = m.suffix().str();
-            w_tmp = w_suffix;
-            w_cleaned_prompt = std::regex_replace(w_cleaned_prompt, re, L"", std::regex_constants::format_first_only);
-            continue;
-        }
-
-        bool is_high_noise = false;
-        static const std::string prefix = "|high_noise|";
-        if (raw_path.rfind(prefix, 0) == 0) {
-            raw_path.erase(0, prefix.size());
-            is_high_noise = true;
-        }
-
-        // Build platform-correct paths from UTF-8 input to avoid mojibake on Windows
-#ifdef _WIN32
-        fs::path raw_path_p = fs::path(utf8_to_wstring(raw_path));
-        fs::path lora_dir_p = fs::path(utf8_to_wstring(lora_model_dir));
-#else
-        fs::path raw_path_p = fs::path(reinterpret_cast<const char8_t*>(raw_path.c_str()));
-        fs::path lora_dir_p = fs::path(reinterpret_cast<const char8_t*>(lora_model_dir.c_str()));
-#endif
-
-        fs::path final_path;
-        if (raw_path_p.is_absolute()) {
-            final_path = raw_path_p;
-        } else {
-            final_path = lora_dir_p / raw_path_p;
-        }
-
-        // Log the resolved path for debugging
-        LOG_DEBUG("Resolved LoRA path: %s", path_to_utf8(final_path.lexically_normal()).c_str());
-
-        if (!fs::exists(final_path)) {
-            LOG_WARNING("LoRA file does not exist: %s", path_to_utf8(final_path).c_str());
-            bool found = false;
-            for (const auto& ext : {"gguf", "safetensors", "pt", "sft"}) {
-                fs::path try_path = final_path;
-                try_path += ".";
-                try_path += ext;
-                if (fs::exists(try_path)) {
-                    final_path = try_path;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found && !raw_path_p.is_absolute()) {
-                std::string stem = path_to_utf8(raw_path_p.stem());
-                fs::path found_path = findFileRecursively(lora_dir_p, stem, {"gguf", "safetensors", "pt", "sft"});
-                if (!found_path.empty()) {
-                    final_path = found_path;
-                    found = true;
-                }
-            }
-
-            // Remove the matched tag from the cleaned prompt and advance the regex search to avoid infinite loop
-            w_cleaned_prompt = std::regex_replace(w_cleaned_prompt, re, L"", std::regex_constants::format_first_only);
-            std::wstring w_suffix = m.suffix().str();
-            w_tmp = w_suffix;
-
-            if (!found) {
-                LOG_ERROR("Failed to find LoRA file: %s", raw_path.c_str());
-                continue;
-            }
-        }
-
-        const std::string key = path_to_utf8(final_path.lexically_normal());
-
-        if (is_high_noise)
-            high_noise_lora_map[key] += mul;
-        else
-            lora_map[key] += mul;
-
-        w_cleaned_prompt = std::regex_replace(w_cleaned_prompt, re, L"", std::regex_constants::format_first_only);
-
-        std::wstring w_suffix = m.suffix().str();
-        w_tmp = w_suffix;
-    }
-
-    return wstring_to_utf8(w_cleaned_prompt);
-}
-
 // Helper function to build embedding map from directory
 static void buildEmbeddingMap(const std::string& embedding_dir, std::map<std::string, std::string>& embedding_map) {
     static const std::vector<std::string> valid_ext = {".gguf", ".safetensors", ".pt", ".sft"};
@@ -332,35 +202,26 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     LOG_INFO("Generating %s: prompt='%s', size=%dx%d, steps=%d, seed=%lld", is_img2img ? "img2img" : "txt2img",
              params.prompt.c_str(), params.width, params.height, params.steps, params.seed);
 
-    // Parse loras from prompt and get cleaned prompt
-    std::map<std::string, float> lora_map;
-    std::map<std::string, float> high_noise_lora_map;
     std::vector<sd_lora_t> lora_vec;
-    std::string lora_dir_str = current_lora_model_dir_;
-
-    std::string cleaned_prompt = parseLoras(params.prompt, lora_dir_str, lora_map, high_noise_lora_map);
-
-    // Build lora vector from parsed maps
-    for (const auto& kv : lora_map) {
-        sd_lora_t item;
-        item.is_high_noise = false;
-        item.path = kv.first.c_str();
-        item.multiplier = kv.second;
-        lora_vec.push_back(item);
+    size_t lora_count = params.lora_paths.size();
+    if (params.lora_alphas.size() < lora_count) {
+        LOG_WARNING("LoRA alpha count (%zu) does not match LoRA path count (%zu)", params.lora_alphas.size(),
+                    params.lora_paths.size());
+        lora_count = params.lora_alphas.size();
     }
 
-    for (const auto& kv : high_noise_lora_map) {
+    for (size_t i = 0; i < lora_count; i++) {
         sd_lora_t item;
-        item.is_high_noise = true;
-        item.path = kv.first.c_str();
-        item.multiplier = kv.second;
+        item.is_high_noise = false;
+        item.path = params.lora_paths[i].c_str();
+        item.multiplier = params.lora_alphas[i];
         lora_vec.push_back(item);
     }
 
     if (!lora_vec.empty()) {
         LOG_INFO("Using %zu LoRA(s)", lora_vec.size());
         for (const auto& lora : lora_vec) {
-            LOG_DEBUG("  LoRA: %s (%.2f) %s", lora.path, lora.multiplier, lora.is_high_noise ? "[high_noise]" : "");
+            LOG_DEBUG("  LoRA: %s (%.2f)", lora.path, lora.multiplier);
         }
     }
 
@@ -372,7 +233,7 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     gen_params.loras = lora_vec.empty() ? nullptr : lora_vec.data();
     gen_params.lora_count = static_cast<uint32_t>(lora_vec.size());
 
-    gen_params.prompt = cleaned_prompt.c_str();
+    gen_params.prompt = params.prompt.c_str();
     gen_params.negative_prompt = params.negative_prompt.empty() ? "" : params.negative_prompt.c_str();
     gen_params.clip_skip = params.clip_skip;
     gen_params.width = params.width;
@@ -630,7 +491,8 @@ std::vector<sd_image_t> ImageGenerator::createRefImages(const ImageGenerationPar
             }
         }
 
-        LOG_DEBUG("Loaded reference image %zu: %ux%u channels", i, ref_image.width, ref_image.height, ref_image.channel);
+        LOG_DEBUG("Loaded reference image %zu: %ux%u channels", i, ref_image.width, ref_image.height,
+                  ref_image.channel);
         ref_images.push_back(ref_image);
     }
 

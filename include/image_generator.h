@@ -18,6 +18,8 @@ struct ServerParams;
 struct ImageGenerationParams {
     std::string prompt;
     std::string negative_prompt;
+    std::vector<std::string> lora_paths;
+    std::vector<float> lora_alphas;
     int width = 512;
     int height = 512;
     int steps = 20;
