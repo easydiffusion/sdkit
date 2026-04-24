@@ -293,13 +293,13 @@ crow::response Server::generateImage(const crow::json::rvalue& json_body, bool i
         params.batch_count = json_body.has("batch_size") ? json_body["batch_size"].i() : 1;
 
         // Sampler and scheduler parameters
-        if (json_body.has("sampler_name")) {
+        if (json_body.has("sampler_name") && json_body["sampler_name"].t() == crow::json::type::String) {
             std::string sampler_str = json_body["sampler_name"].s();
             // Convert from webui-style sampler name to sd.cpp name
             sampler_str = convert_webui_sampler_name(sampler_str);
             params.sampler = str_to_sample_method(sampler_str.c_str());
         }
-        if (json_body.has("scheduler")) {
+        if (json_body.has("scheduler") && json_body["scheduler"].t() == crow::json::type::String) {
             std::string scheduler_str = json_body["scheduler"].s();
             // Convert from webui-style scheduler name to sd.cpp name
             scheduler_str = convert_webui_scheduler_name(scheduler_str);
