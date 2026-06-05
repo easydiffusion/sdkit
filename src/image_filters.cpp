@@ -187,7 +187,7 @@ bool ImageFilters::ensureUpscalerLoaded(const std::string& upscaler_name) {
 
     LOG_INFO("Loading upscaler from: %s", upscaler_path.c_str());
 
-    upscaler_ctx_ = new_upscaler_ctx(upscaler_path.c_str(), false, false, -1, 128);
+    upscaler_ctx_ = new_upscaler_ctx(upscaler_path.c_str(), false, false, -1, 128, nullptr, nullptr);
 
     if (!upscaler_ctx_) {
         LOG_ERROR("Failed to load upscaler from: %s", upscaler_path.c_str());
