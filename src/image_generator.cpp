@@ -523,6 +523,10 @@ bool ImageGenerator::needsModelReload(const std::string& model_path) const {
     return false;
 }
 
+static void prepend_backend_assignment(std::string& spec, const char* assignment) {
+    spec = spec.empty() ? assignment : std::string(assignment) + "," + spec;
+}
+
 bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -649,8 +653,6 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     sd_ctx_params_t params;
     sd_ctx_params_init(&params);
 
-    params.free_params_immediately = false;
-
     // Check if we have additional modules (VAE, CLIP, etc.)
     bool has_additional_modules =
         !clip_l_path_str.empty() || !clip_g_path_str.empty() || !t5xxl_path_str.empty() || !llm_path_str.empty();
@@ -695,8 +697,6 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
         params.embedding_count = 0;
     }
 
-    params.vae_decode_only = false;  // We need encoding for img2img
-
     // Log what we're loading
     if (!vae_path_str.empty()) {
         LOG_INFO("Loading VAE model: %s", vae_path_str.c_str());
@@ -727,11 +727,24 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     params.rng_type = CUDA_RNG;
 
     // Apply CLI parameters for SD context
-    params.keep_vae_on_cpu = vae_on_cpu_;
-    params.offload_params_to_cpu = offload_to_cpu_;
+    std::string backend, backend_params;
+
+    if (offload_to_cpu_) {
+        prepend_backend_assignment(backend_params, "*=cpu");
+    }
+    if (clip_on_cpu_) {
+        prepend_backend_assignment(backend, "te=cpu");
+    }
+    if (vae_on_cpu_) {
+        prepend_backend_assignment(backend, "vae=cpu");
+    }
+    if (control_net_cpu_) {
+        prepend_backend_assignment(backend, "controlnet=cpu");
+    }
+
+    params.backend = backend.c_str();
+    params.params_backend = backend_params.c_str();
     params.diffusion_flash_attn = diffusion_fa_;
-    params.keep_control_net_on_cpu = control_net_cpu_;
-    params.keep_clip_on_cpu = clip_on_cpu_;
     params.chroma_use_dit_mask = !chroma_disable_dit_mask_;
 
     if (vae_on_cpu_) {
