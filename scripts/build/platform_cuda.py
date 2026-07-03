@@ -1,18 +1,4 @@
-"""CUDA platform build configuration.
-
-IMPORTANT: GGML_NATIVE is disabled to ensure CPU fallback code is portable across
-different processors (Intel and AMD). This prevents -march=native optimization which
-would cause crashes when the binary runs on a different CPU than it was built on.
-
-This is especially important for CUDA builds because:
-1. CPU code is still used for model loading and some operations
-2. The offload_to_cpu feature relies on CPU-optimized kernels
-3. Binaries need to work on both Intel and AMD systems
-
-The AVX2/FMA/F16C configuration works on:
-- Intel: Haswell and newer (2013+)
-- AMD: Excavator/Zen and newer (2015+)
-"""
+"""CUDA platform build configuration."""
 
 import os
 import platform
@@ -38,8 +24,16 @@ def check_environment():
 def get_compile_flags(target_any):
     """Get compile flags for CUDA."""
     # Disable GGML_NATIVE for portable CPU code (works on both Intel and AMD)
-    # Enable AVX2/FMA/F16C for good performance while maintaining compatibility
-    return ["-DSD_CUDA=ON", "-DGGML_NATIVE=OFF", "-DGGML_AVX2=ON", "-DGGML_FMA=ON", "-DGGML_F16C=ON", "-DGGML_BMI2=ON"]
+    # Disable AVX2/FMA/F16C to maximize compatibility, since the actual operations are performed by the GPU
+    return [
+        "-DSD_CUDA=ON",
+        "-DGGML_NATIVE=OFF",
+        "-DGGML_AVX=ON",
+        "-DGGML_AVX2=OFF",
+        "-DGGML_FMA=OFF",
+        "-DGGML_F16C=ON",
+        "-DGGML_BMI2=OFF",
+    ]
 
 
 def get_variants():
