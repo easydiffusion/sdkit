@@ -91,6 +91,8 @@ std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_
     bool has_llm_mlp = false;
     bool has_llm_output_norm = false;
     bool has_llm_qk_norm = false;
+    bool has_llm_moe_mlp = false;
+    bool has_llm_moe_router = false;
 
     // Count transformer layers to distinguish CLIP-L (12 layers) from CLIP-G (32 layers)
     int max_layer_number = -1;
@@ -157,6 +159,21 @@ std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_
             name_lower.find("self_attn.k_norm.weight") != std::string::npos) {
             has_llm_qk_norm = true;
         }
+        if ((name_lower.find("blk.") != std::string::npos &&
+             (name_lower.find("ffn_gate_exps.weight") != std::string::npos ||
+              name_lower.find("ffn_up_exps.weight") != std::string::npos ||
+              name_lower.find("ffn_down_exps.weight") != std::string::npos)) ||
+            (name_lower.find("model.layers.") != std::string::npos &&
+             (name_lower.find("mlp.experts.gate_proj") != std::string::npos ||
+              name_lower.find("mlp.experts.up_proj") != std::string::npos ||
+              name_lower.find("mlp.experts.down_proj") != std::string::npos))) {
+            has_llm_moe_mlp = true;
+        }
+        if (name_lower.find("ffn_gate_inp.weight") != std::string::npos ||
+            name_lower.find("mlp.router") != std::string::npos ||
+            name_lower.find("mlp.gate.weight") != std::string::npos) {
+            has_llm_moe_router = true;
+        }
 
         // Extract layer numbers from tensor names
         // Look for patterns like "layers.11", "layer.31", "blocks.5", etc.
@@ -188,9 +205,11 @@ std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_
 
     // Qwen3 and similar LLMs expose a transformer block structure with token embeddings,
     // attention projections, MLP projections, and a final output norm.
-    if ((has_llm_token_embedding && has_llm_attention && has_llm_mlp) ||
-        (has_llm_attention && has_llm_mlp && has_llm_output_norm) ||
-        (has_llm_attention && has_llm_mlp && has_llm_qk_norm)) {
+    bool mlp_present = has_llm_mlp || has_llm_moe_mlp;
+    if ((has_llm_token_embedding && has_llm_attention && mlp_present) ||
+        (has_llm_attention && mlp_present && has_llm_output_norm) ||
+        (has_llm_attention && mlp_present && has_llm_qk_norm) ||
+        (has_llm_attention && has_llm_moe_mlp && has_llm_moe_router)) {
         LOG_DEBUG("Detected LLM model");
         return "llm";
     }
