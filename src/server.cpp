@@ -2,10 +2,15 @@
 
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <sstream>
 #include <thread>
 #include <unordered_map>
 #include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "image_utils.h"
 #include "logging.h"
@@ -137,6 +142,9 @@ void Server::setupRoutes() {
     // Ping endpoint
     CROW_ROUTE(app_, "/v1/internal/ping").methods("GET"_method)([this]() { return handlePing(); });
 
+    // Segmentation demo page (served same-origin so the browser allows API calls)
+    CROW_ROUTE(app_, "/").methods("GET"_method)([this]() { return handleDemoPage(); });
+
     // Models endpoint
     CROW_ROUTE(app_, "/v1/sdapi/v1/models").methods("GET"_method)([this]() { return handleGetModels(); });
 
@@ -202,6 +210,38 @@ void Server::stop() {
 }
 
 crow::response Server::handlePing() { return crow::response(200, "OK"); }
+
+crow::response Server::handleDemoPage() {
+    // Look for the demo page relative to the working directory, then relative to
+    // the executable's directory (so it works regardless of where the server is
+    // started from).
+    std::vector<std::string> candidates;
+    candidates.push_back("demo/segmentation-demo.html");
+
+    char exe_path_buf[MAX_PATH];
+    if (GetModuleFileNameA(nullptr, exe_path_buf, MAX_PATH) > 0) {
+        std::string exe_dir(exe_path_buf);
+        size_t slash = exe_dir.find_last_of("/\\");
+        if (slash != std::string::npos) {
+            candidates.push_back(exe_dir.substr(0, slash + 1) + "demo/segmentation-demo.html");
+        }
+    }
+
+    for (const auto& path : candidates) {
+        std::ifstream file(path, std::ios::binary);
+        if (!file) continue;
+        std::ostringstream ss;
+        ss << file.rdbuf();
+        crow::response res(200, ss.str());
+        res.set_header("Content-Type", "text/html; charset=utf-8");
+        return res;
+    }
+
+    LOG_ERROR("Demo page not found (looked in: %s)",
+              "demo/segmentation-demo.html relative to cwd and to the executable");
+    return crow::response(404, "Demo page not found. Start sdkit.exe from the repository root, or place"
+                               " demo/segmentation-demo.html next to the executable.");
+}
 
 crow::response Server::handleGetModels() {
     try {

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sdkit3 · Segmentation Demo</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1e2126;
+    --border: #33383f;
+    --text: #e6e8eb;
+    --muted: #9aa3ad;
+    --accent: #4f9cf9;
+    --pos: #35c26a;
+    --neg: #e5484d;
+    --box: #f5a524;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 15px; margin: 0 8px 0 0; font-weight: 600; white-space: nowrap; }
+  select, input[type=text], input[type=number] {
+    background: #12141a; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font: inherit;
+  }
+  select { min-width: 210px; }
+  input[type=number] { width: 52px; }
+  button {
+    background: #2a2f36; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { background: #343b44; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { filter: brightness(1.1); }
+  button.danger:hover { background: var(--neg); border-color: var(--neg); }
+  button:disabled { opacity: .45; cursor: default; }
+  label.chk { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; }
+
+  #toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  .mode-btn { border-radius: 999px; }
+  .mode-btn.active { outline: 2px solid var(--accent); background: #2c3b50; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #stage-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 18px; min-width: 0; position: relative; overflow: hidden;
+  }
+  #stage { position: relative; max-width: 100%; max-height: 100%; box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+  #stage img#image { display: block; max-width: 100%; max-height: calc(100vh - 160px); }
+  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  #dropzone {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 10px; color: var(--muted);
+    border: 2px dashed var(--border); border-radius: 12px; margin: 24px;
+    transition: border-color .15s, background .15s;
+  }
+  #dropzone.drag { border-color: var(--accent); background: rgba(79,156,249,.07); }
+  #busy {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,22,26,.92); border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 16px; display: none; align-items: center; gap: 8px; z-index: 5;
+  }
+  #busy .spin {
+    width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #status {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,22,26,.92); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; z-index: 5; display: none; max-width: 80%;
+  }
+  #status.error { color: var(--neg); border-color: var(--neg); display: block; }
+
+  aside {
+    width: 260px; background: var(--panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  aside h2 { font-size: 13px; margin: 0; padding: 10px 14px 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  #legend { padding: 0 14px 10px; color: var(--muted); font-size: 12px; }
+  #legend span.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  #masks { flex: 1; overflow-y: auto; padding: 4px 10px 12px; }
+  .mask-row {
+    display: flex; align-items: center; gap: 8px; padding: 5px 8px; margin-bottom: 4px;
+    background: #171a1f; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+  }
+  .mask-row .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .mask-row .score { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .mask-row button { padding: 2px 8px; }
+  #empty-hint { padding: 8px 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>sdkit3 segmentation</h1>
+  <select id="model" title="Segmentation model"><option>Loading models…</option></select>
+  <button id="reload-models">↻ Models</button>
+  <input type="file" id="file" accept="image/*" hidden>
+  <button id="pick" class="primary">Open image…</button>
+  <span style="flex:1"></span>
+  <input type="text" id="prompt" placeholder="Text prompt (full SAM3 models only)" style="width:230px">
+  <label class="chk">Score
+    <input type="number" id="score-threshold" value="0.5" step="0.05" min="0" max="1">
+  </label>
+  <button id="detect">Detect by text</button>
+</header>
+
+<div id="toolbar">
+  <button class="mode-btn active" data-mode="point" id="mode-point">● Point (+)</button>
+  <button class="mode-btn" data-mode="negpoint" id="mode-negpoint">● Point (−)</button>
+  <button class="mode-btn" data-mode="box" id="mode-box">▭ Box</button>
+  <span style="width:1px;height:22px;background:var(--border)"></span>
+  <label class="chk">Auto-run <input type="checkbox" id="auto-run" checked></label>
+  <span style="width:1px;height:22px;background:var(--border)"></span>
+  <label class="chk">Everything grid
+    <input type="number" id="grid" value="4" min="1" max="8" style="width:44px">
+  </label>
+  <button id="segment-all" class="primary">Segment everything</button>
+  <span style="flex:1"></span>
+  <span id="count" style="color:var(--muted)"></span>
+  <button id="clear-prompts">Clear prompts</button>
+  <button id="clear-masks">Clear masks</button>
+</div>
+
+<main>
+  <div id="stage-wrap">
+    <div id="busy"><div class="spin"></div><span>Segmenting…</span></div>
+    <div id="status"></div>
+    <div id="dropzone">
+      <div style="font-size:17px;color:var(--text)">Drop an image here</div>
+      <div>or click “Open image…” · paste with Ctrl+V also works</div>
+      <div style="font-size:12px;margin-top:6px">Click = positive point &nbsp;·&nbsp; “Point (−)” mode / right-click = negative &nbsp;·&nbsp; drag = box</div>
+    </div>
+    <div id="stage" hidden>
+      <img id="image" alt="">
+      <canvas id="overlay"></canvas>
+    </div>
+  </div>
+  <aside>
+    <h2>Masks</h2>
+    <div id="legend">
+      <div><span class="dot" style="background:var(--pos)"></span>positive point</div>
+      <div><span class="dot" style="background:var(--neg)"></span>negative point</div>
+      <div><span class="dot" style="background:var(--box)"></span>box</div>
+    </div>
+    <div id="empty-hint">No masks yet.</div>
+    <div id="masks"></div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const image = $("image"), overlay = $("overlay"), stage = $("stage"), dropzone = $("dropzone");
+
+let naturalW = 0, naturalH = 0;
+let imageDataUrl = null;
+let posPoints = [], negPoints = [], boxes = [];   // image-pixel coords
+let masks = [];   // {canvas, score, visible, hue}
+let runSeq = 0;
+let pending = null;
+
+/* ---------- server helpers ---------- */
+
+function api(path, opts) {
+  return fetch(path, opts).then(async (r) => {
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.message || r.statusText);
+    return body;
+  });
+}
+
+async function loadModels() {
+  const sel = $("model");
+  sel.innerHTML = "<option>Loading…</option>";
+  try {
+    const models = await api("/v1/sdapi/v1/models");
+    const seg = models.segmentation || [];
+    sel.innerHTML = "";
+    for (const name of seg) {
+      const o = document.createElement("option");
+      o.value = o.textContent = name;
+      sel.appendChild(o);
+    }
+    if (!seg.length) {
+      sel.innerHTML = "<option value=''>No segmentation models found</option>";
+      setStatus("No models found in the segmentation directory", true);
+    }
+    // Prefer SAM3 visual > SAM2.1 small
+    for (const pref of ["sam3-visual", "sam2.1"]) {
+      const hit = seg.find((m) => m.toLowerCase().includes(pref));
+      if (hit) { sel.value = hit; break; }
+    }
+  } catch (e) {
+    sel.innerHTML = "<option value=''>Server unreachable</option>";
+    setStatus("Could not reach sdkit3 server: " + e.message, true);
+  }
+}
+
+/* ---------- status ---------- */
+
+let statusTimer = null;
+function setStatus(msg, isError) {
+  const el = $("status");
+  clearTimeout(statusTimer);
+  el.textContent = msg;
+  el.className = isError ? "error" : "";
+  el.style.display = msg ? "block" : "none";
+  if (!isError && msg) statusTimer = setTimeout(() => (el.style.display = "none"), 2500);
+}
+
+/* ---------- image loading ---------- */
+
+function loadImage(dataUrl) {
+  const img = new Image();
+  img.onload = () => {
+    imageDataUrl = dataUrl;
+    image.src = dataUrl;
+    naturalW = img.naturalWidth; naturalH = img.naturalHeight;
+    overlay.width = naturalW; overlay.height = naturalH;
+    stage.hidden = false;
+    dropzone.style.display = "none";
+    clearAll(false);
+    setStatus(`${naturalW}×${naturalH}px loaded`);
+  };
+  img.src = dataUrl;
+}
+
+$("pick").onclick = () => $("file").click();
+$("file").onchange = (e) => {
+  const f = e.target.files[0];
+  if (f) readFile(f);
+  e.target.value = "";
+};
+
+function readFile(file) {
+  const r = new FileReader();
+  r.onload = () => loadImage(r.result);
+  r.readAsDataURL(file);
+}
+
+for (const ev of ["dragenter", "dragover"]) {
+  window.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("drag"); });
+}
+window.addEventListener("dragleave", (e) => { if (e.target === dropzone) dropzone.classList.remove("drag"); });
+window.addEventListener("drop", (e) => {
+  e.preventDefault(); dropzone.classList.remove("drag");
+  const f = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
+  if (f) readFile(f);
+});
+window.addEventListener("paste", (e) => {
+  const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+  if (item) readFile(item.getAsFile());
+});
+
+/* ---------- interaction ---------- */
+
+function toImageCoords(e) {
+  const rect = overlay.getBoundingClientRect();
+  return [
+    Math.round((e.clientX - rect.left) * (naturalW / rect.width)),
+    Math.round((e.clientY - rect.top) * (naturalH / rect.height)),
+  ];
+}
+
+let mode = "point";
+for (const btn of document.querySelectorAll(".mode-btn")) {
+  btn.onclick = () => {
+    mode = btn.dataset.mode;
+    document.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b === btn));
+  };
+}
+
+let drawingBox = null;
+
+overlay.addEventListener("contextmenu", (e) => e.preventDefault());
+
+overlay.addEventListener("pointerdown", (e) => {
+  if (!imageDataUrl || $("busy").style.display === "flex") return;
+  const [x, y] = toImageCoords(e);
+  if (mode === "box") {
+    drawingBox = [x, y, x, y];
+    overlay.setPointerCapture(e.pointerId);
+  } else {
+    const isNeg = mode === "negpoint" || e.button === 2 || e.shiftKey;
+    (isNeg ? negPoints : posPoints).push([x, y]);
+    scheduleRun();
+  }
+});
+
+overlay.addEventListener("pointermove", (e) => {
+  if (drawingBox) {
+    const [x, y] = toImageCoords(e);
+    drawingBox[2] = x; drawingBox[3] = y;
+    render();
+  }
+});
+
+overlay.addEventListener("pointerup", () => {
+  if (!drawingBox) return;
+  const [x0, y0, x1, y1] = drawingBox;
+  drawingBox = null;
+  if (Math.abs(x1 - x0) > 4 && Math.abs(y1 - y0) > 4) {
+    boxes.push([Math.min(x0,x1), Math.min(y0,y1), Math.max(x0,x1), Math.max(y0,y1)]);
+    scheduleRun();
+  } else render();
+});
+
+function updateCount() {
+  $("count").textContent =
+    `${posPoints.length}(+) ${negPoints.length}(−) ${boxes.length}(□)` +
+    (masks.length ? ` · ${masks.length} mask(s)` : "");
+}
+
+/* ---------- rendering ---------- */
+
+function render() {
+  const ctx = overlay.getContext("2d");
+  ctx.clearRect(0, 0, naturalW, naturalH);
+
+  // masks
+  for (const m of masks) {
+    if (!m.visible) continue;
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(m.canvas, 0, 0);
+    ctx.restore();
+  }
+
+  // boxes
+  ctx.lineWidth = Math.max(2, naturalW / 700);
+  const allBoxes = drawingBox ? boxes.concat([drawingBox]) : boxes;
+  for (const [x0, y0, x1, y1] of allBoxes) {
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--box");
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  }
+
+  // points
+  const r = Math.max(5, naturalW / 220);
+  const dot = ([x, y], color) => {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.lineWidth = Math.max(1.5, r / 4); ctx.strokeStyle = "#fff"; ctx.stroke();
+  };
+  for (const p of posPoints) dot(p, getComputedStyle(document.documentElement).getPropertyValue("--pos"));
+  for (const p of negPoints) dot(p, getComputedStyle(document.documentElement).getPropertyValue("--neg"));
+
+  updateCount();
+}
+
+/* ---------- mask handling ---------- */
+
+async function decodeMask(base64, index) {
+  const bmp = await new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = "data:image/png;base64," + base64;
+  });
+  const c = document.createElement("canvas");
+  c.width = naturalW; c.height = naturalH;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(bmp, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height);
+  const hue = (index * 137.5) % 360;
+  const [rr, gg, bb] = hslToRgb(hue / 360, 0.75, 0.55);
+  for (let i = 0; i < d.data.length; i += 4) {
+    const a = d.data[i]; // grayscale -> alpha
+    d.data[i] = rr; d.data[i+1] = gg; d.data[i+2] = bb; d.data[i+3] = a;
+  }
+  ctx.putImageData(d, 0, 0);
+  return c;
+}
+
+function hslToRgb(h, s, l) {
+  const f = (n) => {
+    const k = (n + h * 12) % 12;
+    return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return [255*f(0), 255*f(8), 255*f(4)];
+}
+
+function renderMaskList() {
+  const wrap = $("masks");
+  wrap.innerHTML = "";
+  $("empty-hint").style.display = masks.length ? "none" : "block";
+  masks.forEach((m, i) => {
+    const row = document.createElement("div");
+    row.className = "mask-row";
+    const sw = document.createElement("span");
+    sw.className = "swatch";
+    const [r, g, b] = hslToRgb((m.hue % 360) / 360, 0.75, 0.55);
+    sw.style.background = `rgb(${r|0},${g|0},${b|0})`;
+    const name = document.createElement("span");
+    name.textContent = "mask " + (i + 1);
+    const score = document.createElement("span");
+    score.className = "score";
+    score.textContent = m.score != null ? m.score.toFixed(3) : "";
+    const vis = document.createElement("button");
+    vis.textContent = m.visible ? "hide" : "show";
+    vis.onclick = () => { m.visible = !m.visible; render(); renderMaskList(); };
+    const del = document.createElement("button");
+    del.className = "danger";
+    del.textContent = "✕";
+    del.onclick = () => { masks.splice(i, 1); render(); renderMaskList(); };
+    row.append(sw, name, score, vis, del);
+    wrap.appendChild(row);
+  });
+}
+
+/* ---------- segmentation ---------- */
+
+function buildRequestBody(extra) {
+  return Object.assign({
+    image: imageDataUrl,
+    model: $("model").value,
+    positive_points: posPoints,
+    negative_points: negPoints,
+    boxes,
+  }, extra || {});
+}
+
+async function runSegment(extra) {
+  if (!imageDataUrl) { setStatus("Load an image first", true); return; }
+  if (!$("model").value) { setStatus("Select a segmentation model", true); return; }
+
+  const seq = ++runSeq;
+  $("busy").style.display = "flex";
+  const t0 = performance.now();
+  try {
+    const res = await api("/v1/sdapi/v1/segment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildRequestBody(extra)),
+    });
+    if (seq !== runSeq) return;   // superseded by a newer request
+
+    const newMasks = [];
+    for (let i = 0; i < res.masks.length; i++) {
+      const canvas = await decodeMask(res.masks[i], masks.length + i);
+      newMasks.push({ canvas, score: res.scores?.[i], visible: true, hue: (masks.length + i) * 137.5 });
+    }
+    masks.push(...newMasks);
+    render();
+    renderMaskList();
+    setStatus(`${newMasks.length} mask(s) in ${((performance.now()-t0)/1000).toFixed(1)}s`);
+    if (!newMasks.length && !extra?.text_prompt) setStatus("Model returned no mask for that prompt");
+  } catch (e) {
+    if (seq === runSeq) setStatus(e.message, true);
+  } finally {
+    if (seq === runSeq) $("busy").style.display = "none";
+  }
+}
+
+let debounceTimer = null;
+function scheduleRun() {
+  render();
+  if (!$("auto-run").checked) return;
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => runSegment(), 350);
+}
+
+/* ---------- toolbar actions ---------- */
+
+$("segment-all").onclick = () => {
+  const n = Math.max(1, Math.min(8, parseInt($("grid").value) || 4));
+  const tileBoxes = [];
+  for (let gy = 0; gy < n; gy++) {
+    for (let gx = 0; gx < n; gx++) {
+      tileBoxes.push([
+        Math.round(gx * naturalW / n), Math.round(gy * naturalH / n),
+        Math.round((gx + 1) * naturalW / n), Math.round((gy + 1) * naturalH / n),
+      ]);
+    }
+  }
+  runSegment({ boxes: tileBoxes });
+};
+
+$("detect").onclick = () => {
+  const p = $("prompt").value.trim();
+  if (!p) { setStatus("Type a text prompt first (full SAM3 models only)", true); return; }
+  runSegment({
+    text_prompt: p,
+    score_threshold: parseFloat($("score-threshold").value) || 0.5,
+    positive_points: [], negative_points: [],
+  });
+};
+
+function clearPrompts() {
+  posPoints = []; negPoints = []; boxes = [];
+  render();
+}
+function clearMasksOnly() {
+  masks = []; renderMaskList(); render();
+}
+function clearAll(alsoMasks = true) {
+  clearPrompts();
+  if (alsoMasks) clearMasksOnly();
+}
+$("clear-prompts").onclick = () => clearPrompts();
+$("clear-masks").onclick = () => clearMasksOnly();
+
+$("reload-models").onclick = loadModels;
+$("model").onchange = () => { clearMasksOnly(); };
+
+loadModels();
+render();
+renderMaskList();
+</script>
+</body>
+</html>
