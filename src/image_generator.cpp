@@ -273,7 +273,6 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     if (!ref_images_vec.empty()) {
         gen_params.ref_images = ref_images_vec.data();
         gen_params.ref_images_count = static_cast<int>(ref_images_vec.size());
-        gen_params.auto_resize_ref_image = params.auto_resize_ref_image;
         LOG_INFO("Using %d reference image(s)", gen_params.ref_images_count);
     }
 
@@ -315,7 +314,11 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     }
 
     // Generate images
-    sd_image_t* result = generate_image(sd_ctx_, &gen_params);
+    sd_image_t* result = nullptr;
+    int num_results = 0;
+    if (!generate_image(sd_ctx_, &gen_params, &result, &num_results)) {
+        result = nullptr;
+    }
 
     // Free init image if used
     if (gen_params.init_image.data) {
@@ -350,7 +353,7 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
 
     // Convert results to base64
     std::vector<std::string> result_images;
-    for (int i = 0; i < params.batch_count; i++) {
+    for (int i = 0; i < num_results; i++) {
         std::string img_base64 = imageToBase64(result[i]);
         result_images.push_back(img_base64);
 
@@ -747,7 +750,6 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     params.backend = backend.c_str();
     params.params_backend = backend_params.c_str();
     params.diffusion_flash_attn = diffusion_fa_;
-    params.chroma_use_dit_mask = !chroma_disable_dit_mask_;
 
     if (vae_on_cpu_) {
         LOG_INFO("VAE will be kept on CPU");

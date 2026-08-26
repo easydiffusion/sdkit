@@ -21,9 +21,9 @@ set(BUILD_SHARED_LIBS ON CACHE BOOL "Build ggml as a shared library")
 set(SD_BUILD_SHARED_LIBS ON CACHE BOOL "Build stable-diffusion as a shared library")
 set(SD_BUILD_SHARED_GGML_LIB ON CACHE BOOL "Build ggml as a separate shared library")
 
-# Enable /bigobj for MSVC to handle large object files (needed for debug builds)
+# Enable /bigobj for MSVC to handle large object files
 if(MSVC)
-    add_compile_options($<$<CONFIG:Debug>:/bigobj>)
+    add_compile_options(/bigobj)
 endif()
 
 # Common libraries in third_party:
@@ -70,6 +70,11 @@ target_compile_definitions(sam3 PRIVATE STB_IMAGE_STATIC STB_IMAGE_WRITE_STATIC)
 
 # Include stable-diffusion.cpp
 add_subdirectory(third_party/stable-diffusion.cpp)
+
+# stable-diffusion.cpp includes some private ggml headers by path
+# ("ggml/src/ggml-impl.h"). When it vendors its own ggml this resolves via its
+# own root; with our shared third_party/ggml we have to provide that root.
+target_include_directories(stable-diffusion PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
 # Add the sdkit binary
 file(GLOB_RECURSE ED_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)

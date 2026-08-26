@@ -6,7 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "../stable-diffusion.cpp/ggml/include/gguf.h"
+#include "ggml/include/gguf.h"
 #include "crow.h"
 #include "logging.h"
 

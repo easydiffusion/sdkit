@@ -79,7 +79,16 @@ sd_image_t ImageFilters::upscaleImage(const sd_image_t& input_image, int upscale
     }
 
     LOG_DEBUG("Upscaling image from %dx%d, factor %d", input_image.width, input_image.height, upscale_factor);
-    upscaled_image = upscale(upscaler_ctx_, input_image, upscale_factor);
+    sd_image_t* results     = nullptr;
+    int                num_results = 0;
+    if (!upscale(upscaler_ctx_, input_image, upscale_factor, &results, &num_results)) {
+        LOG_ERROR("Upscale failed");
+        return upscaled_image;
+    }
+    if (num_results > 0) {
+        upscaled_image = results[0];
+    }
+    free(results);
 
     if (upscaled_image.data) {
         LOG_DEBUG("Upscaled to %dx%d", upscaled_image.width, upscaled_image.height);
