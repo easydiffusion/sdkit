@@ -6,7 +6,7 @@
 	url = https://github.com/leejet/stable-diffusion.cpp
 [submodule "third_party/ggml"]
 	path = third_party/ggml
-	url = https://github.com/ggml-org/ggml
+	url = https://github.com/cmdr2/ggml
 [submodule "third_party/stb"]
 	path = third_party/stb
 	url = https://github.com/nothings/stb
