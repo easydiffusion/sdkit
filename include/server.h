@@ -38,7 +38,7 @@ class Server {
 
     // Route handlers
     crow::response handlePing();
-    crow::response handleDemoPage();
+    crow::response handleDemoPage(const std::string& filename);
     crow::response handleGetModels();
     crow::response handleGetOptions();
     crow::response handlePostOptions(const crow::request& req);

@@ -142,8 +142,12 @@ void Server::setupRoutes() {
     // Ping endpoint
     CROW_ROUTE(app_, "/v1/internal/ping").methods("GET"_method)([this]() { return handlePing(); });
 
-    // Segmentation demo page (served same-origin so the browser allows API calls)
-    CROW_ROUTE(app_, "/").methods("GET"_method)([this]() { return handleDemoPage(); });
+    // Demo pages (served same-origin so the browser allows API calls)
+    CROW_ROUTE(app_, "/").methods("GET"_method)([this]() { return handleDemoPage("index.html"); });
+
+    CROW_ROUTE(app_, "/demo/<string>").methods("GET"_method)([this](const std::string& name) {
+        return handleDemoPage(name);
+    });
 
     // Models endpoint
     CROW_ROUTE(app_, "/v1/sdapi/v1/models").methods("GET"_method)([this]() { return handleGetModels(); });
@@ -211,12 +215,19 @@ void Server::stop() {
 
 crow::response Server::handlePing() { return crow::response(200, "OK"); }
 
-crow::response Server::handleDemoPage() {
+crow::response Server::handleDemoPage(const std::string& filename) {
+    // Only serve plain .html files from within the demo directory.
+    if (filename.empty() || filename.find("/") != std::string::npos ||
+        filename.find("\\") != std::string::npos || filename.find("..") != std::string::npos ||
+        filename.length() < 5 || filename.substr(filename.length() - 5) != ".html") {
+        return crow::response(404, "Demo page not found");
+    }
+
     // Look for the demo page relative to the working directory, then relative to
     // the executable's directory (so it works regardless of where the server is
     // started from).
     std::vector<std::string> candidates;
-    candidates.push_back("demo/segmentation-demo.html");
+    candidates.push_back("demo/" + filename);
 
     char exe_path_buf[MAX_PATH];
     if (GetModuleFileNameA(nullptr, exe_path_buf, MAX_PATH) > 0) {
@@ -237,10 +248,9 @@ crow::response Server::handleDemoPage() {
         return res;
     }
 
-    LOG_ERROR("Demo page not found (looked in: %s)",
-              "demo/segmentation-demo.html relative to cwd and to the executable");
+    LOG_ERROR("Demo page not found (looked in: %s)", ("demo/" + filename).c_str());
     return crow::response(404, "Demo page not found. Start sdkit.exe from the repository root, or place"
-                               " demo/segmentation-demo.html next to the executable.");
+                               " the demo/ directory next to the executable.");
 }
 
 crow::response Server::handleGetModels() {

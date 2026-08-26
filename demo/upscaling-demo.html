@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sdkit3 · Upscaling Demo</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1e2126;
+    --border: #33383f;
+    --text: #e6e8eb;
+    --muted: #9aa3ad;
+    --accent: #4f9cf9;
+    --pos: #35c26a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 15px; margin: 0 8px 0 0; font-weight: 600; white-space: nowrap; }
+  select, input[type=text], input[type=number] {
+    background: #12141a; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; font: inherit;
+  }
+  select { min-width: 210px; }
+  button {
+    background: #2a2f36; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { background: #343b44; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { filter: brightness(1.1); }
+  button:disabled { opacity: .45; cursor: default; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+  #stage-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 18px; min-width: 0; position: relative; overflow: hidden;
+  }
+  #dropzone {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 10px; color: var(--muted);
+    border: 2px dashed var(--border); border-radius: 12px; margin: 24px;
+    transition: border-color .15s, background .15s;
+  }
+  #dropzone.drag { border-color: var(--accent); background: rgba(79,156,249,.07); }
+  #busy {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,22,26,.92); border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 16px; display: none; align-items: center; gap: 8px; z-index: 5;
+  }
+  #busy .spin {
+    width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #status {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,22,26,.92); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; z-index: 5; display: none; max-width: 80%;
+  }
+  #status.error { color: var(--neg, #e5484d); border-color: var(--neg, #e5484d); display: block; }
+
+  /* ---------- before/after compare ---------- */
+  #compare-box { position: relative; max-width: 100%; max-height: 100%; box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+  #compare {
+    position: relative; overflow: hidden; user-select: none; touch-action: none;
+    cursor: ew-resize;
+  }
+  #compare img { position: absolute; top: 0; left: 0; pointer-events: none; }
+  #img-before { width: 100%; height: 100%; }
+  /* #img-after is sized explicitly (to the full compare-box dimensions) in JS,
+     because % sizes here would resolve against #img-after-wrap, not #compare.
+     Note: before/after share the same aspect ratio, so this stays aligned even
+     when the upscaled output is larger than the input. */
+  /* Right-anchored reveal window: shows the rightmost N% of the after-image
+     (which is kept aligned with the full frame), i.e. everything right of the divider. */
+  #img-after-wrap {
+    position: absolute; top: 0; right: 0; height: 100%; width: 50%;
+    overflow: hidden; border-left: 2px solid var(--pos);
+  }
+  .tag {
+    position: absolute; bottom: 8px; padding: 2px 8px; border-radius: 999px;
+    background: rgba(20,22,26,.85); border: 1px solid var(--border);
+    color: var(--muted); font-size: 11.5px; pointer-events: none;
+  }
+  .tag.before { left: 8px; }
+  .tag.after { right: 8px; color: var(--pos); }
+  #slider-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; width: 100%; max-width: 720px; }
+  input[type=range] { flex: 1; accent-color: var(--pos); cursor: ew-resize; }
+
+  aside {
+    width: 260px; background: var(--panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; min-height: 0; padding: 12px 14px; gap: 10px;
+  }
+  aside h2 { font-size: 13px; margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  aside .kv { font-size: 13px; }
+  aside .kv b { float: right; font-variant-numeric: tabular-nums; }
+  #empty-hint { color: var(--muted); font-size: 12.5px; }
+  aside button { width: 100%; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>sdkit3 upscaling</h1>
+  <select id="model" title="RealESRGAN model"><option>Loading models…</option></select>
+  <button id="reload-models">↻ Models</button>
+  <label style="color:var(--muted)">Scale
+    <select id="scale" title="Upscale factor" style="min-width:60px">
+      <option value="2">2×</option>
+      <option value="3">3×</option>
+      <option value="4" selected>4×</option>
+    </select>
+  </label>
+  <input type="file" id="file" accept="image/*" hidden>
+  <button id="pick" class="primary">Open image…</button>
+  <span style="flex:1"></span>
+  <button id="run" class="primary" disabled>Upscale</button>
+</header>
+
+<main>
+  <div id="stage-wrap">
+    <div id="busy"><div class="spin"></div><span>Upscaling…</span></div>
+    <div id="status"></div>
+    <div id="dropzone">
+      <div style="font-size:17px;color:var(--text)">Drop an image here</div>
+      <div>or click “Open image…” · paste with Ctrl+V also works</div>
+      <div style="font-size:12px;margin-top:6px">Drag the divider (or use the slider) to compare before / after</div>
+    </div>
+    <div id="compare-box" hidden>
+      <div id="compare">
+        <img id="img-before" alt="before">
+        <div id="img-after-wrap"><img id="img-after" alt="after"></div>
+        <span class="tag before">before</span>
+        <span class="tag after">after</span>
+      </div>
+      <div id="slider-row"><input type="range" id="slider" min="0" max="100" value="50"></div>
+    </div>
+  </div>
+
+  <aside>
+    <h2>Result</h2>
+    <div id="empty-hint">No result yet — load an image and press “Upscale”.</div>
+    <div class="kv" id="kv-before" hidden>Input <b id="dim-before"></b></div>
+    <div class="kv" id="kv-after" hidden>Output <b id="dim-after"></b></div>
+    <div class="kv" id="kv-time" hidden>Time <b id="time"></b></div>
+    <span style="flex:1"></span>
+    <button id="download" disabled>⬇ Download result</button>
+  </aside>
+</main>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const dropzone = $("dropzone"), compareBox = $("compare-box"), compare = $("compare");
+const imgBefore = $("img-before"), imgAfter = $("img-after");
+
+let imageDataUrl = null;
+let resultDataUrl = null;
+let naturalW = 0, naturalH = 0;
+let runSeq = 0;
+
+/* ---------- server helpers ---------- */
+
+function api(path, opts) {
+  return fetch(path, opts).then(async (r) => {
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.message || r.statusText);
+    return body;
+  });
+}
+
+async function loadModels() {
+  const sel = $("model");
+  sel.innerHTML = "<option>Loading…</option>";
+  try {
+    const models = await api("/v1/sdapi/v1/models");
+    const ups = models.realesrgan || [];
+    sel.innerHTML = "";
+    for (const name of ups) {
+      const o = document.createElement("option");
+      o.value = o.textContent = name.replace(/\.pth$/i, "");
+      sel.appendChild(o);
+    }
+    if (!ups.length) {
+      sel.innerHTML = "<option value=''>No RealESRGAN models found</option>";
+      setStatus("No models found in the RealESRGAN directory", true);
+    } else if (ups.length === 1) {
+      setStatus("Model: " + sel.value);
+    }
+  } catch (e) {
+    sel.innerHTML = "<option value=''>Server unreachable</option>";
+    setStatus("Could not reach sdkit3 server: " + e.message, true);
+  }
+}
+
+/* ---------- status ---------- */
+
+let statusTimer = null;
+function setStatus(msg, isError) {
+  const el = $("status");
+  clearTimeout(statusTimer);
+  el.textContent = msg;
+  el.className = isError ? "error" : "";
+  el.style.display = msg ? "block" : "none";
+  if (!isError && msg) statusTimer = setTimeout(() => (el.style.display = "none"), 2500);
+}
+
+/* ---------- image loading ---------- */
+
+function loadImage(dataUrl) {
+  const img = new Image();
+  img.onload = () => {
+    imageDataUrl = dataUrl;
+    naturalW = img.naturalWidth; naturalH = img.naturalHeight;
+    clearResult();
+    imgBefore.src = dataUrl;
+    layoutCompare();
+    compareBox.hidden = false;
+    dropzone.style.display = "none";
+    $("run").disabled = false;
+    setStatus(`${naturalW}×${naturalH}px loaded`);
+  };
+  img.src = dataUrl;
+}
+
+$("pick").onclick = () => $("file").click();
+$("file").onchange = (e) => {
+  const f = e.target.files[0];
+  if (f) readFile(f);
+  e.target.value = "";
+};
+
+function readFile(file) {
+  const r = new FileReader();
+  r.onload = () => loadImage(r.result);
+  r.readAsDataURL(file);
+}
+
+for (const ev of ["dragenter", "dragover"]) {
+  window.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("drag"); });
+}
+window.addEventListener("dragleave", (e) => { if (e.target === dropzone) dropzone.classList.remove("drag"); });
+window.addEventListener("drop", (e) => {
+  e.preventDefault(); dropzone.classList.remove("drag");
+  const f = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
+  if (f) readFile(f);
+});
+window.addEventListener("paste", (e) => {
+  const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+  if (item) readFile(item.getAsFile());
+});
+
+/* ---------- compare slider ---------- */
+
+const slider = $("slider");
+
+function setSplit(percent) {
+  const p = percent / 100;
+  $("img-after-wrap").style.width = percent + "%";
+  // The wrap is anchored to the right edge and reveals the after-image's right
+  // portion; shift the image left by the hidden amount so it stays aligned.
+  const w = compare.clientWidth;
+  imgAfter.style.left = (p - 1) * w + "px";
+}
+
+function layoutCompare() {
+  if (!naturalW || !naturalH) return;
+  // Fit the (before-sized) stage into the available area.
+  const wrap = document.getElementById("stage-wrap");
+  const availW = wrap.clientWidth - 36;
+  const availH = wrap.clientHeight - 80;   // room for the slider row
+  const scale = Math.min(availW / naturalW, availH / naturalH, 1);
+  const w = Math.max(120, Math.round(naturalW * scale));
+  const h = Math.max(90, Math.round(naturalH * scale));
+  compare.style.width = w + "px";
+  compare.style.height = h + "px";
+  imgAfter.style.width = w + "px";
+  imgAfter.style.height = h + "px";
+  setSplit(parseInt(slider.value));
+}
+
+slider.oninput = () => setSplit(parseInt(slider.value));
+
+// Pointer dragging directly on the comparison view
+let dragging = false;
+function dragTo(e) {
+  const rect = compare.getBoundingClientRect();
+  const pct = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
+  slider.value = pct;
+  setSplit(pct);
+}
+compare.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  compare.setPointerCapture(e.pointerId);
+  dragTo(e);
+});
+compare.addEventListener("pointermove", (e) => { if (dragging) dragTo(e); });
+compare.addEventListener("pointerup", () => (dragging = false));
+compare.addEventListener("pointercancel", () => (dragging = false));
+
+window.addEventListener("resize", layoutCompare);
+
+/* ---------- upscaling ---------- */
+
+async function runUpscale() {
+  if (!imageDataUrl) { setStatus("Load an image first", true); return; }
+  if (!$("model").value) { setStatus("Select a RealESRGAN model", true); return; }
+
+  const seq = ++runSeq;
+  $("busy").style.display = "flex";
+  $("run").disabled = true;
+  const t0 = performance.now();
+  try {
+    const res = await api("/v1/sdapi/v1/extra-batch-images", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageList: [{ data: imageDataUrl }],
+        upscaler_1: $("model").value,
+        upscaling_resize: parseInt($("scale").value) || 4,
+      }),
+    });
+    if (seq !== runSeq) return;
+
+    const out = res.images?.[0];
+    if (!out) throw new Error("Server returned no image");
+
+    resultDataUrl = "data:image/png;base64," + out;
+    const outImg = new Image();
+    await new Promise((res, rej) => { outImg.onload = res; outImg.onerror = rej; outImg.src = resultDataUrl; });
+
+    imgAfter.src = resultDataUrl;
+    setSplit(parseInt(slider.value));
+
+    $("empty-hint").style.display = "none";
+    $("kv-before").hidden = false; $("dim-before").textContent = `${naturalW}×${naturalH}`;
+    $("kv-after").hidden = false;  $("dim-after").textContent = `${outImg.naturalWidth}×${outImg.naturalHeight}`;
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    $("kv-time").hidden = false;   $("time").textContent = secs + "s";
+    $("download").disabled = false;
+
+    setStatus(`Upscaled to ${outImg.naturalWidth}×${outImg.naturalHeight} in ${secs}s`);
+  } catch (e) {
+    if (seq === runSeq) setStatus(e.message, true);
+  } finally {
+    if (seq === runSeq) {
+      $("busy").style.display = "none";
+      $("run").disabled = !imageDataUrl;
+    }
+  }
+}
+
+$("run").onclick = runUpscale;
+
+function clearResult() {
+  resultDataUrl = null;
+  imgAfter.removeAttribute("src");
+  ["kv-before", "kv-after", "kv-time"].forEach((id) => ($(id).hidden = true));
+  $("download").disabled = true;
+  $("empty-hint").style.display = "block";
+}
+
+$("download").onclick = () => {
+  if (!resultDataUrl) return;
+  const a = document.createElement("a");
+  a.href = resultDataUrl;
+  a.download = "upscaled.png";
+  a.click();
+};
+
+$("reload-models").onclick = loadModels;
+
+loadModels();
+</script>
+</body>
+</html>
