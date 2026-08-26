@@ -21,7 +21,7 @@ def get_compile_flags(target_any):
     """Get compile flags for Metal."""
     # Disable GGML_NATIVE; target architecture is set centrally during CMake configure.
     # GGML_ACCELERATE enables Apple's optimized framework
-    return ["-DSD_METAL=ON", "-DGGML_NATIVE=OFF", "-DGGML_ACCELERATE=ON"]
+    return ["-DGGML_METAL=ON", "-DGGML_NATIVE=OFF", "-DGGML_ACCELERATE=ON"]
 
 
 def get_platform_name():

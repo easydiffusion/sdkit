@@ -26,7 +26,7 @@ def get_compile_flags(target_any):
     # Disable GGML_NATIVE for portable CPU code (works on both Intel and AMD)
     # Disable AVX2/FMA/F16C to maximize compatibility, since the actual operations are performed by the GPU
     return [
-        "-DSD_CUDA=ON",
+        "-DGGML_CUDA=ON",
         "-DGGML_NATIVE=OFF",
         "-DGGML_AVX=ON",
         "-DGGML_AVX2=OFF",

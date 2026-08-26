@@ -10,7 +10,8 @@ namespace fs = std::filesystem;
 
 // Define valid model file extensions
 const std::vector<std::string> ModelManager::valid_extensions_ = {".sft", ".safetensors", ".pth",
-                                                                  ".pt",  ".ckpt",        ".gguf"};
+                                                                  ".pt",  ".ckpt",        ".gguf",
+                                                                  ".ggml"};
 
 ModelManager::ModelManager() { LOG_INFO("ModelManager initialized"); }
 
@@ -76,6 +77,12 @@ void ModelManager::setTextEncoderDir(const std::string& dir) {
     LOG_INFO("Text Encoder directory set to: %s", dir.c_str());
 }
 
+void ModelManager::setSegmentationDir(const std::string& dir) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    model_directories_[ModelType::SEGMENTATION] = dir;
+    LOG_INFO("Segmentation directory set to: %s", dir.c_str());
+}
+
 std::string ModelManager::getRealesrganModelsPath() const {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = model_directories_.find(ModelType::REALESRGAN);
@@ -91,6 +98,12 @@ std::string ModelManager::getLoraDir() const {
 std::string ModelManager::getEmbeddingsDir() const {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = model_directories_.find(ModelType::EMBEDDINGS);
+    return it != model_directories_.end() ? it->second : "";
+}
+
+std::string ModelManager::getSegmentationDir() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = model_directories_.find(ModelType::SEGMENTATION);
     return it != model_directories_.end() ? it->second : "";
 }
 
@@ -361,6 +374,8 @@ std::string ModelManager::getModelTypeString(ModelType type) const {
             return "controlnet";
         case ModelType::TEXT_ENCODER:
             return "text_encoder";
+        case ModelType::SEGMENTATION:
+            return "segmentation";
         default:
             return "unknown";
     }

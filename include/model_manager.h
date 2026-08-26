@@ -16,7 +16,8 @@ enum class ModelType {
     CODEFORMER,
     EMBEDDINGS,
     CONTROLNET,
-    TEXT_ENCODER
+    TEXT_ENCODER,
+    SEGMENTATION
 };
 
 struct ModelInfo {
@@ -47,11 +48,13 @@ class ModelManager {
     void setEmbeddingsDir(const std::string& dir);
     void setControlnetDir(const std::string& dir);
     void setTextEncoderDir(const std::string& dir);
+    void setSegmentationDir(const std::string& dir);
 
     // Get model directories
     std::string getRealesrganModelsPath() const;
     std::string getLoraDir() const;
     std::string getEmbeddingsDir() const;
+    std::string getSegmentationDir() const;
 
     // Scan directories and build the model index
     void scanAllDirectories();

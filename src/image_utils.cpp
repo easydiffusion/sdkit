@@ -4,11 +4,12 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
-#include "../stable-diffusion.cpp/thirdparty/stb_image_write.h"
+#include "stb_image_write.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "../stable-diffusion.cpp/thirdparty/stb_image.h"
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "../stable-diffusion.cpp/thirdparty/stb_image_resize.h"
+#include "stb_image.h"
+#define STB_IMAGE_RESIZE2_IMPLEMENTATION
+#define STB_IMAGE_RESIZE_STATIC
+#include "stb_image_resize2.h"
 #include "base64.hpp"
 #include "logging.h"
 
@@ -126,6 +127,14 @@ bool resizeImage(sd_image_t& image, int target_width, int target_height, bool cl
         return true;
     }
 
+    // Resize using stb_image_resize2
+    // Map the channel count to stb's pixel layout enum (STBIR_1CH=0 .. STBIR_4CH=3)
+    if (image.channel < 1 || image.channel > 4) {
+        LOG_ERROR("Unsupported channel count for resize: %d", image.channel);
+        return false;
+    }
+    stbir_pixel_layout pixel_layout = static_cast<stbir_pixel_layout>(image.channel - 1);
+
     // Allocate new buffer for resized image
     int new_size = final_width * final_height * image.channel;
     unsigned char* resized_data = (unsigned char*)malloc(new_size);
@@ -134,11 +143,11 @@ bool resizeImage(sd_image_t& image, int target_width, int target_height, bool cl
         return false;
     }
 
-    // Resize using stb_image_resize
-    int result = stbir_resize_uint8(image.data, image.width, image.height, 0, resized_data, final_width, final_height,
-                                    0, image.channel);
+    // Returns the output buffer on success, NULL on failure
+    unsigned char* result = stbir_resize_uint8_linear(image.data, image.width, image.height, 0, resized_data,
+                                                      final_width, final_height, 0, pixel_layout);
 
-    if (result == 0) {
+    if (result == nullptr) {
         LOG_ERROR("Failed to resize image");
         free(resized_data);
         return false;

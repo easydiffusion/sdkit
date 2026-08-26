@@ -26,8 +26,50 @@ if(MSVC)
     add_compile_options($<$<CONFIG:Debug>:/bigobj>)
 endif()
 
+# Common libraries in third_party:
+#  - ggml: a single ggml, shared by stable-diffusion.cpp and sam3.cpp.
+#
+#    Both libraries normally vendor their own ggml copy as a submodule. To keep
+#    a single ggml (and a single shared ggml artifact), we build ggml from
+#    third_party/ggml first:
+#      - stable-diffusion.cpp's CMakeLists skips its vendored ggml when a `ggml`
+#        target already exists (`if(NOT TARGET ggml)`).
+#      - sam3.cpp's CMakeLists unconditionally adds its own ggml, so we don't
+#        include it; instead we build its single-file library directly below.
+#
+#    Backend selection (CUDA / Metal / Vulkan / CPU flags etc.) is done by
+#    passing GGML_* variables directly on the CMake command line — both sd.cpp
+#    and sam3 work with any backend that the shared ggml was built with.
+#
+# stable-diffusion.cpp expects this macro (it normally defines it right before
+# adding its vendored ggml). It must be set before ggml is added here so that
+# all consumers share the same ABI.
+add_compile_definitions(GGML_MAX_NAME=128)
+
+add_subdirectory(third_party/ggml)
+
+# Common stb (header-only image loading/writing), shared by the sdkit binary and
+# sam3.cpp. Both compile stb implementations into their own binaries; each does
+# so with static symbols (or is the only non-static user) to avoid link clashes.
+# stable-diffusion.cpp keeps using its own vendored stb headers internally; its
+# implementations are static or absent, so they can't clash with ours.
+set(STB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/stb)
+
+# sam3.cpp: image/video segmentation library (SAM 1/2/3, EdgeTAM). Built as a
+# static lib from its single-file sources, linked against the common ggml.
+add_library(sam3 STATIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sam3.cpp/sam3.cpp)
+target_include_directories(sam3 PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sam3.cpp
+    ${STB_INCLUDE_DIR}
+)
+target_link_libraries(sam3 PUBLIC ggml)
+# sam3.cpp compiles its own copies of stb_image/stb_image_write. Make those
+# symbols static so they don't clash with the stb symbols compiled into the
+# sdkit binary itself.
+target_compile_definitions(sam3 PRIVATE STB_IMAGE_STATIC STB_IMAGE_WRITE_STATIC)
+
 # Include stable-diffusion.cpp
-add_subdirectory(stable-diffusion.cpp)
+add_subdirectory(third_party/stable-diffusion.cpp)
 
 # Add the sdkit binary
 file(GLOB_RECURSE ED_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
@@ -37,7 +79,11 @@ target_include_directories(sdkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_include_directories(sdkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
-target_include_directories(sdkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stable-diffusion.cpp)
+target_include_directories(sdkit PRIVATE ${STB_INCLUDE_DIR})
+
+target_include_directories(sdkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/stable-diffusion.cpp)
+
+target_include_directories(sdkit PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sam3.cpp)
 
 # Suppress Unicode character warnings from Crow library headers on Windows
 if(MSVC)
@@ -67,6 +113,7 @@ endif()
 
 target_link_libraries(sdkit PRIVATE ggml)
 target_link_libraries(sdkit PRIVATE stable-diffusion)
+target_link_libraries(sdkit PRIVATE sam3)
 target_link_libraries(sdkit PRIVATE Threads::Threads)
 
 # Platform-specific libraries

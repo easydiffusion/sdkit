@@ -1,3 +1,12 @@
-[submodule "stable-diffusion.cpp"]
-	path = stable-diffusion.cpp
-	url = https://github.com/cmdr2/stable-diffusion.cpp.git
+[submodule "third_party/sam3.cpp"]
+	path = third_party/sam3.cpp
+	url = https://github.com/cmdr2/sam3.cpp
+[submodule "third_party/stable-diffusion.cpp"]
+	path = third_party/stable-diffusion.cpp
+	url = https://github.com/leejet/stable-diffusion.cpp
+[submodule "third_party/ggml"]
+	path = third_party/ggml
+	url = https://github.com/ggml-org/ggml
+[submodule "third_party/stb"]
+	path = third_party/stb
+	url = https://github.com/nothings/stb

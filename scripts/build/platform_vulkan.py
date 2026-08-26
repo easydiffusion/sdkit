@@ -22,7 +22,7 @@ def get_compile_flags(target_any):
     """Get compile flags for Vulkan."""
     # Disable GGML_NATIVE for portable CPU code (works on both Intel and AMD)
     # Disable AVX2/FMA/F16C to maximize compatibility, since the actual operations are performed by the GPU
-    flags = ["-DSD_VULKAN=ON", "-DGGML_NATIVE=OFF"]
+    flags = ["-DGGML_VULKAN=ON", "-DGGML_NATIVE=OFF"]
 
     if "-x64-" in target_any:
         flags.extend(

@@ -8,8 +8,10 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
-#include "../stable-diffusion.cpp/thirdparty/stb_image.h"
-#include "../stable-diffusion.cpp/thirdparty/stb_image_write.h"
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include "stb_image.h"
+#include "stb_image_write.h"
 #include "base64.hpp"
 #include "crow.h"
 #include "image_utils.h"

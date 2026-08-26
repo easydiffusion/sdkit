@@ -119,6 +119,9 @@ Server::Server(const ServerParams& params)
     // Create ImageFilters for upscaling and other image processing
     image_filters_ = std::make_shared<ImageFilters>(model_manager_);
 
+    // Create ImageSegmenter for SAM-based segmentation
+    image_segmenter_ = std::make_unique<ImageSegmenter>(model_manager_);
+
     // Create ImageGenerator with shared task state manager and model manager
     image_generator_ =
         std::make_unique<ImageGenerator>(task_state_manager_, options_manager_, model_manager_, image_filters_, params);
@@ -133,6 +136,9 @@ Server::~Server() { stop(); }
 void Server::setupRoutes() {
     // Ping endpoint
     CROW_ROUTE(app_, "/v1/internal/ping").methods("GET"_method)([this]() { return handlePing(); });
+
+    // Models endpoint
+    CROW_ROUTE(app_, "/v1/sdapi/v1/models").methods("GET"_method)([this]() { return handleGetModels(); });
 
     // Options endpoints
     CROW_ROUTE(app_, "/v1/sdapi/v1/options").methods("GET"_method)([this]() { return handleGetOptions(); });
@@ -170,6 +176,11 @@ void Server::setupRoutes() {
         return handleControlNetDetect(req);
     });
 
+    // Segmentation endpoint
+    CROW_ROUTE(app_, "/v1/sdapi/v1/segment").methods("POST"_method)([this](const crow::request& req) {
+        return handleSegment(req);
+    });
+
     // Refresh endpoints
     CROW_ROUTE(app_, "/v1/sdapi/v1/refresh-checkpoints").methods("POST"_method)([this]() {
         return handleRefreshCheckpoints();
@@ -191,6 +202,23 @@ void Server::stop() {
 }
 
 crow::response Server::handlePing() { return crow::response(200, "OK"); }
+
+crow::response Server::handleGetModels() {
+    try {
+        auto grouped_models = model_manager_->getAllModelsGrouped();
+
+        crow::json::wvalue response;
+        for (const auto& [type, names] : grouped_models) {
+            response[type] = names;
+        }
+
+        return crow::response(200, response);
+    } catch (const std::exception& e) {
+        crow::json::wvalue error;
+        error["message"] = std::string("Failed to get models: ") + e.what();
+        return crow::response(500, error);
+    }
+}
 
 crow::response Server::handleGetOptions() {
     try {
@@ -556,6 +584,102 @@ crow::response Server::handleControlNetDetect(const crow::request& req) {
     } catch (const std::exception& e) {
         crow::json::wvalue error;
         error["message"] = std::string("Failed to detect: ") + e.what();
+        return crow::response(500, error);
+    }
+}
+
+crow::response Server::handleSegment(const crow::request& req) {
+    try {
+        auto json_body = crow::json::load(req.body);
+        if (!json_body) {
+            crow::json::wvalue error;
+            error["message"] = "Invalid JSON";
+            return crow::response(400, error);
+        }
+
+        SegmentationParams params;
+
+        if (json_body.has("image") && json_body["image"].t() == crow::json::type::String) {
+            params.image_base64 = json_body["image"].s();
+        }
+        if (params.image_base64.empty()) {
+            crow::json::wvalue error;
+            error["message"] = "Missing image parameter";
+            return crow::response(400, error);
+        }
+
+        if (json_body.has("model") && json_body["model"].t() == crow::json::type::String) {
+            params.model_name = json_body["model"].s();
+        }
+        if (params.model_name.empty()) {
+            crow::json::wvalue error;
+            error["message"] = "Missing model parameter";
+            return crow::response(400, error);
+        }
+
+        if (json_body.has("text_prompt") && json_body["text_prompt"].t() == crow::json::type::String) {
+            params.text_prompt = json_body["text_prompt"].s();
+        }
+        if (json_body.has("score_threshold") && json_body["score_threshold"].t() == crow::json::type::Number) {
+            params.score_threshold = static_cast<float>(json_body["score_threshold"].d());
+        }
+
+        auto read_points = [&json_body](const char* key,
+                                        std::vector<std::pair<float, float>>& out) -> bool {
+            if (!json_body.has(key)) return true;
+            if (json_body[key].t() != crow::json::type::List) return false;
+            for (size_t i = 0; i < json_body[key].size(); i++) {
+                auto& point = json_body[key][i];
+                if (point.t() != crow::json::type::List || point.size() != 2) return false;
+                out.emplace_back(static_cast<float>(point[0].d()), static_cast<float>(point[1].d()));
+            }
+            return true;
+        };
+
+        if (!read_points("positive_points", params.positive_points) ||
+            !read_points("negative_points", params.negative_points)) {
+            crow::json::wvalue error;
+            error["message"] = "Points must be lists of [x, y] pairs";
+            return crow::response(400, error);
+        }
+
+        if (json_body.has("boxes")) {
+            if (json_body["boxes"].t() != crow::json::type::List) {
+                crow::json::wvalue error;
+                error["message"] = "boxes must be a list of [x0, y0, x1, y1] arrays";
+                return crow::response(400, error);
+            }
+            for (size_t i = 0; i < json_body["boxes"].size(); i++) {
+                auto& box = json_body["boxes"][i];
+                if (box.t() != crow::json::type::List || box.size() != 4) {
+                    crow::json::wvalue error;
+                    error["message"] = "Each box must be [x0, y0, x1, y1]";
+                    return crow::response(400, error);
+                }
+                std::vector<float> coords;
+                for (size_t j = 0; j < 4; j++) {
+                    coords.push_back(static_cast<float>(box[j].d()));
+                }
+                params.boxes.push_back(std::move(coords));
+            }
+        }
+
+        LOG_INFO("Segmenting image with model '%s' (prompt: %s, %zu positive point(s), %zu negative point(s), %zu "
+                 "box(es))",
+                 params.model_name.c_str(), params.text_prompt.empty() ? "none" : params.text_prompt.c_str(),
+                 params.positive_points.size(), params.negative_points.size(), params.boxes.size());
+
+        SegmentationResult result = image_segmenter_->segment(params);
+
+        crow::json::wvalue response;
+        response["masks"] = result.masks;
+        response["scores"] = result.scores;
+
+        return crow::response(200, response);
+    } catch (const std::exception& e) {
+        LOG_ERROR("Segmentation error: %s", e.what());
+        crow::json::wvalue error;
+        error["message"] = std::string("Segmentation failed: ") + e.what();
         return crow::response(500, error);
     }
 }

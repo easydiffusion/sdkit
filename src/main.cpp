@@ -89,6 +89,7 @@ struct CommandLineArgs {
     std::string embeddings_dir;
     std::string controlnet_dir;
     std::string text_encoder_dir;
+    std::string segmentation_models_path;
     bool vae_on_cpu = false;
     bool vae_tiling = false;
     std::string vae_tile_size;
@@ -117,6 +118,7 @@ void print_usage(const char* program_name) {
     std::cerr << "  --embeddings-dir <path>            Embeddings directory" << std::endl;
     std::cerr << "  --controlnet-dir <path>            ControlNet models directory" << std::endl;
     std::cerr << "  --text-encoder-dir <path>          Text encoder models directory" << std::endl;
+    std::cerr << "  --segmentation-models-path <path>  Segmentation models directory (SAM 1/2/3 models)" << std::endl;
     std::cerr << "  --vae-on-cpu                       Keep VAE on CPU (default: false)" << std::endl;
     std::cerr << "  --vae-tiling                       Enable VAE tiling (default: false)" << std::endl;
     std::cerr << "  --vae-tile-size <size>             VAE tile size (in pixels), format [X]x[Y] (default: 256x256)"
@@ -173,6 +175,8 @@ CommandLineArgs parse_args(int argc, char* argv[]) {
             args.controlnet_dir = argv[++i];
         } else if (arg == "--text-encoder-dir" && i + 1 < argc) {
             args.text_encoder_dir = argv[++i];
+        } else if (arg == "--segmentation-models-path" && i + 1 < argc) {
+            args.segmentation_models_path = argv[++i];
         } else if (arg == "--vae-on-cpu") {
             args.vae_on_cpu = true;
         } else if (arg == "--vae-tiling") {
@@ -245,6 +249,9 @@ int main(int argc, char* argv[]) {
     }
     if (!args.text_encoder_dir.empty()) {
         model_manager->setTextEncoderDir(args.text_encoder_dir);
+    }
+    if (!args.segmentation_models_path.empty()) {
+        model_manager->setSegmentationDir(args.segmentation_models_path);
     }
 
     // Scan all model directories

@@ -7,6 +7,7 @@
 #include "crow.h"
 #include "image_filters.h"
 #include "image_generator.h"
+#include "image_segmenter.h"
 #include "model_manager.h"
 #include "options_manager.h"
 #include "task_state.h"
@@ -37,6 +38,7 @@ class Server {
 
     // Route handlers
     crow::response handlePing();
+    crow::response handleGetModels();
     crow::response handleGetOptions();
     crow::response handlePostOptions(const crow::request& req);
     crow::response handleTxt2Img(const crow::request& req);
@@ -45,6 +47,7 @@ class Server {
     crow::response handleInterrupt(const crow::request& req);
     crow::response handleExtraBatchImages(const crow::request& req);
     crow::response handleControlNetDetect(const crow::request& req);
+    crow::response handleSegment(const crow::request& req);
     crow::response handleRefreshCheckpoints();
     crow::response handleRefreshVaeAndTextEncoders();
 
@@ -59,6 +62,7 @@ class Server {
     std::shared_ptr<ModelManager> model_manager_;
     std::unique_ptr<ImageGenerator> image_generator_;
     std::shared_ptr<ImageFilters> image_filters_;
+    std::unique_ptr<ImageSegmenter> image_segmenter_;
     bool should_stop_;
 };
 
