@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <stdexcept>
 
+#include "filters/controlnet.hpp"
 #include "image_utils.h"
 #include "logging.h"
 #include "string_utils.h"
@@ -153,10 +154,16 @@ sd_image_t ImageFilters::applyControlNetFilter(const sd_image_t& input_image, co
     }
     memcpy(result_image.data, input_image.data, data_size);
 
-    // Apply ControlNet preprocessing (for now, always use canny)
-    bool preprocess_result = preprocess_canny(result_image, 0.08f, 0.08f, 0.8f, 1.0f, false);
+    // Apply the requested ControlNet preprocessing.
+    bool preprocess_result = false;
+    if (module == "canny") {
+        preprocess_result = controlnet::preprocess_canny(result_image, 0.08f, 0.08f, 0.8f, 1.0f, false);
+    } else {
+        preprocess_result = controlnet::preprocess(result_image, module);
+    }
+
     if (!preprocess_result) {
-        LOG_WARNING("Failed to apply ControlNet preprocessing (%s), using original", module.c_str());
+        LOG_WARNING("Failed to apply or unsupported ControlNet preprocessing (%s), using original", module.c_str());
     } else {
         LOG_INFO("Applied ControlNet preprocessing (%s)", module.c_str());
     }
