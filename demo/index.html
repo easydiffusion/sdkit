@@ -1,177 +1,292 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sdkit3 · Demos</title>
-<style>
-  :root {
-    --bg: #14161a;
-    --panel: #1e2126;
-    --border: #33383f;
-    --text: #e6e8eb;
-    --muted: #9aa3ad;
-    --accent: #4f9cf9;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    overflow: hidden;
-  }
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>sdkit3 · Demos</title>
+        <style>
+            :root {
+                --bg: #14161a;
+                --panel: #1e2126;
+                --border: #33383f;
+                --text: #e6e8eb;
+                --muted: #9aa3ad;
+                --accent: #4f9cf9;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                height: 100%;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    14px/1.45 system-ui,
+                    -apple-system,
+                    "Segoe UI",
+                    Roboto,
+                    sans-serif;
+                overflow: hidden;
+            }
 
-  #app { display: flex; height: 100vh; }
+            #app {
+                display: flex;
+                height: 100vh;
+            }
 
-  /* ---------- sidebar ---------- */
-  #sidebar {
-    width: 230px; flex: none; background: var(--panel);
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    transition: transform .22s ease;
-    z-index: 20;
-  }
-  #sidebar .brand {
-    padding: 16px 16px 12px; border-bottom: 1px solid var(--border);
-  }
-  #sidebar .brand h1 { font-size: 15px; margin: 0; font-weight: 600; }
-  #sidebar .brand p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
-  nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; text-align: left;
-    background: none; border: none; color: var(--text);
-    padding: 9px 10px; border-radius: 8px; cursor: pointer;
-    font: inherit; margin-bottom: 2px;
-  }
-  .nav-item:hover { background: #262b32; }
-  .nav-item.active { background: #2c3b50; outline: 1px solid var(--accent); }
-  .nav-item .icon { width: 18px; text-align: center; flex: none; }
-  .nav-item .desc { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
-  #sidebar .foot {
-    padding: 12px 16px; border-top: 1px solid var(--border);
-    color: var(--muted); font-size: 11.5px;
-  }
-  #sidebar .foot a { color: var(--accent); text-decoration: none; }
+            /* ---------- sidebar ---------- */
+            #sidebar {
+                width: 230px;
+                flex: none;
+                background: var(--panel);
+                border-right: 1px solid var(--border);
+                display: flex;
+                flex-direction: column;
+                transition: transform 0.22s ease;
+                z-index: 20;
+            }
+            #sidebar .brand {
+                padding: 16px 16px 12px;
+                border-bottom: 1px solid var(--border);
+            }
+            #sidebar .brand h1 {
+                font-size: 15px;
+                margin: 0;
+                font-weight: 600;
+            }
+            #sidebar .brand p {
+                margin: 3px 0 0;
+                color: var(--muted);
+                font-size: 12px;
+            }
+            nav {
+                padding: 10px 8px;
+                flex: 1;
+                overflow-y: auto;
+            }
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                text-align: left;
+                background: none;
+                border: none;
+                color: var(--text);
+                padding: 9px 10px;
+                border-radius: 8px;
+                cursor: pointer;
+                font: inherit;
+                margin-bottom: 2px;
+            }
+            .nav-item:hover {
+                background: #262b32;
+            }
+            .nav-item.active {
+                background: #2c3b50;
+                outline: 1px solid var(--accent);
+            }
+            .nav-item .icon {
+                width: 18px;
+                text-align: center;
+                flex: none;
+            }
+            .nav-item .desc {
+                display: block;
+                color: var(--muted);
+                font-size: 11.5px;
+                margin-top: 1px;
+            }
+            #sidebar .foot {
+                padding: 12px 16px;
+                border-top: 1px solid var(--border);
+                color: var(--muted);
+                font-size: 11.5px;
+            }
+            #sidebar .foot a {
+                color: var(--accent);
+                text-decoration: none;
+            }
 
-  /* ---------- main ---------- */
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-  #topbar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 14px; background: var(--panel);
-    border-bottom: 1px solid var(--border);
-  }
-  button.hamburger {
-    background: none; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); font-size: 17px; line-height: 1;
-    padding: 5px 10px; cursor: pointer;
-  }
-  button.hamburger:hover { background: #2a2f36; }
-  #demo-title { font-weight: 600; font-size: 14px; }
-  #frame-wrap { flex: 1; position: relative; min-height: 0; }
-  #frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+            /* ---------- main ---------- */
+            #main {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+            #topbar {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 14px;
+                background: var(--panel);
+                border-bottom: 1px solid var(--border);
+            }
+            button.hamburger {
+                background: none;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-size: 17px;
+                line-height: 1;
+                padding: 5px 10px;
+                cursor: pointer;
+            }
+            button.hamburger:hover {
+                background: #2a2f36;
+            }
+            #demo-title {
+                font-weight: 600;
+                font-size: 14px;
+            }
+            #frame-wrap {
+                flex: 1;
+                position: relative;
+                min-height: 0;
+            }
+            #frame {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                border: 0;
+                background: var(--bg);
+            }
 
-  /* ---------- mobile ---------- */
-  #backdrop {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
-    z-index: 15;
-  }
-  @media (max-width: 860px) {
-    #sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-105%); box-shadow: 4px 0 24px rgba(0,0,0,.5); }
-    body.sidebar-open #sidebar { transform: translateX(0); }
-    body.sidebar-open #backdrop { display: block; }
-  }
-</style>
-</head>
-<body>
+            /* ---------- mobile ---------- */
+            #backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 15;
+            }
+            @media (max-width: 860px) {
+                #sidebar {
+                    position: fixed;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    transform: translateX(-105%);
+                    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+                }
+                body.sidebar-open #sidebar {
+                    transform: translateX(0);
+                }
+                body.sidebar-open #backdrop {
+                    display: block;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <aside id="sidebar">
+                <div class="brand">
+                    <h1>sdkit3 demos</h1>
+                    <p>Interactive demos for the sdkit3 server</p>
+                </div>
+                <nav id="nav"></nav>
+                <div class="foot">Same-origin pages served by sdkit.exe · API docs in the repo README</div>
+            </aside>
 
-<div id="app">
-  <aside id="sidebar">
-    <div class="brand">
-      <h1>sdkit3 demos</h1>
-      <p>Interactive demos for the sdkit3 server</p>
-    </div>
-    <nav id="nav"></nav>
-    <div class="foot">Same-origin pages served by sdkit.exe · API docs in the repo README</div>
-  </aside>
+            <div id="backdrop"></div>
 
-  <div id="backdrop"></div>
+            <div id="main">
+                <header id="topbar">
+                    <button class="hamburger" id="hamburger" title="Menu" aria-label="Toggle menu">☰</button>
+                    <span id="demo-title">Segmentation</span>
+                </header>
+                <div id="frame-wrap"><iframe id="frame" title="Demo"></iframe></div>
+            </div>
+        </div>
 
-  <div id="main">
-    <header id="topbar">
-      <button class="hamburger" id="hamburger" title="Menu" aria-label="Toggle menu">☰</button>
-      <span id="demo-title">Segmentation</span>
-    </header>
-    <div id="frame-wrap"><iframe id="frame" title="Demo"></iframe></div>
-  </div>
-</div>
+        <script>
+            "use strict";
 
-<script>
-"use strict";
+            const DEMOS = [
+                {
+                    id: "segmentation",
+                    title: "Segmentation",
+                    icon: "◍",
+                    file: "demo/segmentation-demo.html",
+                    desc: "SAM2 / SAM3 · points, boxes & text prompts",
+                },
+                {
+                    id: "upscaling",
+                    title: "Upscaling",
+                    icon: "⤢",
+                    file: "demo/upscaling-demo.html",
+                    desc: "RealESRGAN · enlarge images with a before/after view",
+                },
+                {
+                    id: "filters",
+                    title: "Filters · Canny",
+                    icon: "✎",
+                    file: "demo/filters-demo.html",
+                    desc: "ControlNet canny edge detection preview",
+                },
+                {
+                    id: "florence",
+                    title: "Florence-2",
+                    icon: "⌗",
+                    file: "demo/florence-demo.html",
+                    desc: "Captioning, phrase grounding, OCR & region tasks",
+                },
+            ];
 
-const DEMOS = [
-  {
-    id: "segmentation",
-    title: "Segmentation",
-    icon: "◍",
-    file: "demo/segmentation-demo.html",
-    desc: "SAM2 / SAM3 · points, boxes & text prompts",
-  },
-  {
-    id: "upscaling",
-    title: "Upscaling",
-    icon: "⤢",
-    file: "demo/upscaling-demo.html",
-    desc: "RealESRGAN · enlarge images with a before/after view",
-  },
-  {
-    id: "filters",
-    title: "Filters · Canny",
-    icon: "✎",
-    file: "demo/filters-demo.html",
-    desc: "ControlNet canny edge detection preview",
-  },
-];
+            const $ = (id) => document.getElementById(id);
+            const nav = $("nav"),
+                frame = $("frame"),
+                backdrop = $("backdrop");
 
-const $ = (id) => document.getElementById(id);
-const nav = $("nav"), frame = $("frame"), backdrop = $("backdrop");
+            for (const d of DEMOS) {
+                const btn = document.createElement("button");
+                btn.className = "nav-item";
+                btn.dataset.id = d.id;
+                btn.innerHTML =
+                    `<span class="icon">${d.icon}</span>` +
+                    `<span><span>${d.title}</span><span class="desc">${d.desc}</span></span>`;
+                btn.onclick = () => {
+                    location.hash = d.id;
+                    closeSidebar();
+                };
+                nav.appendChild(btn);
+            }
 
-for (const d of DEMOS) {
-  const btn = document.createElement("button");
-  btn.className = "nav-item";
-  btn.dataset.id = d.id;
-  btn.innerHTML =
-    `<span class="icon">${d.icon}</span>` +
-    `<span><span>${d.title}</span><span class="desc">${d.desc}</span></span>`;
-  btn.onclick = () => { location.hash = d.id; closeSidebar(); };
-  nav.appendChild(btn);
-}
+            function currentDemo() {
+                const id = location.hash.replace(/^#/, "");
+                return DEMOS.find((d) => d.id === id) || DEMOS[0];
+            }
 
-function currentDemo() {
-  const id = location.hash.replace(/^#/, "");
-  return DEMOS.find((d) => d.id === id) || DEMOS[0];
-}
+            let loadedFile = "";
+            function applyRoute() {
+                const d = currentDemo();
+                $("demo-title").textContent = d.title;
+                document
+                    .querySelectorAll(".nav-item")
+                    .forEach((b) => b.classList.toggle("active", b.dataset.id === d.id));
+                // Avoid reloading the iframe when the hash is just being re-applied
+                const src = d.file + "?from=" + encodeURIComponent(location.hash);
+                if (loadedFile !== src) {
+                    frame.src = src;
+                    loadedFile = src;
+                }
+            }
 
-let loadedFile = "";
-function applyRoute() {
-  const d = currentDemo();
-  $("demo-title").textContent = d.title;
-  document.querySelectorAll(".nav-item").forEach((b) =>
-    b.classList.toggle("active", b.dataset.id === d.id));
-  // Avoid reloading the iframe when the hash is just being re-applied
-  const src = d.file + "?from=" + encodeURIComponent(location.hash);
-  if (loadedFile !== src) {
-    frame.src = src;
-    loadedFile = src;
-  }
-}
+            function closeSidebar() {
+                document.body.classList.remove("sidebar-open");
+            }
+            $("hamburger").onclick = () => document.body.classList.toggle("sidebar-open");
+            backdrop.onclick = closeSidebar;
 
-function closeSidebar() { document.body.classList.remove("sidebar-open"); }
-$("hamburger").onclick = () => document.body.classList.toggle("sidebar-open");
-backdrop.onclick = closeSidebar;
-
-window.addEventListener("hashchange", applyRoute);
-applyRoute();
-</script>
-</body>
+            window.addEventListener("hashchange", applyRoute);
+            applyRoute();
+        </script>
+    </body>
 </html>

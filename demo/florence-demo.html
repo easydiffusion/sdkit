@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>sdkit3 · Florence Demo</title>
+        <style>
+            :root {
+                --bg: #14161a;
+                --panel: #1e2126;
+                --border: #33383f;
+                --text: #e6e8eb;
+                --muted: #9aa3ad;
+                --accent: #4f9cf9;
+                --good: #35c26a;
+                --warn: #f5a524;
+                --bad: #e5484d;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    14px/1.45 system-ui,
+                    -apple-system,
+                    "Segoe UI",
+                    Roboto,
+                    sans-serif;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                padding: 10px 16px;
+                background: var(--panel);
+                border-bottom: 1px solid var(--border);
+            }
+            header h1 {
+                font-size: 15px;
+                margin: 0 8px 0 0;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            select,
+            input[type="text"],
+            input[type="url"],
+            input[type="number"],
+            textarea {
+                background: #12141a;
+                color: var(--text);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 6px 8px;
+                font: inherit;
+            }
+            select {
+                min-width: 210px;
+            }
+            input[type="url"] {
+                min-width: 240px;
+            }
+            input[type="text"] {
+                min-width: 240px;
+            }
+            input[type="number"] {
+                width: 76px;
+            }
+            button {
+                background: #2a2f36;
+                color: var(--text);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 6px 12px;
+                font: inherit;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            button:hover {
+                background: #343b44;
+            }
+            button.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: #fff;
+                font-weight: 600;
+            }
+            button.primary:hover {
+                filter: brightness(1.1);
+            }
+            button:disabled {
+                opacity: 0.45;
+                cursor: default;
+            }
+            .muted {
+                color: var(--muted);
+            }
+
+            main {
+                flex: 1;
+                display: flex;
+                min-height: 0;
+            }
+            #stage-wrap {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+                min-width: 0;
+                position: relative;
+                overflow: hidden;
+            }
+            #stage {
+                position: relative;
+                max-width: 100%;
+                max-height: 100%;
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            }
+            #stage img#image {
+                display: block;
+                max-width: 100%;
+                max-height: calc(100vh - 160px);
+            }
+            #overlay {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+            #dropzone {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                gap: 10px;
+                color: var(--muted);
+                border: 2px dashed var(--border);
+                border-radius: 12px;
+                margin: 24px;
+                transition:
+                    border-color 0.15s,
+                    background 0.15s;
+            }
+            #dropzone.drag {
+                border-color: var(--accent);
+                background: rgba(79, 156, 249, 0.07);
+            }
+            #busy {
+                position: absolute;
+                top: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(20, 22, 26, 0.92);
+                border: 1px solid var(--border);
+                border-radius: 999px;
+                padding: 6px 16px;
+                display: none;
+                align-items: center;
+                gap: 8px;
+                z-index: 5;
+            }
+            #busy .spin {
+                width: 14px;
+                height: 14px;
+                border: 2px solid var(--muted);
+                border-top-color: var(--accent);
+                border-radius: 50%;
+                animation: spin 0.7s linear infinite;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            #status {
+                position: absolute;
+                bottom: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(20, 22, 26, 0.92);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 6px 14px;
+                z-index: 5;
+                display: none;
+                max-width: 80%;
+            }
+            #status.error {
+                color: var(--bad);
+                border-color: var(--bad);
+                display: block;
+            }
+
+            aside {
+                width: 360px;
+                background: var(--panel);
+                border-left: 1px solid var(--border);
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+                padding: 12px 14px;
+                gap: 12px;
+            }
+            aside h2 {
+                font-size: 13px;
+                margin: 0;
+                color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+            }
+            .card {
+                background: #171a1f;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px;
+            }
+            .card p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 12.5px;
+            }
+            .kv {
+                font-size: 13px;
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            .kv b {
+                font-variant-numeric: tabular-nums;
+            }
+            #result-text {
+                width: 100%;
+                min-height: 88px;
+                resize: vertical;
+            }
+            #regions {
+                flex: 1;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .region-row {
+                background: #171a1f;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 7px 9px;
+                font-size: 13px;
+            }
+            .region-row .top {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+            }
+            .region-row .name {
+                font-weight: 600;
+            }
+            .region-row .score {
+                color: var(--muted);
+                margin-left: auto;
+                font-variant-numeric: tabular-nums;
+            }
+            .region-row .meta {
+                color: var(--muted);
+                font-size: 12px;
+                margin-top: 3px;
+                word-break: break-word;
+            }
+            #raw {
+                margin: 0;
+                white-space: pre-wrap;
+                overflow: auto;
+                max-height: 220px;
+                background: #12141a;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px;
+                font:
+                    12px/1.4 ui-monospace,
+                    SFMono-Regular,
+                    Consolas,
+                    monospace;
+            }
+            #empty-hint {
+                color: var(--muted);
+                font-size: 12.5px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Florence-2 demo</h1>
+            <label class="muted"
+                >Server
+                <input type="url" id="server" value="http://127.0.0.1:8765" spellcheck="false" />
+            </label>
+            <button id="reload-models">↻ Connect</button>
+            <label class="muted"
+                >Model
+                <select id="model" title="Florence model">
+                    <option>Loading models…</option>
+                </select>
+            </label>
+            <label class="muted"
+                >Task
+                <select id="task" title="Florence task"></select>
+            </label>
+            <input type="file" id="file" accept="image/*" hidden />
+            <button id="pick" class="primary">Open image…</button>
+            <span style="flex: 1"></span>
+            <input type="text" id="text-input" placeholder="Phrase to locate, e.g. red backpack" />
+            <button id="run" class="primary" disabled>Run</button>
+        </header>
+
+        <main>
+            <div id="stage-wrap">
+                <div id="busy">
+                    <div class="spin"></div>
+                    <span>Running Florence…</span>
+                </div>
+                <div id="status"></div>
+                <div id="dropzone">
+                    <div style="font-size: 17px; color: var(--text)">Drop an image here</div>
+                    <div>or click “Open image…” · paste with Ctrl+V also works</div>
+                    <div style="font-size: 12px; margin-top: 6px">
+                        This page is served by sdkit3, but its API calls go to the standalone Florence server on another
+                        port.
+                    </div>
+                </div>
+                <div id="stage" hidden>
+                    <img id="image" alt="" />
+                    <canvas id="overlay"></canvas>
+                </div>
+            </div>
+
+            <aside>
+                <div>
+                    <h2>Result</h2>
+                    <div class="card">
+                        <p id="help-text">
+                            Use the standalone Florence server for captioning, phrase grounding, dense region captions,
+                            object detection, and OCR-style tasks.
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <h2>Summary</h2>
+                    <div class="card" style="display: flex; flex-direction: column; gap: 6px">
+                        <div class="kv"><span>Image</span><b id="dims">—</b></div>
+                        <div class="kv"><span>Load time</span><b id="load-time">—</b></div>
+                        <div class="kv"><span>Infer time</span><b id="infer-time">—</b></div>
+                        <div class="kv"><span>Regions</span><b id="region-count">0</b></div>
+                    </div>
+                </div>
+
+                <div>
+                    <h2>Text</h2>
+                    <textarea
+                        id="result-text"
+                        readonly
+                        placeholder="Caption / OCR / region text will appear here"
+                    ></textarea>
+                </div>
+
+                <div style="display: flex; flex-direction: column; min-height: 0; flex: 1">
+                    <h2>Regions</h2>
+                    <div id="empty-hint">No regions returned yet.</div>
+                    <div id="regions"></div>
+                </div>
+
+                <div>
+                    <h2>Raw JSON</h2>
+                    <pre id="raw">{}</pre>
+                </div>
+            </aside>
+        </main>
+
+        <script>
+            "use strict";
+
+            const $ = (id) => document.getElementById(id);
+            const image = $("image"),
+                overlay = $("overlay"),
+                stage = $("stage"),
+                dropzone = $("dropzone");
+            const SERVER_KEY = "sdkit3.florence.server";
+            const TASKS = [
+                { id: "caption", label: "Caption", needsText: false, placeholder: "" },
+                { id: "detailed", label: "Detailed caption", needsText: false, placeholder: "" },
+                { id: "more-detailed", label: "More detailed caption", needsText: false, placeholder: "" },
+                { id: "od", label: "Object detection", needsText: false, placeholder: "" },
+                { id: "dense", label: "Dense region captioning", needsText: false, placeholder: "" },
+                {
+                    id: "ground",
+                    label: "Phrase grounding",
+                    needsText: true,
+                    placeholder: "Phrase to locate, e.g. red backpack",
+                },
+                { id: "ocr", label: "OCR", needsText: false, placeholder: "" },
+                { id: "ocr-region", label: "OCR with regions", needsText: false, placeholder: "" },
+            ];
+
+            let imageDataUrl = null;
+            let naturalW = 0,
+                naturalH = 0;
+            let runSeq = 0;
+            let lastResponse = null;
+
+            function initTaskSelect() {
+                const sel = $("task");
+                sel.innerHTML = "";
+                for (const task of TASKS) {
+                    const opt = document.createElement("option");
+                    opt.value = task.id;
+                    opt.textContent = task.label;
+                    sel.appendChild(opt);
+                }
+                sel.value = "caption";
+                applyTaskUi();
+            }
+
+            function currentTaskSpec() {
+                return TASKS.find((task) => task.id === $("task").value) || TASKS[0];
+            }
+
+            function normalizedServerBase() {
+                return ($("server").value || "http://127.0.0.1:8765").trim().replace(/\/$/, "");
+            }
+
+            function api(path, opts) {
+                const url = normalizedServerBase() + path;
+                return fetch(url, opts).then(async (r) => {
+                    const body = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(body.message || r.statusText || "Request failed");
+                    return body;
+                });
+            }
+
+            function saveServerBase() {
+                localStorage.setItem(SERVER_KEY, normalizedServerBase());
+            }
+
+            async function loadModels() {
+                const sel = $("model");
+                saveServerBase();
+                sel.innerHTML = "<option>Loading…</option>";
+                try {
+                    const res = await api("/v1/models");
+                    const models = res.models || [];
+                    sel.innerHTML = "";
+                    for (const info of models) {
+                        const opt = document.createElement("option");
+                        opt.value = info.id;
+                        opt.textContent = info.id + (info.recommended ? " · recommended" : "");
+                        sel.appendChild(opt);
+                    }
+                    if (!models.length) {
+                        sel.innerHTML = "<option value=''>No models configured</option>";
+                        setStatus("The Florence server returned no available models", true);
+                        $("run").disabled = !imageDataUrl;
+                        return;
+                    }
+                    sel.value = res.default_model || models[0].id;
+                    $("run").disabled = !imageDataUrl;
+                    setStatus("Connected to Florence server");
+                } catch (e) {
+                    sel.innerHTML = "<option value=''>Server unreachable</option>";
+                    $("run").disabled = true;
+                    setStatus(
+                        "Could not reach the Florence server. Start v3/scripts/florence_server.py with sahara/.venv and check the Server URL.",
+                        true,
+                    );
+                }
+            }
+
+            let statusTimer = null;
+            function setStatus(msg, isError) {
+                const el = $("status");
+                clearTimeout(statusTimer);
+                el.textContent = msg;
+                el.className = isError ? "error" : "";
+                el.style.display = msg ? "block" : "none";
+                if (!isError && msg) statusTimer = setTimeout(() => (el.style.display = "none"), 2600);
+            }
+
+            function loadImage(dataUrl) {
+                const img = new Image();
+                img.onload = () => {
+                    imageDataUrl = dataUrl;
+                    image.src = dataUrl;
+                    naturalW = img.naturalWidth;
+                    naturalH = img.naturalHeight;
+                    overlay.width = naturalW;
+                    overlay.height = naturalH;
+                    stage.hidden = false;
+                    dropzone.style.display = "none";
+                    clearResult();
+                    $("dims").textContent = `${naturalW}×${naturalH}`;
+                    $("run").disabled = !$("model").value;
+                    setStatus(`${naturalW}×${naturalH}px loaded`);
+                };
+                img.src = dataUrl;
+            }
+
+            $("pick").onclick = () => $("file").click();
+            $("file").onchange = (e) => {
+                const f = e.target.files[0];
+                if (f) readFile(f);
+                e.target.value = "";
+            };
+
+            function readFile(file) {
+                const r = new FileReader();
+                r.onload = () => loadImage(r.result);
+                r.readAsDataURL(file);
+            }
+
+            for (const ev of ["dragenter", "dragover"]) {
+                window.addEventListener(ev, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add("drag");
+                });
+            }
+            window.addEventListener("dragleave", (e) => {
+                if (e.target === dropzone) dropzone.classList.remove("drag");
+            });
+            window.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.classList.remove("drag");
+                const f = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
+                if (f) readFile(f);
+            });
+            window.addEventListener("paste", (e) => {
+                const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+                if (item) readFile(item.getAsFile());
+            });
+
+            function applyTaskUi() {
+                const spec = currentTaskSpec();
+                const input = $("text-input");
+                input.disabled = !spec.needsText;
+                input.placeholder = spec.placeholder || "No extra text needed for this task";
+                input.style.opacity = spec.needsText ? "1" : ".65";
+                $("help-text").textContent = spec.needsText
+                    ? `${spec.label}: provide extra text input. ${spec.placeholder}`
+                    : `${spec.label}: no extra text input is required.`;
+            }
+
+            function colorFor(index) {
+                const hue = (index * 137.5) % 360;
+                return `hsl(${hue}deg 85% 60%)`;
+            }
+
+            function formatScore(score) {
+                return typeof score === "number" && isFinite(score) ? score.toFixed(3) : "";
+            }
+
+            function drawQuad(ctx, quad, color) {
+                let pts = quad;
+                if (Array.isArray(quad) && quad.length === 8) {
+                    pts = [
+                        [quad[0], quad[1]],
+                        [quad[2], quad[3]],
+                        [quad[4], quad[5]],
+                        [quad[6], quad[7]],
+                    ];
+                }
+                if (!Array.isArray(pts) || pts.length < 4) return;
+                ctx.beginPath();
+                ctx.moveTo(pts[0][0], pts[0][1]);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+                ctx.closePath();
+                ctx.strokeStyle = color;
+                ctx.stroke();
+            }
+
+            function drawPolygon(ctx, polygon, color) {
+                if (!Array.isArray(polygon) || !polygon.length) return;
+                let pts = polygon;
+                if (!Array.isArray(polygon[0]) && polygon.length % 2 === 0) {
+                    pts = [];
+                    for (let i = 0; i < polygon.length; i += 2) pts.push([polygon[i], polygon[i + 1]]);
+                }
+                const first = pts[0];
+                if (!Array.isArray(first)) return;
+                ctx.beginPath();
+                ctx.moveTo(first[0], first[1]);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+                ctx.closePath();
+                ctx.strokeStyle = color;
+                ctx.stroke();
+            }
+
+            function renderOverlay() {
+                const ctx = overlay.getContext("2d");
+                ctx.clearRect(0, 0, naturalW, naturalH);
+
+                const items = lastResponse?.normalized?.items || [];
+                ctx.lineWidth = Math.max(2, naturalW / 700);
+                ctx.font = `${Math.max(13, naturalW / 55)}px system-ui`;
+                ctx.textBaseline = "top";
+
+                items.forEach((item, index) => {
+                    const color = colorFor(index);
+                    const label = item.label != null ? String(item.label) : `item ${index + 1}`;
+                    const score = formatScore(item.score);
+                    const chip = score ? `${label} · ${score}` : label;
+
+                    if (Array.isArray(item.bbox) && item.bbox.length >= 4) {
+                        const [x0, y0, x1, y1] = item.bbox.map((v) => Math.round(Number(v) || 0));
+                        const w = Math.max(1, x1 - x0);
+                        const h = Math.max(1, y1 - y0);
+                        ctx.strokeStyle = color;
+                        ctx.strokeRect(x0, y0, w, h);
+                        const padX = 6,
+                            padY = 4;
+                        const textW = Math.ceil(ctx.measureText(chip).width);
+                        const textH = Math.ceil(parseInt(ctx.font, 10) || 14) + padY * 2;
+                        const boxY = Math.max(0, y0 - textH - 2);
+                        ctx.fillStyle = color;
+                        ctx.fillRect(x0, boxY, textW + padX * 2, textH);
+                        ctx.fillStyle = "#0c1015";
+                        ctx.fillText(chip, x0 + padX, boxY + padY);
+                    }
+
+                    if (item.quad_box) drawQuad(ctx, item.quad_box, color);
+                    if (item.polygon) drawPolygon(ctx, item.polygon, color);
+                });
+            }
+
+            function renderRegions() {
+                const wrap = $("regions");
+                const items = lastResponse?.normalized?.items || [];
+                wrap.innerHTML = "";
+                $("empty-hint").style.display = items.length ? "none" : "block";
+                $("region-count").textContent = String(items.length || 0);
+
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    const row = document.createElement("div");
+                    row.className = "region-row";
+
+                    const top = document.createElement("div");
+                    top.className = "top";
+
+                    const name = document.createElement("span");
+                    name.className = "name";
+                    name.textContent = item.label != null ? String(item.label) : `item ${i + 1}`;
+
+                    const score = document.createElement("span");
+                    score.className = "score";
+                    score.textContent = formatScore(item.score);
+
+                    top.append(name, score);
+
+                    const meta = document.createElement("div");
+                    meta.className = "meta";
+                    const bits = [];
+                    if (Array.isArray(item.bbox) && item.bbox.length >= 4)
+                        bits.push(`bbox: ${JSON.stringify(item.bbox)}`);
+                    if (item.quad_box) bits.push(`quad: ${JSON.stringify(item.quad_box)}`);
+                    if (item.polygon) bits.push(`polygon: ${JSON.stringify(item.polygon)}`);
+                    meta.textContent = bits.join(" · ") || "No geometry details";
+
+                    row.append(top, meta);
+                    wrap.appendChild(row);
+                }
+            }
+
+            function renderText() {
+                const normalized = lastResponse?.normalized;
+                const parsed = lastResponse?.parsed;
+                if (normalized?.kind === "text") {
+                    $("result-text").value = normalized.text || "";
+                    return;
+                }
+                if (normalized?.kind === "regions" && Array.isArray(normalized.items)) {
+                    const lines = normalized.items
+                        .map((item, index) => (item.label != null ? String(item.label) : `item ${index + 1}`))
+                        .filter(Boolean);
+                    $("result-text").value = lines.join("\n");
+                    return;
+                }
+                if (typeof parsed === "string") {
+                    $("result-text").value = parsed;
+                    return;
+                }
+                if (parsed && typeof parsed === "object") {
+                    const taskToken = lastResponse?.task?.token;
+                    const root = taskToken && parsed[taskToken] !== undefined ? parsed[taskToken] : parsed;
+                    if (typeof root === "string") {
+                        $("result-text").value = root;
+                        return;
+                    }
+                }
+                $("result-text").value = "";
+            }
+
+            function renderResult() {
+                renderOverlay();
+                renderRegions();
+                renderText();
+                $("raw").textContent = JSON.stringify(lastResponse || {}, null, 2);
+                $("load-time").textContent = lastResponse?.timing
+                    ? `${lastResponse.timing.load_seconds.toFixed(2)}s`
+                    : "—";
+                $("infer-time").textContent = lastResponse?.timing
+                    ? `${lastResponse.timing.inference_seconds.toFixed(2)}s`
+                    : "—";
+            }
+
+            function clearResult() {
+                lastResponse = null;
+                $("result-text").value = "";
+                $("raw").textContent = "{}";
+                $("load-time").textContent = "—";
+                $("infer-time").textContent = "—";
+                $("region-count").textContent = "0";
+                $("empty-hint").style.display = "block";
+                $("regions").innerHTML = "";
+                const ctx = overlay.getContext("2d");
+                ctx.clearRect(0, 0, overlay.width, overlay.height);
+            }
+
+            async function runTask() {
+                if (!imageDataUrl) {
+                    setStatus("Load an image first", true);
+                    return;
+                }
+                if (!$("model").value) {
+                    setStatus("Connect to the Florence server and choose a model", true);
+                    return;
+                }
+
+                const spec = currentTaskSpec();
+                const textInput = $("text-input").value.trim();
+                if (spec.needsText && !textInput) {
+                    setStatus(spec.placeholder || "This task needs text_input", true);
+                    return;
+                }
+
+                saveServerBase();
+                const seq = ++runSeq;
+                $("busy").style.display = "flex";
+                $("run").disabled = true;
+
+                try {
+                    const res = await api("/v1/run", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: $("model").value,
+                            task: spec.id,
+                            image: imageDataUrl,
+                            text_input: textInput || undefined,
+                        }),
+                    });
+                    if (seq !== runSeq) return;
+                    lastResponse = res;
+                    renderResult();
+                    const regions = res.normalized?.items?.length || 0;
+                    const secs = res.timing ? res.timing.total_seconds.toFixed(2) : "?";
+                    setStatus(`${spec.label} finished in ${secs}s${regions ? ` · ${regions} region(s)` : ""}`);
+                } catch (e) {
+                    if (seq === runSeq) setStatus(e.message || String(e), true);
+                } finally {
+                    if (seq === runSeq) {
+                        $("busy").style.display = "none";
+                        $("run").disabled = !imageDataUrl || !$("model").value;
+                    }
+                }
+            }
+
+            $("reload-models").onclick = loadModels;
+            $("task").onchange = applyTaskUi;
+            $("run").onclick = runTask;
+
+            const savedServer = localStorage.getItem(SERVER_KEY);
+            if (savedServer) $("server").value = savedServer;
+
+            initTaskSelect();
+            loadModels();
+        </script>
+    </body>
+</html>
