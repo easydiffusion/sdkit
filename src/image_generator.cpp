@@ -271,7 +271,9 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
     if (!ref_images_vec.empty()) {
         gen_params.ref_images = ref_images_vec.data();
         gen_params.ref_images_count = static_cast<int>(ref_images_vec.size());
-        gen_params.auto_resize_ref_image = params.auto_resize_ref_image;
+        if (params.auto_resize_ref_image) {
+            gen_params.ref_image_args = "resize_before_vae=true";
+        }
         LOG_INFO("Using %d reference image(s)", gen_params.ref_images_count);
     }
 
@@ -299,21 +301,20 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
             }
         }
 
-        // Convert from pixel space to latent space (VAE downscaling factor is 8)
-        int latent_tile_x = tile_size_x / 8;
-        int latent_tile_y = tile_size_y / 8;
+        // New sd.cpp takes tile dimensions directly in image pixels
 
-        gen_params.vae_tiling_params.tile_size_x = latent_tile_x;
-        gen_params.vae_tiling_params.tile_size_y = latent_tile_y;
+        gen_params.vae_tiling_params.tile_size_w = tile_size_x;
+        gen_params.vae_tiling_params.tile_size_h = tile_size_y;
         gen_params.vae_tiling_params.target_overlap = 0.5f;
-        gen_params.vae_tiling_params.rel_size_x = 0.0f;
-        gen_params.vae_tiling_params.rel_size_y = 0.0f;
-        LOG_INFO("VAE tiling enabled with tile size %dx%d pixels (%dx%d latent)", tile_size_x, tile_size_y,
-                 latent_tile_x, latent_tile_y);
+        gen_params.vae_tiling_params.rel_size_w = 0.0f;
+        gen_params.vae_tiling_params.rel_size_h = 0.0f;
+        LOG_INFO("VAE tiling enabled with tile size %dx%d pixels", tile_size_x, tile_size_y);
     }
 
     // Generate images
-    sd_image_t* result = generate_image(sd_ctx_, &gen_params);
+    sd_image_t* result = nullptr;
+    int num_images = 0;
+    bool success = generate_image(sd_ctx_, &gen_params, &result, &num_images);
 
     // Free init image if used
     if (gen_params.init_image.data) {
@@ -334,7 +335,7 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
         }
     }
 
-    if (!result) {
+    if (!success || !result) {
         LOG_ERROR("Image generation failed");
 
         // Clear callbacks
@@ -348,7 +349,7 @@ std::vector<std::string> ImageGenerator::generateInternal(const ImageGenerationP
 
     // Convert results to base64
     std::vector<std::string> result_images;
-    for (int i = 0; i < params.batch_count; i++) {
+    for (int i = 0; i < num_images; i++) {
         std::string img_base64 = imageToBase64(result[i]);
         result_images.push_back(img_base64);
 
@@ -745,7 +746,9 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     params.backend = backend.c_str();
     params.params_backend = backend_params.c_str();
     params.diffusion_flash_attn = diffusion_fa_;
-    params.chroma_use_dit_mask = !chroma_disable_dit_mask_;
+    if (chroma_disable_dit_mask_) {
+        params.model_args = "chroma_use_dit_mask=false";
+    }
 
     if (vae_on_cpu_) {
         LOG_INFO("VAE will be kept on CPU");
