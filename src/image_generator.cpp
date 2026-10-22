@@ -582,6 +582,8 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     std::string clip_g_path_str;
     std::string t5xxl_path_str;
     std::string llm_path_str;
+    std::string llm_vision_path_str;
+    std::string tokenizer_str;
 
     if (options.has("forge_additional_modules")) {
         auto modules = options["forge_additional_modules"];
@@ -607,6 +609,10 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
                     t5xxl_path_str = module_full_path;
                 } else if (model_type == "llm") {
                     llm_path_str = module_full_path;
+                } else if (model_type == "llm_vision") {
+                    llm_vision_path_str = module_full_path;
+                } else if (model_type == "tokenizer") {
+                    tokenizer_str = module_full_path;
                 } else {
                     LOG_WARNING("Unknown model type for: %s (detected as: %s)", module_full_path.c_str(),
                                 model_type.c_str());
@@ -622,7 +628,8 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     bool needs_reload = !initialized_ || !sd_ctx_ || model_path != current_model_path_ ||
                         vae_path_str != current_vae_path_ || clip_l_path_str != current_clip_l_path_ ||
                         clip_g_path_str != current_clip_g_path_ || t5xxl_path_str != current_t5xxl_path_ ||
-                        llm_path_str != current_llm_path_ || controlnet_path_str != current_controlnet_path_ ||
+                        llm_path_str != current_llm_path_ || llm_vision_path_str != current_llm_vision_path_ ||
+                        tokenizer_str != current_tokenizer_path_ || controlnet_path_str != current_controlnet_path_ ||
                         embeddings_dir_str != current_embeddings_dir_;
 
     if (!needs_reload) {
@@ -656,7 +663,8 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
 
     // Check if we have additional modules (VAE, CLIP, etc.)
     bool has_additional_modules =
-        !clip_l_path_str.empty() || !clip_g_path_str.empty() || !t5xxl_path_str.empty() || !llm_path_str.empty();
+        !clip_l_path_str.empty() || !clip_g_path_str.empty() || !t5xxl_path_str.empty() || !llm_path_str.empty() ||
+        !llm_vision_path_str.empty() || !tokenizer_str.empty();
 
     if (has_additional_modules) {
         LOG_INFO("Using additional modules - loading diffusion model separately");
@@ -674,6 +682,8 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     params.clip_g_path = clip_g_path_str.empty() ? nullptr : clip_g_path_str.c_str();
     params.t5xxl_path = t5xxl_path_str.empty() ? nullptr : t5xxl_path_str.c_str();
     params.llm_path = llm_path_str.empty() ? nullptr : llm_path_str.c_str();
+    params.llm_vision_path = llm_vision_path_str.empty() ? nullptr : llm_vision_path_str.c_str();
+    params.tokenizer = tokenizer_str.empty() ? nullptr : tokenizer_str.c_str();
     params.taesd_path = nullptr;
     params.control_net_path = controlnet_path_str.empty() ? nullptr : controlnet_path_str.c_str();
 
@@ -713,6 +723,12 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     }
     if (!llm_path_str.empty()) {
         LOG_INFO("Loading LLM model: %s", llm_path_str.c_str());
+    }
+    if (!llm_vision_path_str.empty()) {
+        LOG_INFO("Loading LLM vision model: %s", llm_vision_path_str.c_str());
+    }
+    if (!tokenizer_str.empty()) {
+        LOG_INFO("Loading tokenizer: %s", tokenizer_str.c_str());
     }
     if (!controlnet_path_str.empty()) {
         LOG_INFO("Loading ControlNet model: %s", controlnet_path_str.c_str());
@@ -783,6 +799,8 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     current_clip_g_path_ = clip_g_path_str;
     current_t5xxl_path_ = t5xxl_path_str;
     current_llm_path_ = llm_path_str;
+    current_llm_vision_path_ = llm_vision_path_str;
+    current_tokenizer_path_ = tokenizer_str;
     current_taesd_path_ = "";
     current_lora_model_dir_ = lora_dir_str;
     current_embeddings_dir_ = embeddings_dir_str;

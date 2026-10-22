@@ -246,6 +246,54 @@ static void test_moe_singular_exp_form() {
     ASSER_EQ(result, "llm", "MoE singular exp form should be detected as llm, got: " + result);
 }
 
+// ---------------------------------------------------------------------------
+// LLM vision (e.g. Qwen3-VL mmproj) should be detected as llm_vision
+// ---------------------------------------------------------------------------
+static void test_llm_vision() {
+    std::vector<std::string> keys;
+    keys.push_back("v.patch_embd.weight");
+    keys.push_back("v.blk.0.attn_q.weight");
+    keys.push_back("v.blk.0.attn_k.weight");
+    keys.push_back("v.blk.0.attn_v.weight");
+    keys.push_back("v.blk.0.ffn_up.weight");
+    keys.push_back("mm.0.weight");
+    std::string result = inferModelTypeFromTensorKeys(keys);
+    ASSER_EQ(result, "llm_vision", "LLM vision keys should be detected as llm_vision, got: " + result);
+}
+
+// ---------------------------------------------------------------------------
+// Full multimodal file (text + vision tensors) should be detected as llm, not
+// llm_vision - the llm check must take precedence over the llm_vision check.
+// ---------------------------------------------------------------------------
+static void test_multimodal_full() {
+    std::vector<std::string> keys;
+    // Text-side tensors
+    keys.push_back("token_embd.weight");
+    keys.push_back("blk.0.attn_q.weight");
+    keys.push_back("blk.0.attn_k.weight");
+    keys.push_back("blk.0.attn_v.weight");
+    keys.push_back("blk.0.attn_output.weight");
+    keys.push_back("blk.0.ffn_gate.weight");
+    keys.push_back("blk.0.ffn_up.weight");
+    keys.push_back("blk.0.ffn_down.weight");
+    keys.push_back("output_norm.weight");
+    // Vision-side tensors (e.g. bundled Qwen3-VL vision tower)
+    keys.push_back("v.patch_embd.weight");
+    keys.push_back("v.blk.0.attn_q.weight");
+    keys.push_back("v.blk.0.ffn_up.weight");
+    keys.push_back("mm.0.weight");
+    std::string result = inferModelTypeFromTensorKeys(keys);
+    ASSER_EQ(result, "llm", "Full multimodal (text + vision) should be detected as llm, got: " + result);
+}
+
+// ---------------------------------------------------------------------------
+// Tokenizer JSON files should be detected as tokenizer
+// ---------------------------------------------------------------------------
+static void test_tokenizer() {
+    std::string result = inspectModelType("/path/to/tokenizer.json");
+    ASSER_EQ(result, "tokenizer", "Tokenizer JSON should be detected as tokenizer, got: " + result);
+}
+
 int main() {
     std::cout << "=== Model Detection Tests ===\n\n";
 
@@ -259,7 +307,9 @@ int main() {
     test_empty_keys();
     test_gpt_oss_minimal();
     test_moe_singular_exp_form();
-
+    test_llm_vision();
+    test_multimodal_full();
+    test_tokenizer();
     std::cout << "\n=== Results: " << tests_passed << " passed, " 
               << tests_failed << " failed ===\n";
     return tests_failed > 0 ? 1 : 0;

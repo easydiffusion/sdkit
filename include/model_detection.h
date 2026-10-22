@@ -13,12 +13,12 @@ std::string detectModelFormat(const std::string& model_path);
 std::vector<std::string> extractTensorKeys(const std::string& model_path, const std::string& format);
 
 // Determine model type from tensor keys
-// Returns: "clip_l", "clip_g", "t5xxl", "llm", or "vae" (default)
+// Returns: "clip_l", "clip_g", "t5xxl", "llm", "llm_vision", or "vae" (default)
 std::string inferModelTypeFromTensorKeys(const std::vector<std::string>& tensor_keys);
 
 // Inspect a model file and determine its type
 // Supports both GGUF and safetensors formats
-// Returns: "vae", "clip_l", "clip_g", "t5xxl", "llm", or "unknown"
+// Returns: "vae", "clip_l", "clip_g", "t5xxl", "llm", "llm_vision", "tokenizer", or "unknown"
 std::string inspectModelType(const std::string& model_path);
 
 #endif  // MODEL_DETECTION_H

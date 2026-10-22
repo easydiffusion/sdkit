@@ -76,6 +76,12 @@ void ModelManager::setTextEncoderDir(const std::string& dir) {
     LOG_INFO("Text Encoder directory set to: %s", dir.c_str());
 }
 
+void ModelManager::setTokenizerDir(const std::string& dir) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    model_directories_[ModelType::TOKENIZER] = dir;
+    LOG_INFO("Tokenizer directory set to: %s", dir.c_str());
+}
+
 std::string ModelManager::getRealesrganModelsPath() const {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = model_directories_.find(ModelType::REALESRGAN);
@@ -105,6 +111,10 @@ bool ModelManager::isValidModelFile(const std::string& filename) const {
         }
     }
     return false;
+}
+
+static bool isTokenizerJsonFile(const std::string& filename) {
+    return filename.size() >= 5 && filename.compare(filename.size() - 5, 5, ".json") == 0;
 }
 
 void ModelManager::scanDirectoryInternal(const std::string& directory, ModelType type) {
@@ -173,7 +183,8 @@ void ModelManager::scanDirectoryInternal(const std::string& directory, ModelType
                 }
             }
 
-            if (!isValidModelFile(filename)) {
+            if (!isValidModelFile(filename) &&
+                !(type == ModelType::TOKENIZER && isTokenizerJsonFile(filename))) {
                 continue;
             }
 
@@ -361,6 +372,8 @@ std::string ModelManager::getModelTypeString(ModelType type) const {
             return "controlnet";
         case ModelType::TEXT_ENCODER:
             return "text_encoder";
+        case ModelType::TOKENIZER:
+            return "tokenizer";
         default:
             return "unknown";
     }

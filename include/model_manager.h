@@ -16,7 +16,8 @@ enum class ModelType {
     CODEFORMER,
     EMBEDDINGS,
     CONTROLNET,
-    TEXT_ENCODER
+    TEXT_ENCODER,
+    TOKENIZER
 };
 
 struct ModelInfo {
@@ -47,6 +48,7 @@ class ModelManager {
     void setEmbeddingsDir(const std::string& dir);
     void setControlnetDir(const std::string& dir);
     void setTextEncoderDir(const std::string& dir);
+    void setTokenizerDir(const std::string& dir);
 
     // Get model directories
     std::string getRealesrganModelsPath() const;
