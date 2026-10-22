@@ -30,6 +30,12 @@ for adding a new feature. Build details and platform specifics live in
    ggml shared libraries that the post-build step copies there. Add
    `-DSDKIT_BUILD_TOOLS=ON` if you also want the `modelinfo` tool.
 
+**Windows path length note.** On Windows, deep or complex file structures can hit
+the MAX_PATH limitation (260 characters) and cause CMake to fail. To bypass this,
+the build process utilizes the `subst` drive letter substitution trick (e.g.,
+`subst z: C:\\long\\path`) to map long paths to short paths, so CMake and the
+build tools see a short alias instead of a path that exceeds the limit.
+
 ## Running the server locally
 
 Start the server with the directories you want it to scan:

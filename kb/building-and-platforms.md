@@ -42,9 +42,9 @@ The top-level `CMakeLists.txt`:
   `include/`, `third_party/`, and the submodule.
 - Defines an optional `SDKIT_BUILD_TOOLS` flag that builds the `modelinfo` CLI from
   `tools/` (see [models-and-detection](models-and-detection.md)).
-- On Windows it suppresses Unicode warnings from crow headers (`/wd4566`), enables
-  `/bigobj` for Debug builds, targets Windows 7+ (`_WIN32_WINNT=0x0601`), and links
-  `ws2_32`.
+- On Windows, the build uses several flags to ensure compatibility and robustness:
+  it suppresses Unicode warnings from crow headers (`/wd4566`), enables `/bigobj` for Debug builds, targets Windows 7+ (`_WIN32_WINNT=0x0601`), and links `ws2_32`.
+  Crucially, to bypass the Windows MAX_PATH limitation (260 characters) when dealing with deep or complex file structures, the build process utilizes the `subst` drive letter substitution trick (e.g., `subst z: C:\\long\\path`) to map long paths to short paths.
 
 ## Backends
 
