@@ -743,6 +743,14 @@ bool ImageGenerator::ensureModelLoaded(const std::string& controlnet_model) {
     // Set RNG type
     params.rng_type = CUDA_RNG;
 
+    // When model weights are kept in host RAM (offloaded from the GPU), store them in
+    // file-backed (mmap) memory instead of private allocations. File-backed pages can be
+    // reclaimed instantly by the OS under memory pressure, so a large offloaded model no
+    // longer pins down system RAM between generations; re-staging for the next generation
+    // re-reads them from the page cache. Params that stay in VRAM don't need this, and
+    // the LoRA 'immediately' merge mode wants a writable private mapping instead.
+    params.enable_mmap = offload_to_cpu_;
+
     // Apply CLI parameters for SD context
     std::string backend, backend_params;
 
